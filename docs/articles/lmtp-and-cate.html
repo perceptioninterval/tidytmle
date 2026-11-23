@@ -43,6 +43,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
+    <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
   </ul>
@@ -76,14 +77,20 @@
     
     
 <p>Beyond binary point-treatment effects, <code>tidytmle</code> supports
-<strong>Modified Treatment Policies (LMTP)</strong> for continuous
-exposures and <strong>Doubly Robust Conditional Average Treatment Effect
-(DR-Learner CATE)</strong> estimation.</p>
+<strong>Modified Treatment Policies (LMTP)</strong> (Díaz et al., 2021)
+for continuous exposures and <strong>Doubly Robust Conditional Average
+Treatment Effect (DR-Learner CATE)</strong> estimation (Kennedy,
+2023).</p>
 <div class="section level2">
 <h2 id="continuous-exposures-via-shift-and-scale_tx">Continuous Exposures via <code>shift()</code> and
 <code>scale_tx()</code><a class="anchor" aria-label="anchor" href="#continuous-exposures-via-shift-and-scale_tx"></a>
 </h2>
-<p>Use <code>shift(delta)</code> for additive policies
+<p>Asking <em>“what if every patient received dose = 0 vs. dose =
+10?”</em> often forces impossible extrapolations for continuous
+exposures. Modified Treatment Policies solve this by shifting each
+person’s observed exposure realistically (e.g., <code>+1</code> unit or
+<code>90%</code> of current dose). Use <code>shift(delta)</code> for
+additive policies
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>a</mi><mo>+</mo><mi>δ</mi></mrow><annotation encoding="application/x-tex">d(a, w) = a + \delta</annotation></semantics></math>
 or <code>scale_tx(factor)</code> for multiplicative policies
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>a</mi><mo>⋅</mo><mtext mathvariant="normal">factor</mtext></mrow><annotation encoding="application/x-tex">d(a, w) = a \cdot \text{factor}</annotation></semantics></math>.

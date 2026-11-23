@@ -52,3 +52,33 @@ An updated \code{"tmle_spec"} object.
 \description{
 Configure TMLE Targeting, Positivity Bounds, and Memory Options
 }
+\details{
+Three built-in statistical guardrails govern the targeting step:
+\itemize{
+\item \strong{CV-TMLE (\code{cv_tmle = TRUE})}: Uses out-of-fold nuisance predictions so
+standard errors remain valid even when using non-Donsker machine learning
+learners such as random forests or boosted trees (Zheng & van der Laan,
+2011).
+\item \strong{Adaptive Positivity Truncation (\code{g_bounds = "adaptive"})}: Prevents a
+handful of near-0 or near-1 propensity scores from inflating inverse weights
+and EIF variance, following the sample-size-aware \eqn{5 / (\sqrt{n}\ln n)}
+diagnostic rule (Petersen et al., 2012; Gruber & van der Laan, 2010).
+\item \strong{Bounded Logistic Fluctuation (\code{fluctuation = "logistic"})}: Scales
+continuous outcomes into \verb{[0, 1]} and performs canonical logistic
+fluctuation so targeted counterfactual predictions stay strictly inside the
+observed support even under extreme confounding (Gruber & van der Laan,
+2010).
+}
+}
+\references{
+Zheng, W., & van der Laan, M. J. (2011). Cross-validated targeted minimum-loss-based
+estimation. In \emph{Targeted Learning} (pp. 459–474). Springer.
+
+Gruber, S., & van der Laan, M. J. (2010). A targeted maximum likelihood
+estimator of a causal effect on a bounded continuous outcome. \emph{The
+International Journal of Biostatistics}, 6(1), Article 26.
+
+Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., & van der Laan, M. J.
+(2012). Diagnosing and responding to violations in the positivity assumption.
+\emph{Statistical Methods in Medical Research}, 21(1), 31–54.
+}

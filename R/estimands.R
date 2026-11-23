@@ -1,12 +1,28 @@
 #' Modified Treatment Policy Constructors for Continuous Exposures
 #'
 #' Define causal Modified Treatment Policies (MTPs) for continuous treatments
-#' following the Longitudinal Modified Treatment Policy (LMTP) framework.
+#' following the Longitudinal Modified Treatment Policy (LMTP) framework
+#' (Díaz, Williams, Hoffman, & Schenck, 2021).
 #'
-#' - `shift(delta)` defines a deterministic additive intervention
-#'   \eqn{d(a, w) = a + \delta}.
-#' - `scale_tx(factor)` defines a deterministic multiplicative intervention
-#'   \eqn{d(a, w) = a \cdot \text{factor}}.
+#' @details
+#' Unlike static binary interventions ("treat everyone vs. treat no one"),
+#' continuous exposures often violate positivity if we try to force every
+#' individual to the exact same dose. Modified Treatment Policies avoid
+#' extrapolation by shifting each person's observed exposure realistically:
+#' - `shift(delta)` defines an additive shift \eqn{d(a, w) = a + \delta}
+#'   (e.g., increasing daily exercise by +15 minutes or reducing dose by -1 unit).
+#' - `scale_tx(factor)` defines a multiplicative policy
+#'   \eqn{d(a, w) = a \cdot \text{factor}} (e.g., reducing exposure by 10%).
+#'
+#' `tidytmle` estimates the post-intervention density ratio
+#' \eqn{g_d(a \mid w) / g(a \mid w)} nonparametrically via stacked
+#' cross-validated classification without parametric normality assumptions.
+#'
+#' @references
+#' Díaz, I., Williams, N., Hoffman, K. L., & Schenck, E. J. (2021).
+#' Nonparametric causal effects based on longitudinal modified treatment
+#' policies. *Journal of the American Statistical Association*, 118(542),
+#' 846–857.
 #'
 #' @param delta Numeric scalar specifying the additive shift applied to observed
 #'   treatment values.

@@ -28,7 +28,7 @@ tune::collect_metrics
 utils::globalVariables(c(
   ".estimate", ".estimator", ".metric", ".pred", "arm", "conf.high",
   "conf.low", "covariate", "density", "eif", "estimand", "estimate", "fold",
-  "g", "group", "is_outlier", "learner", "leverage", "metric_type",
+  "g", "group", "h_mag", "is_outlier", "learner", "leverage", "metric_type",
   "nuisance", "obs_id", "pct_truncated", "smd", "term", "threshold", "val",
-  "value", "weight"
+  "value", "weight", "x_init", "y_star"
 ))

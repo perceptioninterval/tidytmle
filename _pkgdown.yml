@@ -81,5 +81,6 @@ articles:
   - title: Articles
     navbar: Articles
     contents:
+      - tmle-intuition
       - workflows-and-super-learning
       - lmtp-and-cate

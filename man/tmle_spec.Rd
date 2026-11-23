@@ -57,6 +57,37 @@ bounded logistic fluctuation are enabled automatically. At Level 2, attach
 custom \code{recipes}, \code{parsnip} specs, \code{workflows}, \code{workflowsets}, and \code{rsample}
 objects using the \verb{set_*()} verbs.
 }
+\details{
+\subsection{How TMLE Works ("Predict, Then Target")}{
+
+Standard machine learning regression models \eqn{\bar{Q}^0(A, W) = E[Y \mid A, W]}
+optimize global prediction accuracy rather than the bias-variance trade-off
+for a causal contrast such as the Average Treatment Effect (ATE). Conversely,
+inverse-probability weighting (IPW) relies entirely on the propensity score
+\eqn{g(W) = P(A = 1 \mid W)} and blows up in variance when positivity is
+stressed.
+
+As synthesized in Schuler & Rose (2017) and Luque-Fernandez et al. (2018),
+TMLE resolves both weaknesses in two stages:
+\enumerate{
+\item \strong{Predict}: Estimate the initial outcome surface \eqn{\bar{Q}^0(A, W)}
+and treatment propensity \eqn{g(W)} (plus missingness/censoring
+\eqn{C(A, W)} when outcomes are missing) using cross-validated Super
+Learning.
+\item \strong{Target (Fluctuate)}: Construct the \emph{Clever Covariate} \eqn{H(A, W)}
+derived from the parameter's Efficient Influence Function (EIF) and fit a
+1-parameter fluctuation submodel \eqn{\text{logit}\,\bar{Q}^*(A, W) =
+   \text{logit}\,\bar{Q}^0(A, W) + \epsilon H(A, W)}. This nudges the
+initial predictions strictly along the direction needed to remove residual
+confounding bias until the sample mean of the EIF equals zero.
+}
+
+This makes TMLE a \strong{doubly robust}, \strong{locally efficient substitution
+estimator}: it remains consistent if \emph{either} \eqn{\bar{Q}} \emph{or} \eqn{g} is
+consistently estimated, attains the semiparametric efficiency lower bound
+when both are consistent, and respects natural outcome bounds.
+}
+}
 \examples{
 df <- sim_causal_cohort(n = 200, seed = 42)
 spec <- tmle_spec(
@@ -67,4 +98,16 @@ spec <- tmle_spec(
 )
 spec
 
+}
+\references{
+van der Laan, M. J., & Rubin, D. (2006). Targeted maximum likelihood learning.
+\emph{The International Journal of Biostatistics}, 2(1), Article 11.
+
+Schuler, M. S., & Rose, S. (2017). Targeted maximum likelihood estimation for
+causal inference in observational studies. \emph{American Journal of Epidemiology},
+185(1), 65–73.
+
+Luque-Fernandez, M. A., Schomaker, M., Rachet, B., & Schnitzer, M. E.
+(2018). Targeted maximum likelihood estimation for a binary treatment: A
+tutorial. \emph{Statistics in Medicine}, 37(16), 2530–2546.
 }

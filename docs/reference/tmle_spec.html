@@ -33,6 +33,7 @@ objects using the set_*() verbs."><meta property="og:image" content="https://tid
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
+    <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
   </ul></li>
@@ -126,6 +127,48 @@ created by <code><a href="shift.html">shift()</a></code> or <code><a href="shift
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>"tmle_spec"</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+
+<div class="section">
+<h3 id="how-tmle-works-predict-then-target-">How TMLE Works ("Predict, Then Target")<a class="anchor" aria-label="anchor" href="#how-tmle-works-predict-then-target-"></a></h3>
+
+
+<p>Standard machine learning regression models \(\bar{Q}^0(A, W) = E[Y \mid A, W]\)
+optimize global prediction accuracy rather than the bias-variance trade-off
+for a causal contrast such as the Average Treatment Effect (ATE). Conversely,
+inverse-probability weighting (IPW) relies entirely on the propensity score
+\(g(W) = P(A = 1 \mid W)\) and blows up in variance when positivity is
+stressed.</p>
+<p>As synthesized in Schuler &amp; Rose (2017) and Luque-Fernandez et al. (2018),
+TMLE resolves both weaknesses in two stages:</p><ol><li><p><strong>Predict</strong>: Estimate the initial outcome surface \(\bar{Q}^0(A, W)\)
+and treatment propensity \(g(W)\) (plus missingness/censoring
+\(C(A, W)\) when outcomes are missing) using cross-validated Super
+Learning.</p></li>
+<li><p><strong>Target (Fluctuate)</strong>: Construct the <em>Clever Covariate</em> \(H(A, W)\)
+derived from the parameter's Efficient Influence Function (EIF) and fit a
+1-parameter fluctuation submodel \(\text{logit}\,\bar{Q}^*(A, W) =
+   \text{logit}\,\bar{Q}^0(A, W) + \epsilon H(A, W)\). This nudges the
+initial predictions strictly along the direction needed to remove residual
+confounding bias until the sample mean of the EIF equals zero.</p></li>
+</ol><p>This makes TMLE a <strong>doubly robust</strong>, <strong>locally efficient substitution
+estimator</strong>: it remains consistent if <em>either</em> \(\bar{Q}\) <em>or</em> \(g\) is
+consistently estimated, attains the semiparametric efficiency lower bound
+when both are consistent, and respects natural outcome bounds.</p>
+</div>
+
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>van der Laan, M. J., &amp; Rubin, D. (2006). Targeted maximum likelihood learning.
+<em>The International Journal of Biostatistics</em>, 2(1), Article 11.</p>
+<p>Schuler, M. S., &amp; Rose, S. (2017). Targeted maximum likelihood estimation for
+causal inference in observational studies. <em>American Journal of Epidemiology</em>,
+185(1), 65–73.</p>
+<p>Luque-Fernandez, M. A., Schomaker, M., Rachet, B., &amp; Schnitzer, M. E.
+(2018). Targeted maximum likelihood estimation for a binary treatment: A
+tutorial. <em>Statistics in Medicine</em>, 37(16), 2530–2546.</p>
     </div>
 
     <div class="section level2">

@@ -37,7 +37,11 @@ An updated \code{"tmle_fit"} object.
 \description{
 Re-runs only the positivity truncation, fluctuation submodel, and Efficient
 Influence Function (EIF) inference using the cached out-of-fold nuisance
-predictions stored inside a \code{tmle_fit} object. Typically completes in \verb{< 50ms}.
+predictions stored inside a \code{tmle_fit} object. Because nuisance Super
+Learning accounts for 95–99\% of runtime while the targeting fluctuation
+takes milliseconds, \code{retarget()} lets you run positivity sensitivity sweeps,
+switch estimands, or inspect subgroup effects interactively with zero ML
+refitting.
 }
 \examples{
 df <- sim_causal_cohort(n = 150, seed = 1)

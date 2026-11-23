@@ -43,6 +43,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
+    <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
   </ul>
@@ -79,6 +80,14 @@
 <code>recipes</code>, <code>parsnip</code> model specifications,
 <code>workflows</code>, and <code><a href="https://workflowsets.tidymodels.org/reference/workflow_set.html" class="external-link">workflowsets::workflow_set</a></code>
 ensembles directly—while enforcing causal guardrails automatically.</p>
+<blockquote>
+<p><strong>Why cross-fitting and Super Learning matter here:</strong>
+Following Zheng &amp; van der Laan (2011), pairing diverse candidate
+algorithms inside a single cross-validated Super Learner reduces the
+risk of model misspecification while out-of-fold predictions eliminate
+Donsker-class restrictions when using random forests, regularized
+regressions, or boosted trees.</p>
+</blockquote>
 <div class="section level2">
 <h2 id="role-aware-recipe-splitting-workflow_set-super-learning">Role-Aware Recipe Splitting &amp; <code>workflow_set</code> Super
 Learning<a class="anchor" aria-label="anchor" href="#role-aware-recipe-splitting-workflow_set-super-learning"></a>
@@ -150,7 +159,7 @@ predictors:</p>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (observed = 280) | 5-fold CV-TMLE | logistic fluctuation |</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">2.29s | 15 clusters</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">2.50s | 15 clusters</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Estimates </span></span>
 <span><span class="co">#&gt; ATE est = 1.7176 (SE = 0.1230) 95% CI [1.4766, 1.9586] p = &lt; 0.0001</span></span>
@@ -161,7 +170,8 @@ predictors:</p>
 <span><span class="co">#&gt; C Super Learner: AUC = 0.660 (weights: glmnet 0.34, glm 0.33, ranger</span></span>
 <span><span class="co">#&gt; 0.33)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Diagnostics </span></span>
+<span><span class="co">#&gt; ── Diagnostics &amp; Targeting Shift </span></span>
+<span><span class="co">#&gt; Targeting shift (TMLE - plug-in): +0.0050 (epsilon = 0.0079)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All checks healthy: mean EIF = -4.42e-15, truncated = 0.6%, max EIF leverage = 2.8%.</span></span></code></pre></div>
 </div>
 <div class="section level2">

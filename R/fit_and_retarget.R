@@ -254,7 +254,11 @@ fit.tmle_spec <- function(object, data, ...) {
 #'
 #' Re-runs only the positivity truncation, fluctuation submodel, and Efficient
 #' Influence Function (EIF) inference using the cached out-of-fold nuisance
-#' predictions stored inside a `tmle_fit` object. Typically completes in `< 50ms`.
+#' predictions stored inside a `tmle_fit` object. Because nuisance Super
+#' Learning accounts for 95–99% of runtime while the targeting fluctuation
+#' takes milliseconds, `retarget()` lets you run positivity sensitivity sweeps,
+#' switch estimands, or inspect subgroup effects interactively with zero ML
+#' refitting.
 #'
 #' @param object A fitted `"tmle_fit"` object.
 #' @param g_bounds Optional updated positivity bounds (`"adaptive"`, scalar, or

@@ -48,6 +48,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
+    <li><a class="dropdown-item" href="articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
   </ul>
@@ -74,7 +75,20 @@
 </div>
 <!-- badges: start -->
 
-<p><code>tidytmle</code> is a semiparametric <strong>Targeted Maximum Likelihood Estimation (CV-TMLE)</strong> orchestrator built natively for the <a href="https://www.tidymodels.org/" class="external-link">tidymodels</a> ecosystem. Rather than forcing TMLE into a prediction-only <code>parsnip</code> model specification, <code>tidytmle</code> sits above <code>workflows</code>, <code>workflowsets</code>, <code>recipes</code>, <code>rsample</code>, <code>hardhat</code>, and <code>yardstick</code> so any tidymodels workflow can serve as a cross-fitted Super Learner nuisance model.</p>
+<p><code>tidytmle</code> brings <strong>Targeted Maximum Likelihood Estimation (CV-TMLE)</strong> to the <a href="https://www.tidymodels.org/" class="external-link">tidymodels</a> ecosystem. Rather than forcing causal estimation into a prediction-only <code>parsnip</code> model, <code>tidytmle</code> orchestrates <code>workflows</code>, <code>workflowsets</code>, <code>recipes</code>, <code>rsample</code>, <code>hardhat</code>, and <code>yardstick</code> so you can plug any machine learning pipeline into a doubly robust, locally efficient causal estimator.</p>
+<div class="section level2">
+<h2 id="why-tmle-the-60-second-intuition">Why TMLE? The 60-Second Intuition<a class="anchor" aria-label="anchor" href="#why-tmle-the-60-second-intuition"></a>
+</h2>
+<p>Standard machine learning regression (<strong>G-computation</strong>) optimizes overall prediction accuracy rather than the bias-variance trade-off for a treatment effect contrast—leaving residual confounding bias and invalid confidence intervals. Conversely, <strong>propensity weighting (IPTW)</strong> discards outcome modeling and blows up in variance whenever propensity scores approach <code>0</code> or <code>1</code>.</p>
+<p><strong>TMLE follows a simple two-stage philosophy: <em>“Predict, Then Target.”</em></strong></p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Predict</strong> initial outcomes <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>E</mi><mo stretchy="false" form="prefix">[</mo><mi>Y</mi><mo>∣</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\bar{Q}^0(A, W) = E[Y \mid A, W]</annotation></semantics></math> and treatment propensities <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g(W) = P(A = 1 \mid W)</annotation></semantics></math> using cross-validated Super Learning.</li>
+<li>
+<strong>Target</strong> those initial predictions with a 1-parameter <em>fluctuation step</em> along a <strong>Clever Covariate</strong> <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>H</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">H(A, W)</annotation></semantics></math> derived from the Efficient Influence Function (EIF)—nudging predictions just enough to remove residual confounding bias without ruining the fit.</li>
+</ol>
+<p>Because it uses <em>both</em> models, TMLE is <strong>doubly robust</strong> (consistent if <em>either</em> <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>Q</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar{Q}</annotation></semantics></math> or <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math> is consistent), <strong>locally efficient</strong>, and <strong>safe</strong> (respecting natural outcome bounds). See <a href="https://tidytmle.tidymodels.org/articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a> for the full visual walkthrough.</p>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -84,7 +98,7 @@
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu">pak</span><span class="op">(</span><span class="st">"michaelespero/tidytmle"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="key-capabilities">Key Capabilities<a class="anchor" aria-label="anchor" href="#key-capabilities"></a>
+<h2 id="key-guardrails--capabilities">Key Guardrails &amp; Capabilities<a class="anchor" aria-label="anchor" href="#key-guardrails--capabilities"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -93,29 +107,28 @@
 </colgroup>
 <thead><tr>
 <th>Capability</th>
-<th>Design &amp; Statistical Guardrails</th>
+<th>Plain-English Benefit</th>
 </tr></thead>
 <tbody>
 <tr>
 <td><strong>Progressive-Disclosure API</strong></td>
-<td>3-line Level 1 <code>tmle_spec() \|&gt; fit()</code> default scaling smoothly to Level 2 <code>recipes</code>, <code>workflows</code>, and <code>workflow_set</code> ensembles</td>
+<td>3-line Level 1 <code>tmle_spec() \|&gt; fit()</code> default scaling cleanly to Level 2 <code>recipes</code>, <code>workflows</code>, and <code>workflow_set</code> Super Learners</td>
 </tr>
 <tr>
 <td><strong>Role-Aware Recipe Splitting</strong></td>
-<td>Clones user <code>recipes</code> per nuisance (<code>Q</code>, <code>g</code>, <code>C</code>) so treatment <code>A</code> never leaks into propensity models and <code>id</code> / <code>weights</code> never leak into predictors</td>
+<td>Automatically clones <code>recipes</code> per nuisance (<code>Q</code>, <code>g</code>, <code>C</code>) so treatment <code>A</code> never leaks into propensity models and <code>id</code> / <code>weights</code> never leak into predictors</td>
 </tr>
 <tr>
 <td><strong>Automatic Informative Missingness</strong></td>
-<td>Detects outcome <code>NA</code>s when <code>censoring</code> is omitted and models <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mo>=</mo><mi>𝕀</mi><mo stretchy="false" form="prefix">(</mo><mo>¬</mo><mtext mathvariant="normal">is.na</mtext><mo stretchy="false" form="prefix">(</mo><mi>Y</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\Delta = \mathbb{I}(\neg\text{is.na}(Y))</annotation></semantics></math> via <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Δ</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">C(A, W) = P(\Delta = 1 \mid A, W)</annotation></semantics></math>
-</td>
+<td>Detects outcome <code>NA</code>s when <code>censoring</code> is omitted and models <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mo>=</mo><mi>𝕀</mi><mo stretchy="false" form="prefix">(</mo><mo>¬</mo><mtext mathvariant="normal">is.na</mtext><mo stretchy="false" form="prefix">(</mo><mi>Y</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\Delta = \mathbb{I}(\neg\text{is.na}(Y))</annotation></semantics></math> via <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Δ</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">C(A, W) = P(\Delta = 1 \mid A, W)</annotation></semantics></math> instead of silent listwise deletion</td>
 </tr>
 <tr>
-<td><strong>Built-In Semiparametric Rigor</strong></td>
-<td>10-fold CV-TMLE by default, bounded canonical logistic fluctuation on scaled <code>[0, 1]</code> outcomes, Gruber &amp; van der Laan adaptive positivity bounds, joint EIF inference (<code>ate</code>, <code>rr</code>, <code>or</code>, <code>att</code>, <code>atc</code>), cluster-robust SEs, and <code>hardhat</code> case weights</td>
+<td><strong>Built-In Semiparametric Guardrails</strong></td>
+<td>10-fold CV-TMLE (removes Donsker assumptions), bounded canonical logistic fluctuation on <code>[0, 1]</code> scaled outcomes, adaptive <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5</mn><mi>/</mi><mo stretchy="false" form="prefix">(</mo><msqrt><mi>n</mi></msqrt><mrow><mi>ln</mi><mo>⁡</mo></mrow><mi>n</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">5/(\sqrt{n}\ln n)</annotation></semantics></math> positivity truncation, joint EIF inference (<code>ate</code>, <code>rr</code>, <code>or</code>, <code>att</code>, <code>atc</code>), cluster-robust SEs, and <code>hardhat</code> case weights</td>
 </tr>
 <tr>
 <td><strong>Instant <code><a href="reference/retarget.html">retarget()</a></code></strong></td>
-<td>Re-runs positivity bounds, estimands, or subgroups in milliseconds using cached out-of-fold nuisance predictions with zero ML refitting</td>
+<td>Re-runs positivity bounds, estimands, or subgroups in milliseconds using cached out-of-fold predictions with zero ML refitting</td>
 </tr>
 <tr>
 <td><strong>LMTP &amp; DR-Learner CATE</strong></td>
@@ -147,7 +160,7 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── TMLE Fit Summary ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; n = 350 (observed = 350) | 5-fold CV-TMLE | logistic fluctuation | 1.86s</span></span>
+<span><span class="co">#&gt; n = 350 (observed = 350) | 5-fold CV-TMLE | logistic fluctuation | 2.10s</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Estimates </span></span>
 <span><span class="co">#&gt; ATE est = 0.1071 (SE = 0.0511) 95% CI [0.0069, 0.2074] p = 0.0362</span></span>
@@ -158,7 +171,8 @@
 <span><span class="co">#&gt; Q Super Learner: AUC = 0.713 (weights: glmnet 0.34, glm 0.34, ranger 0.33)</span></span>
 <span><span class="co">#&gt; g Super Learner: AUC = 0.623 (weights: ranger 0.33, glm 0.33, glmnet 0.33)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Diagnostics </span></span>
+<span><span class="co">#&gt; ── Diagnostics &amp; Targeting Shift </span></span>
+<span><span class="co">#&gt; Targeting shift (TMLE - plug-in): +0.0332 (epsilon = 0.0825)</span></span>
 <span><span class="co">#&gt; ✔ All checks healthy: mean EIF = 5.13e-14, truncated = 0.0%, max EIF leverage = 4.2%.</span></span>
 <span></span>
 <span><span class="co"># Simultaneous uniform confidence bands &amp; VanderWeele-Ding E-values</span></span>
@@ -186,6 +200,14 @@
 <div class="figure">
 <img src="reference/figures/README-example-1.png" alt="Mirrored propensity score overlap plot generated by autoplot(fit, type = 'overlap')" width="100%"><p class="caption">
 plot of chunk example
+</p>
+</div>
+<p>Inspect how much the targeting step adjusted the initial G-computation predictions using <code>autoplot(fit, type = "targeting")</code>:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"targeting"</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/README-targeting-example-1.png" alt="Targeting scatter plot comparing initial G-computation vs fluctuated TMLE contrasts shaded by Clever Covariate magnitude" width="100%"><p class="caption">
+plot of chunk targeting-example
 </p>
 </div>
 </div>

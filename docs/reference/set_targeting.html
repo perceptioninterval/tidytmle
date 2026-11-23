@@ -21,6 +21,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
+    <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
   </ul></li>
@@ -111,6 +112,33 @@ fitted workflows).</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An updated <code>"tmle_spec"</code> object.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Three built-in statistical guardrails govern the targeting step:</p><ul><li><p><strong>CV-TMLE (<code>cv_tmle = TRUE</code>)</strong>: Uses out-of-fold nuisance predictions so
+standard errors remain valid even when using non-Donsker machine learning
+learners such as random forests or boosted trees (Zheng &amp; van der Laan,
+2011).</p></li>
+<li><p><strong>Adaptive Positivity Truncation (<code>g_bounds = "adaptive"</code>)</strong>: Prevents a
+handful of near-0 or near-1 propensity scores from inflating inverse weights
+and EIF variance, following the sample-size-aware \(5 / (\sqrt{n}\ln n)\)
+diagnostic rule (Petersen et al., 2012; Gruber &amp; van der Laan, 2010).</p></li>
+<li><p><strong>Bounded Logistic Fluctuation (<code>fluctuation = "logistic"</code>)</strong>: Scales
+continuous outcomes into <code>[0, 1]</code> and performs canonical logistic
+fluctuation so targeted counterfactual predictions stay strictly inside the
+observed support even under extreme confounding (Gruber &amp; van der Laan,
+2010).</p></li>
+</ul></div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Zheng, W., &amp; van der Laan, M. J. (2011). Cross-validated targeted minimum-loss-based
+estimation. In <em>Targeted Learning</em> (pp. 459–474). Springer.</p>
+<p>Gruber, S., &amp; van der Laan, M. J. (2010). A targeted maximum likelihood
+estimator of a causal effect on a bounded continuous outcome. <em>The
+International Journal of Biostatistics</em>, 6(1), Article 26.</p>
+<p>Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., &amp; van der Laan, M. J.
+(2012). Diagnosing and responding to violations in the positivity assumption.
+<em>Statistical Methods in Medical Research</em>, 21(1), 31–54.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

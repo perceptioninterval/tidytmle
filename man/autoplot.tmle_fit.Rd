@@ -6,7 +6,7 @@
 \usage{
 \method{autoplot}{tmle_fit}(
   object,
-  type = c("overlap", "learners", "eif", "sensitivity", "balance"),
+  type = c("overlap", "targeting", "learners", "eif", "sensitivity", "balance"),
   g_grid = seq(0.01, 0.15, by = 0.01),
   ...
 )
@@ -14,8 +14,8 @@
 \arguments{
 \item{object}{A fitted \code{"tmle_fit"} object.}
 
-\item{type}{Diagnostic plot type: \code{"overlap"}, \code{"learners"}, \code{"eif"},
-\code{"sensitivity"}, or \code{"balance"}.}
+\item{type}{Diagnostic plot type: \code{"overlap"}, \code{"targeting"}, \code{"learners"},
+\code{"eif"}, \code{"sensitivity"}, or \code{"balance"}.}
 
 \item{g_grid}{Numeric vector of lower positivity thresholds in \verb{(0, 0.5)}
 swept when \code{type = "sensitivity"}.}
@@ -26,18 +26,42 @@ swept when \code{type = "sensitivity"}.}
 A \code{ggplot2} object.
 }
 \description{
-Produces \code{ggplot2} causal diagnostics for a fitted \code{"tmle_fit"} object:
+Produces \code{ggplot2} causal diagnostics for a fitted \code{"tmle_fit"} object,
+turning every step of the TMLE estimator into an inspectable visual check:
 \itemize{
-\item \code{"overlap"}: Mirrored propensity score density by treatment arm with
-\code{g_bounds} truncation lines (or density-ratio distribution for LMTPs).
-\item \code{"learners"}: Cross-validated nuisance performance and Super Learner
-metalearner weights.
-\item \code{"eif"}: Observation-level Efficient Influence Function leverage plot
-highlighting extreme single-row influence outliers.
-\item \code{"sensitivity"}: Instantaneous \code{retarget()} sweep across positivity bounds
-\code{g_grid} showing stability of the point estimate, 95\% CI, and truncation
-rate.
-\item \code{"balance"}: Weighted Love plot comparing unadjusted vs IPW/TMLE-weighted
-absolute standardized mean differences across baseline covariates.
+\item \code{"overlap"}: \strong{Step 2 (Positivity / Overlap Check)}. Mirrored propensity
+score density by treatment arm with \code{g_bounds} truncation lines (or
+density-ratio distribution for LMTPs). Validates whether both treated and
+control units exist across confounder strata (Petersen et al., 2012).
+\item \code{"targeting"}: \strong{Steps 3–4 (Initial G-Computation vs. Targeted TMLE)}.
+Compares initial ML counterfactual contrasts (\eqn{\bar{Q}^0(1, W) - \bar{Q}^0(0, W)})
+against fluctuated TMLE contrasts (\eqn{\bar{Q}^*(1, W) - \bar{Q}^*(0, W)}),
+shaded by Clever Covariate magnitude \eqn{|H_n(A, W)|}, illustrating how the
+fluctuation step removes residual confounding bias from the initial fit.
+\item \code{"learners"}: \strong{Cross-Validated Super Learner Ensemble}. Compares CV risk
+and simplex metalearner weights across base workflows for \eqn{Q}, \eqn{g},
+and \eqn{C}.
+\item \code{"eif"}: \strong{Step 5 (Efficient Influence Function Variance Leverage)}.
+Observation-level share of total EIF variance (\eqn{D_i^2 / \sum D_j^2})
+to catch single-row outliers driving standard errors.
+\item \code{"sensitivity"}: \strong{Positivity Sensitivity Sweep}. Instantaneous
+\code{retarget()} sweep across truncation thresholds \code{g_grid} showing stability
+of point estimates, 95\% confidence intervals, and sample truncation rates.
+\item \code{"balance"}: \strong{Weighted Covariate Balance Love Plot}. Compares unadjusted
+vs. IPW/TMLE-weighted absolute standardized mean differences (\verb{|SMD|})
+against the standard \code{0.10} balance benchmark.
 }
+}
+\references{
+Schuler, M. S., & Rose, S. (2017). Targeted maximum likelihood estimation for
+causal inference in observational studies. \emph{American Journal of Epidemiology},
+185(1), 65–73.
+
+Luque-Fernandez, M. A., Schomaker, M., Rachet, B., & Schnitzer, M. E.
+(2018). Targeted maximum likelihood estimation for a binary treatment: A
+tutorial. \emph{Statistics in Medicine}, 37(16), 2530–2546.
+
+Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., & van der Laan, M. J.
+(2012). Diagnosing and responding to violations in the positivity assumption.
+\emph{Statistical Methods in Medical Research}, 21(1), 31–54.
 }

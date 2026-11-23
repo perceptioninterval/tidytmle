@@ -21,3 +21,29 @@ Appends initial and targeted counterfactual predictions (\code{.q0_init},
 treatment effects (\code{.ite_star}), Efficient Influence Function values
 (\code{.eif}), and fractional EIF variance leverage (\code{.eif_leverage}).
 }
+\details{
+\subsection{Column Decoder Ring}{
+\itemize{
+\item \strong{\code{.q0_init}, \code{.q1_init}}: Initial cross-fitted outcome predictions
+\eqn{\bar{Q}^0(0, W)} and \eqn{\bar{Q}^0(1, W)} before targeting
+(G-computation predictions).
+\item \strong{\code{.q0_star}, \code{.q1_star}}: Targeted TMLE counterfactual predictions
+\eqn{\bar{Q}^*(0, W)} and \eqn{\bar{Q}^*(1, W)} after fluctuating along
+the Clever Covariate.
+\item \strong{\code{.g_hat}, \code{.g_trunc}}: Raw cross-fitted propensity scores
+\eqn{P(A = 1 \mid W)} and scores truncated to \code{g_bounds}.
+\item \strong{\code{.clever_h}}: The Clever Covariate \eqn{H_n(A, W)} linking propensity
+and censoring weights to the parameter's Efficient Influence Function
+(Luque-Fernandez et al., 2018).
+\item \strong{\code{.ite_star}}: Individual targeted treatment contrast
+\eqn{\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)}.
+\item \strong{\code{.eif}, \code{.eif_leverage}}: Observation-level Efficient Influence Function
+contribution \eqn{D_i^*} and variance share \eqn{{D_i^*}^2 / \sum {D_j^*}^2}.
+}
+}
+}
+\references{
+Luque-Fernandez, M. A., Schomaker, M., Rachet, B., & Schnitzer, M. E.
+(2018). Targeted maximum likelihood estimation for a binary treatment: A
+tutorial. \emph{Statistics in Medicine}, 37(16), 2530–2546.
+}

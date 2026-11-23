@@ -8,6 +8,45 @@
 #' custom `recipes`, `parsnip` specs, `workflows`, `workflowsets`, and `rsample`
 #' objects using the `set_*()` verbs.
 #'
+#' @details
+#' ## How TMLE Works ("Predict, Then Target")
+#' Standard machine learning regression models \eqn{\bar{Q}^0(A, W) = E[Y \mid A, W]}
+#' optimize global prediction accuracy rather than the bias-variance trade-off
+#' for a causal contrast such as the Average Treatment Effect (ATE). Conversely,
+#' inverse-probability weighting (IPW) relies entirely on the propensity score
+#' \eqn{g(W) = P(A = 1 \mid W)} and blows up in variance when positivity is
+#' stressed.
+#'
+#' As synthesized in Schuler & Rose (2017) and Luque-Fernandez et al. (2018),
+#' TMLE resolves both weaknesses in two stages:
+#' 1. **Predict**: Estimate the initial outcome surface \eqn{\bar{Q}^0(A, W)}
+#'    and treatment propensity \eqn{g(W)} (plus missingness/censoring
+#'    \eqn{C(A, W)} when outcomes are missing) using cross-validated Super
+#'    Learning.
+#' 2. **Target (Fluctuate)**: Construct the *Clever Covariate* \eqn{H(A, W)}
+#'    derived from the parameter's Efficient Influence Function (EIF) and fit a
+#'    1-parameter fluctuation submodel \eqn{\text{logit}\,\bar{Q}^*(A, W) =
+#'    \text{logit}\,\bar{Q}^0(A, W) + \epsilon H(A, W)}. This nudges the
+#'    initial predictions strictly along the direction needed to remove residual
+#'    confounding bias until the sample mean of the EIF equals zero.
+#'
+#' This makes TMLE a **doubly robust**, **locally efficient substitution
+#' estimator**: it remains consistent if *either* \eqn{\bar{Q}} *or* \eqn{g} is
+#' consistently estimated, attains the semiparametric efficiency lower bound
+#' when both are consistent, and respects natural outcome bounds.
+#'
+#' @references
+#' van der Laan, M. J., & Rubin, D. (2006). Targeted maximum likelihood learning.
+#' *The International Journal of Biostatistics*, 2(1), Article 11.
+#'
+#' Schuler, M. S., & Rose, S. (2017). Targeted maximum likelihood estimation for
+#' causal inference in observational studies. *American Journal of Epidemiology*,
+#' 185(1), 65–73.
+#'
+#' Luque-Fernandez, M. A., Schomaker, M., Rachet, B., & Schnitzer, M. E.
+#' (2018). Targeted maximum likelihood estimation for a binary treatment: A
+#' tutorial. *Statistics in Medicine*, 37(16), 2530–2546.
+#'
 #' @param outcome Tidyselect specification of the outcome column. May be numeric
 #'   (continuous or 0/1 binary) or a 2-level factor/logical.
 #' @param treatment Tidyselect specification of the treatment/exposure column.
@@ -244,6 +283,34 @@ set_resamples <- function(spec, resamples = NULL, v_folds = 10L, strata = TRUE) 
 }
 
 #' Configure TMLE Targeting, Positivity Bounds, and Memory Options
+#'
+#' @details
+#' Three built-in statistical guardrails govern the targeting step:
+#' - **CV-TMLE (`cv_tmle = TRUE`)**: Uses out-of-fold nuisance predictions so
+#'   standard errors remain valid even when using non-Donsker machine learning
+#'   learners such as random forests or boosted trees (Zheng & van der Laan,
+#'   2011).
+#' - **Adaptive Positivity Truncation (`g_bounds = "adaptive"`)**: Prevents a
+#'   handful of near-0 or near-1 propensity scores from inflating inverse weights
+#'   and EIF variance, following the sample-size-aware \eqn{5 / (\sqrt{n}\ln n)}
+#'   diagnostic rule (Petersen et al., 2012; Gruber & van der Laan, 2010).
+#' - **Bounded Logistic Fluctuation (`fluctuation = "logistic"`)**: Scales
+#'   continuous outcomes into `[0, 1]` and performs canonical logistic
+#'   fluctuation so targeted counterfactual predictions stay strictly inside the
+#'   observed support even under extreme confounding (Gruber & van der Laan,
+#'   2010).
+#'
+#' @references
+#' Zheng, W., & van der Laan, M. J. (2011). Cross-validated targeted minimum-loss-based
+#' estimation. In *Targeted Learning* (pp. 459–474). Springer.
+#'
+#' Gruber, S., & van der Laan, M. J. (2010). A targeted maximum likelihood
+#' estimator of a causal effect on a bounded continuous outcome. *The
+#' International Journal of Biostatistics*, 6(1), Article 26.
+#'
+#' Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., & van der Laan, M. J.
+#' (2012). Diagnosing and responding to violations in the positivity assumption.
+#' *Statistical Methods in Medical Research*, 21(1), 31–54.
 #'
 #' @param spec A [tmle_spec()] object.
 #' @param cv_tmle Logical; whether to use Cross-Validated TMLE (out-of-fold

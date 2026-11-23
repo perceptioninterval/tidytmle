@@ -43,6 +43,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
+    <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
   </ul>
@@ -81,6 +82,9 @@ semi-parametric causal orchestrator sitting above
 <code>workflows</code>, <code>workflowsets</code>, <code>recipes</code>,
 <code>rsample</code>, <code>hardhat</code>, and
 <code>yardstick</code>.</p>
+<p>If you are new to the theory behind TMLE, start with <a href="tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual
+Guide</a> for an accessible breakdown of the <em>Predict, Then
+Target</em> philosophy, Clever Covariates, and double robustness.</p>
 <div class="section level2">
 <h2 id="level-1-the-3-line-safe-default">Level 1: The 3-Line Safe Default<a class="anchor" aria-label="anchor" href="#level-1-the-3-line-safe-default"></a>
 </h2>
@@ -111,7 +115,7 @@ are enabled automatically:</p>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (observed = 350) | 5-fold CV-TMLE | logistic fluctuation |</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">1.80s</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">1.86s</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Estimates </span></span>
 <span><span class="co">#&gt; ATE est = 0.1071 (SE = 0.0511) 95% CI [0.0069, 0.2074] p = 0.0362</span></span>
@@ -124,7 +128,8 @@ are enabled automatically:</p>
 <span><span class="co">#&gt; g Super Learner: AUC = 0.623 (weights: ranger 0.33, glm 0.33, glmnet</span></span>
 <span><span class="co">#&gt; 0.33)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Diagnostics </span></span>
+<span><span class="co">#&gt; ── Diagnostics &amp; Targeting Shift </span></span>
+<span><span class="co">#&gt; Targeting shift (TMLE - plug-in): +0.0332 (epsilon = 0.0825)</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All checks healthy: mean EIF = 5.13e-14, truncated = 0.0%, max EIF leverage = 4.2%.</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -244,10 +249,13 @@ outliers, positivity sensitivity curves, and weighted covariate balance
 using <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"overlap"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tidytmle_files/figure-html/plots-1.png" alt="Propensity score overlap and positivity sensitivity sweep" width="672"></p>
+<p><img src="tidytmle_files/figure-html/plots-1.png" alt="Propensity score overlap, targeting shift, and positivity sensitivity sweep" width="672"></p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"targeting"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="tidytmle_files/figure-html/plots-2.png" alt="Propensity score overlap, targeting shift, and positivity sensitivity sweep" width="672"></p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"sensitivity"</span>, g_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.12</span>, by <span class="op">=</span> <span class="fl">0.02</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="tidytmle_files/figure-html/plots-2.png" alt="Propensity score overlap and positivity sensitivity sweep" width="672"></p>
+<p><img src="tidytmle_files/figure-html/plots-3.png" alt="Propensity score overlap, targeting shift, and positivity sensitivity sweep" width="672"></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

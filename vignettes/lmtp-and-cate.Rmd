@@ -16,11 +16,11 @@ knitr::opts_chunk$set(
 )
 ```
 
-Beyond binary point-treatment effects, `tidytmle` supports **Modified Treatment Policies (LMTP)** for continuous exposures and **Doubly Robust Conditional Average Treatment Effect (DR-Learner CATE)** estimation.
+Beyond binary point-treatment effects, `tidytmle` supports **Modified Treatment Policies (LMTP)** (Díaz et al., 2021) for continuous exposures and **Doubly Robust Conditional Average Treatment Effect (DR-Learner CATE)** estimation (Kennedy, 2023).
 
 ## Continuous Exposures via `shift()` and `scale_tx()`
 
-Use `shift(delta)` for additive policies $d(a, w) = a + \delta$ or `scale_tx(factor)` for multiplicative policies $d(a, w) = a \cdot \text{factor}$. Internally, `tidytmle` estimates the treatment density ratio nonparametrically using stacked cross-validated classification workflows without parametric normality assumptions:
+Asking *"what if every patient received dose = 0 vs. dose = 10?"* often forces impossible extrapolations for continuous exposures. Modified Treatment Policies solve this by shifting each person's observed exposure realistically (e.g., `+1` unit or `90%` of current dose). Use `shift(delta)` for additive policies $d(a, w) = a + \delta$ or `scale_tx(factor)` for multiplicative policies $d(a, w) = a \cdot \text{factor}$. Internally, `tidytmle` estimates the treatment density ratio nonparametrically using stacked cross-validated classification workflows without parametric normality assumptions:
 
 ```{r lmtp, message = FALSE}
 library(tidytmle)

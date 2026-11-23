@@ -6,6 +6,8 @@
 \alias{tidytmle-package}
 \title{tidytmle: Targeted Maximum Likelihood Estimation for Tidymodels}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Semiparametric Targeted Maximum Likelihood Estimation (TMLE) and cross-fitted causal inference orchestration built natively on top of 'tidymodels'. Supports 'workflows' and 'workflowsets' as cross-validated Super Learner nuisance models via 'rsample', role-aware 'recipes' splitting, automatic informative-missingness handling, adaptive positivity truncation, joint Efficient Influence Function (EIF) multi-estimand inference, instant 'retarget()' without ML refitting, Modified Treatment Policies, and Doubly Robust CATE estimation.
 }
 \seealso{

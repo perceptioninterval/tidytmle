@@ -18,6 +18,8 @@ knitr::opts_chunk$set(
 
 For publication-grade pipelines, `tidytmle` accepts custom `recipes`, `parsnip` model specifications, `workflows`, and `workflowsets::workflow_set` ensembles directly—while enforcing causal guardrails automatically.
 
+> **Why cross-fitting and Super Learning matter here:** Following Zheng & van der Laan (2011), pairing diverse candidate algorithms inside a single cross-validated Super Learner reduces the risk of model misspecification while out-of-fold predictions eliminate Donsker-class restrictions when using random forests, regularized regressions, or boosted trees.
+
 ## Role-Aware Recipe Splitting & `workflow_set` Super Learning
 
 A common source of subtle bugs in manual causal ML pipelines is accidentally leaking the treatment column $A$ or cluster ID into the propensity model $g(W)$ when reusing a single `recipe(y ~ ., data = df)`. `tidytmle` automatically clones and adapts the preprocessing recipe per nuisance factor (`Q`, `g`, and `C`), guaranteeing that $A$ is retained in $Q(A, W)$ and $C(A, W)$ while strictly excluded from $g$'s predictors:

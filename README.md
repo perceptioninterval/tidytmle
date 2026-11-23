@@ -14,7 +14,18 @@ output: github_document
 [![R-CMD-check](https://github.com/michaelespero/tidytmle/workflows/R-CMD-check/badge.svg)](https://github.com/michaelespero/tidytmle/actions)
 <!-- badges: end -->
 
-`tidytmle` is a semiparametric **Targeted Maximum Likelihood Estimation (CV-TMLE)** orchestrator built natively for the [tidymodels](https://www.tidymodels.org/) ecosystem. Rather than forcing TMLE into a prediction-only `parsnip` model specification, `tidytmle` sits above `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick` so any tidymodels workflow can serve as a cross-fitted Super Learner nuisance model.
+`tidytmle` brings **Targeted Maximum Likelihood Estimation (CV-TMLE)** to the [tidymodels](https://www.tidymodels.org/) ecosystem. Rather than forcing causal estimation into a prediction-only `parsnip` model, `tidytmle` orchestrates `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick` so you can plug any machine learning pipeline into a doubly robust, locally efficient causal estimator.
+
+## Why TMLE? The 60-Second Intuition
+
+Standard machine learning regression (**G-computation**) optimizes overall prediction accuracy rather than the bias-variance trade-off for a treatment effect contrast—leaving residual confounding bias and invalid confidence intervals. Conversely, **propensity weighting (IPTW)** discards outcome modeling and blows up in variance whenever propensity scores approach `0` or `1`.
+
+**TMLE follows a simple two-stage philosophy: *"Predict, Then Target."***
+
+1. **Predict** initial outcomes $\bar{Q}^0(A, W) = E[Y \mid A, W]$ and treatment propensities $g(W) = P(A = 1 \mid W)$ using cross-validated Super Learning.
+2. **Target** those initial predictions with a 1-parameter *fluctuation step* along a **Clever Covariate** $H(A, W)$ derived from the Efficient Influence Function (EIF)—nudging predictions just enough to remove residual confounding bias without ruining the fit.
+
+Because it uses *both* models, TMLE is **doubly robust** (consistent if *either* $\bar{Q}$ or $g$ is consistent), **locally efficient**, and **safe** (respecting natural outcome bounds). See [TMLE Intuition: A Step-by-Step Visual Guide](https://tidytmle.tidymodels.org/articles/tmle-intuition.html) for the full visual walkthrough.
 
 ## Installation
 
@@ -25,15 +36,15 @@ You can install the development version of `tidytmle` from [GitHub](https://gith
 pak::pak("michaelespero/tidytmle")
 ```
 
-## Key Capabilities
+## Key Guardrails & Capabilities
 
-| Capability | Design & Statistical Guardrails |
+| Capability | Plain-English Benefit |
 |---|---|
-| **Progressive-Disclosure API** | 3-line Level 1 `tmle_spec() \|> fit()` default scaling smoothly to Level 2 `recipes`, `workflows`, and `workflow_set` ensembles |
-| **Role-Aware Recipe Splitting** | Clones user `recipes` per nuisance (`Q`, `g`, `C`) so treatment `A` never leaks into propensity models and `id` / `weights` never leak into predictors |
-| **Automatic Informative Missingness** | Detects outcome `NA`s when `censoring` is omitted and models $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ via $C(A, W) = P(\Delta = 1 \mid A, W)$ |
-| **Built-In Semiparametric Rigor** | 10-fold CV-TMLE by default, bounded canonical logistic fluctuation on scaled `[0, 1]` outcomes, Gruber & van der Laan adaptive positivity bounds, joint EIF inference (`ate`, `rr`, `or`, `att`, `atc`), cluster-robust SEs, and `hardhat` case weights |
-| **Instant `retarget()`** | Re-runs positivity bounds, estimands, or subgroups in milliseconds using cached out-of-fold nuisance predictions with zero ML refitting |
+| **Progressive-Disclosure API** | 3-line Level 1 `tmle_spec() \|> fit()` default scaling cleanly to Level 2 `recipes`, `workflows`, and `workflow_set` Super Learners |
+| **Role-Aware Recipe Splitting** | Automatically clones `recipes` per nuisance (`Q`, `g`, `C`) so treatment `A` never leaks into propensity models and `id` / `weights` never leak into predictors |
+| **Automatic Informative Missingness** | Detects outcome `NA`s when `censoring` is omitted and models $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ via $C(A, W) = P(\Delta = 1 \mid A, W)$ instead of silent listwise deletion |
+| **Built-In Semiparametric Guardrails** | 10-fold CV-TMLE (removes Donsker assumptions), bounded canonical logistic fluctuation on `[0, 1]` scaled outcomes, adaptive $5/(\sqrt{n}\ln n)$ positivity truncation, joint EIF inference (`ate`, `rr`, `or`, `att`, `atc`), cluster-robust SEs, and `hardhat` case weights |
+| **Instant `retarget()`** | Re-runs positivity bounds, estimands, or subgroups in milliseconds using cached out-of-fold predictions with zero ML refitting |
 | **LMTP & DR-Learner CATE** | `shift()` and `scale_tx()` continuous-treatment density-ratio TMLE plus `fit_cate()` and `qini_auc()` uplift scoring |
 
 ## Example
@@ -59,7 +70,7 @@ fit
 #> 
 #> ── TMLE Fit Summary ──
 #> 
-#> n = 350 (observed = 350) | 5-fold CV-TMLE | logistic fluctuation | 1.86s
+#> n = 350 (observed = 350) | 5-fold CV-TMLE | logistic fluctuation | 2.10s
 #> 
 #> ── Causal Estimates 
 #> ATE est = 0.1071 (SE = 0.0511) 95% CI [0.0069, 0.2074] p = 0.0362
@@ -70,7 +81,8 @@ fit
 #> Q Super Learner: AUC = 0.713 (weights: glmnet 0.34, glm 0.34, ranger 0.33)
 #> g Super Learner: AUC = 0.623 (weights: ranger 0.33, glm 0.33, glmnet 0.33)
 #> 
-#> ── Diagnostics 
+#> ── Diagnostics & Targeting Shift 
+#> Targeting shift (TMLE - plug-in): +0.0332 (epsilon = 0.0825)
 #> ✔ All checks healthy: mean EIF = 5.13e-14, truncated = 0.0%, max EIF leverage = 4.2%.
 
 # Simultaneous uniform confidence bands & VanderWeele-Ding E-values
@@ -100,6 +112,18 @@ autoplot(fit, type = "overlap")
 <div class="figure">
 <img src="man/figures/README-example-1.png" alt="Mirrored propensity score overlap plot generated by autoplot(fit, type = 'overlap')" width="100%" />
 <p class="caption">plot of chunk example</p>
+</div>
+
+Inspect how much the targeting step adjusted the initial G-computation predictions using `autoplot(fit, type = "targeting")`:
+
+
+``` r
+autoplot(fit, type = "targeting")
+```
+
+<div class="figure">
+<img src="man/figures/README-targeting-example-1.png" alt="Targeting scatter plot comparing initial G-computation vs fluctuated TMLE contrasts shaded by Clever Covariate magnitude" width="100%" />
+<p class="caption">plot of chunk targeting-example</p>
 </div>
 
 ## Code of Conduct

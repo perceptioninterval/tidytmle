@@ -29,6 +29,7 @@ treatment effects (.ite_star), Efficient Influence Function values
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
+    <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
   </ul></li>
@@ -77,6 +78,36 @@ treatment effects (<code>.ite_star</code>), Efficient Influence Function values
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble::tibble()</a></code> matching the input data (or selected subgroup).</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+
+<div class="section">
+<h3 id="column-decoder-ring">Column Decoder Ring<a class="anchor" aria-label="anchor" href="#column-decoder-ring"></a></h3>
+
+<ul><li><p><strong><code>.q0_init</code>, <code>.q1_init</code></strong>: Initial cross-fitted outcome predictions
+\(\bar{Q}^0(0, W)\) and \(\bar{Q}^0(1, W)\) before targeting
+(G-computation predictions).</p></li>
+<li><p><strong><code>.q0_star</code>, <code>.q1_star</code></strong>: Targeted TMLE counterfactual predictions
+\(\bar{Q}^*(0, W)\) and \(\bar{Q}^*(1, W)\) after fluctuating along
+the Clever Covariate.</p></li>
+<li><p><strong><code>.g_hat</code>, <code>.g_trunc</code></strong>: Raw cross-fitted propensity scores
+\(P(A = 1 \mid W)\) and scores truncated to <code>g_bounds</code>.</p></li>
+<li><p><strong><code>.clever_h</code></strong>: The Clever Covariate \(H_n(A, W)\) linking propensity
+and censoring weights to the parameter's Efficient Influence Function
+(Luque-Fernandez et al., 2018).</p></li>
+<li><p><strong><code>.ite_star</code></strong>: Individual targeted treatment contrast
+\(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\).</p></li>
+<li><p><strong><code>.eif</code>, <code>.eif_leverage</code></strong>: Observation-level Efficient Influence Function
+contribution \(D_i^*\) and variance share \({D_i^*}^2 / \sum {D_j^*}^2\).</p></li>
+</ul></div>
+
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Luque-Fernandez, M. A., Schomaker, M., Rachet, B., &amp; Schnitzer, M. E.
+(2018). Targeted maximum likelihood estimation for a binary treatment: A
+tutorial. <em>Statistics in Medicine</em>, 37(16), 2530–2546.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

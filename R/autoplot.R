@@ -1,36 +1,63 @@
 #' Diagnostic Plots for a TMLE Fit
 #'
-#' Produces `ggplot2` causal diagnostics for a fitted `"tmle_fit"` object:
-#' - `"overlap"`: Mirrored propensity score density by treatment arm with
-#'   `g_bounds` truncation lines (or density-ratio distribution for LMTPs).
-#' - `"learners"`: Cross-validated nuisance performance and Super Learner
-#'   metalearner weights.
-#' - `"eif"`: Observation-level Efficient Influence Function leverage plot
-#'   highlighting extreme single-row influence outliers.
-#' - `"sensitivity"`: Instantaneous `retarget()` sweep across positivity bounds
-#'   `g_grid` showing stability of the point estimate, 95% CI, and truncation
-#'   rate.
-#' - `"balance"`: Weighted Love plot comparing unadjusted vs IPW/TMLE-weighted
-#'   absolute standardized mean differences across baseline covariates.
+#' Produces `ggplot2` causal diagnostics for a fitted `"tmle_fit"` object,
+#' turning every step of the TMLE estimator into an inspectable visual check:
+#' - `"overlap"`: **Step 2 (Positivity / Overlap Check)**. Mirrored propensity
+#'   score density by treatment arm with `g_bounds` truncation lines (or
+#'   density-ratio distribution for LMTPs). Validates whether both treated and
+#'   control units exist across confounder strata (Petersen et al., 2012).
+#' - `"targeting"`: **Steps 3–4 (Initial G-Computation vs. Targeted TMLE)**.
+#'   Compares initial ML counterfactual contrasts (\eqn{\bar{Q}^0(1, W) - \bar{Q}^0(0, W)})
+#'   against fluctuated TMLE contrasts (\eqn{\bar{Q}^*(1, W) - \bar{Q}^*(0, W)}),
+#'   shaded by Clever Covariate magnitude \eqn{|H_n(A, W)|}, illustrating how the
+#'   fluctuation step removes residual confounding bias from the initial fit.
+#' - `"learners"`: **Cross-Validated Super Learner Ensemble**. Compares CV risk
+#'   and simplex metalearner weights across base workflows for \eqn{Q}, \eqn{g},
+#'   and \eqn{C}.
+#' - `"eif"`: **Step 5 (Efficient Influence Function Variance Leverage)**.
+#'   Observation-level share of total EIF variance (\eqn{D_i^2 / \sum D_j^2})
+#'   to catch single-row outliers driving standard errors.
+#' - `"sensitivity"`: **Positivity Sensitivity Sweep**. Instantaneous
+#'   `retarget()` sweep across truncation thresholds `g_grid` showing stability
+#'   of point estimates, 95% confidence intervals, and sample truncation rates.
+#' - `"balance"`: **Weighted Covariate Balance Love Plot**. Compares unadjusted
+#'   vs. IPW/TMLE-weighted absolute standardized mean differences (`|SMD|`)
+#'   against the standard `0.10` balance benchmark.
 #'
 #' @param object A fitted `"tmle_fit"` object.
-#' @param type Diagnostic plot type: `"overlap"`, `"learners"`, `"eif"`,
-#'   `"sensitivity"`, or `"balance"`.
+#' @param type Diagnostic plot type: `"overlap"`, `"targeting"`, `"learners"`,
+#'   `"eif"`, `"sensitivity"`, or `"balance"`.
 #' @param g_grid Numeric vector of lower positivity thresholds in `(0, 0.5)`
 #'   swept when `type = "sensitivity"`.
 #' @param ... Currently unused.
+#'
+#' @references
+#' Schuler, M. S., & Rose, S. (2017). Targeted maximum likelihood estimation for
+#' causal inference in observational studies. *American Journal of Epidemiology*,
+#' 185(1), 65–73.
+#'
+#' Luque-Fernandez, M. A., Schomaker, M., Rachet, B., & Schnitzer, M. E.
+#' (2018). Targeted maximum likelihood estimation for a binary treatment: A
+#' tutorial. *Statistics in Medicine*, 37(16), 2530–2546.
+#'
+#' Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., & van der Laan, M. J.
+#' (2012). Diagnosing and responding to violations in the positivity assumption.
+#' *Statistical Methods in Medical Research*, 21(1), 31–54.
 #'
 #' @return A `ggplot2` object.
 #' @method autoplot tmle_fit
 #' @export
 autoplot.tmle_fit <- function(object,
-                              type = c("overlap", "learners", "eif", "sensitivity", "balance"),
+                              type = c("overlap", "targeting", "learners", "eif", "sensitivity", "balance"),
                               g_grid = seq(0.01, 0.15, by = 0.01),
                               ...) {
   type <- match.arg(type)
 
   if (type == "overlap") {
     return(autoplot_overlap(object))
+  }
+  if (type == "targeting") {
+    return(autoplot_targeting(object))
   }
   if (type == "learners") {
     return(autoplot_learners(object))
@@ -42,6 +69,58 @@ autoplot.tmle_fit <- function(object,
     return(autoplot_sensitivity(object, g_grid = g_grid))
   }
   autoplot_balance(object)
+}
+
+autoplot_targeting <- function(object) {
+  t_res <- object$targeting
+  idx <- object$subgroup_idx
+  w <- object$cache$weights[idx]
+  w <- w / mean(w)
+
+  if (object$cache$treatment_type == "binary") {
+    x_init <- t_res$q1_init - t_res$q0_init
+    y_star <- t_res$q1_star - t_res$q0_star
+    plug_mean <- stats::weighted.mean(x_init, w = w)
+    tmle_mean <- stats::weighted.mean(y_star, w = w)
+    x_lab <- "Initial ML Individual Contrast Q0(1, W) - Q0(0, W)"
+    y_lab <- "Targeted TMLE Contrast Q*(1, W) - Q*(0, W)"
+    title_txt <- "TMLE Targeting Step: Initial G-Computation vs. Fluctuated Contrasts"
+    sub_txt <- sprintf(
+      "Sample-average plug-in ATE = %.4f -> Targeted TMLE ATE = %.4f (bias-correction shift = %+.4f)",
+      plug_mean, tmle_mean, tmle_mean - plug_mean
+    )
+  } else {
+    x_init <- t_res$q1_init
+    y_star <- t_res$q1_star
+    plug_mean <- stats::weighted.mean(x_init, w = w)
+    tmle_mean <- stats::weighted.mean(y_star, w = w)
+    x_lab <- "Initial ML Shifted Prediction Q0(d(A, W), W)"
+    y_lab <- "Targeted TMLE Prediction Q*(d(A, W), W)"
+    title_txt <- "TMLE Targeting Step: Initial vs. Fluctuated Policy Outcomes"
+    sub_txt <- sprintf(
+      "Plug-in policy mean = %.4f -> Targeted TMLE = %.4f (shift = %+.4f)",
+      plug_mean, tmle_mean, tmle_mean - plug_mean
+    )
+  }
+
+  df_t <- tibble::tibble(
+    x_init = x_init,
+    y_star = y_star,
+    h_mag = abs(t_res$clever_h)
+  )
+
+  ggplot2::ggplot(df_t, ggplot2::aes(x = x_init, y = y_star, color = h_mag)) +
+    ggplot2::geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "#737A82", linewidth = 0.7) +
+    ggplot2::geom_point(alpha = 0.72, size = 1.9) +
+    ggplot2::scale_color_gradient(low = "#3182ce", high = "#CA225E") +
+    ggplot2::labs(
+      title = title_txt,
+      subtitle = sub_txt,
+      x = x_lab,
+      y = y_lab,
+      color = "|Clever H|"
+    ) +
+    ggplot2::theme_minimal()
 }
 
 autoplot_overlap <- function(object) {

@@ -5,6 +5,27 @@
 #' workflow or Super Learner (Kennedy, 2023) to estimate Conditional Average
 #' Treatment Effects \eqn{\tau(V) = E[Y(1) - Y(0) \mid V]}.
 #'
+#' @details
+#' Because the individual treatment effect \eqn{Y_i(1) - Y_i(0)} is never
+#' directly observed, Kennedy's Doubly Robust (DR) Learner constructs the
+#' cross-fitted pseudo-outcome
+#' \deqn{\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right)}
+#' whose conditional expectation given covariates \eqn{V} equals the true CATE
+#' \eqn{\tau(V)} whenever *either* \eqn{\bar{Q}} or \eqn{g} is consistently
+#' estimated. Regressing \eqn{\varphi_i} on \eqn{V_i} lets any `tidymodels`
+#' regression workflow learn treatment effect heterogeneity while `tidy()`
+#' reports Chernozhukov et al.'s (2018) Best Linear Projection (BLP) test for
+#' significant effect modification.
+#'
+#' @references
+#' Kennedy, E. H. (2023). Towards optimal doubly robust estimation of
+#' heterogeneous causal effects. *Electronic Journal of Statistics*, 17(2),
+#' 3008–3049.
+#'
+#' Chernozhukov, V., Demirer, M., Duflo, E., & Fernandez-Val, I. (2018).
+#' Generic machine learning inference on heterogeneous treatment effects in
+#' randomized experiments. *NBER Working Paper No. 24678*.
+#'
 #' @param fit A fitted `"tmle_fit"` object with binary treatment.
 #' @param learners `"default"`, a `parsnip` `model_spec` (regression mode), a
 #'   `workflow`, a `workflow_set`, or a list of specs/workflows.

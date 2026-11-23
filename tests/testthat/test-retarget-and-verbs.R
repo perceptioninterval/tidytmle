@@ -79,8 +79,8 @@ test_that("All S3 verbs (tidy simultaneous/e_value, glance, augment, collect_met
   expect_output(print(fit$spec), "Targeted Maximum Likelihood")
   expect_output(print(fit), "TMLE Fit Summary")
 
-  # All 5 autoplot diagnostics
-  for (pt in c("overlap", "learners", "eif", "sensitivity", "balance")) {
+  # All 6 autoplot diagnostics
+  for (pt in c("overlap", "targeting", "learners", "eif", "sensitivity", "balance")) {
     p <- autoplot(fit, type = pt, g_grid = c(0.02, 0.05, 0.10))
     expect_s3_class(p, "ggplot")
   }

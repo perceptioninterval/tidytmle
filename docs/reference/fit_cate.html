@@ -27,6 +27,7 @@ Treatment Effects \(\tau(V) = E[Y(1) - Y(0) \mid V]\).'><meta property="og:image
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Articles</h6></li>
+    <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
   </ul></li>
@@ -92,6 +93,28 @@ and Best Linear Projection heterogeneity testing (default <code>5L</code>).</p><
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An S3 object of class <code>"tmle_cate"</code> supporting <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>,
 <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>, <code><a href="https://generics.r-lib.org/reference/augment.html" class="external-link">augment()</a></code>, and <code><a href="qini_auc.html">qini_auc()</a></code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Because the individual treatment effect \(Y_i(1) - Y_i(0)\) is never
+directly observed, Kennedy's Doubly Robust (DR) Learner constructs the
+cross-fitted pseudo-outcome
+$$\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right)$$
+whose conditional expectation given covariates \(V\) equals the true CATE
+\(\tau(V)\) whenever <em>either</em> \(\bar{Q}\) or \(g\) is consistently
+estimated. Regressing \(\varphi_i\) on \(V_i\) lets any <code>tidymodels</code>
+regression workflow learn treatment effect heterogeneity while <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>
+reports Chernozhukov et al.'s (2018) Best Linear Projection (BLP) test for
+significant effect modification.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Kennedy, E. H. (2023). Towards optimal doubly robust estimation of
+heterogeneous causal effects. <em>Electronic Journal of Statistics</em>, 17(2),
+3008–3049.</p>
+<p>Chernozhukov, V., Demirer, M., Duflo, E., &amp; Fernandez-Val, I. (2018).
+Generic machine learning inference on heterogeneous treatment effects in
+randomized experiments. <em>NBER Working Paper No. 24678</em>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

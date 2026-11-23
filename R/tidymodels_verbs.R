@@ -77,10 +77,39 @@ tidy.tmle_fit <- function(x,
 #' Extract 1-Row Causal Health Check from a TMLE Fit
 #'
 #' Summarizes sample sizes, cross-fitting metadata, targeting convergence
-#' (`epsilon`, `mean_eif`), plug-in vs TMLE shift, propensity positivity bounds
+#' (`epsilon`, `mean_eif`), plug-in vs. TMLE shift, propensity positivity bounds
 #' and truncation rate, Kish effective sample sizes (`ess_treated`,
 #' `ess_control`), maximum single-observation EIF leverage, and Super Learner
 #' nuisance performance.
+#'
+#' @details
+#' ## How to Read the Causal Health Check
+#' - **`mean_eif`**: The sample average of the Efficient Influence Function
+#'   \eqn{\frac{1}{n}\sum D_i^*}. A healthy TMLE solves the EIF score equation,
+#'   so `abs(mean_eif)` must be near zero (`< 1e-4`).
+#' - **`epsilon`**: The magnitude of the targeting fluctuation step. Values
+#'   close to `0` mean the initial ML outcome fit already had little residual
+#'   confounding bias; larger magnitudes show how strongly TMLE adjusted the
+#'   initial predictions to remove bias.
+#' - **`plugin_vs_tmle_shift`**: Difference between the final targeted TMLE ATE
+#'   and the untargeted G-computation plug-in ATE. Quantifies the exact causal
+#'   bias correction performed by the targeting step.
+#' - **`pct_truncated` & `ess_treated`/`ess_control`**: Share of propensity
+#'   scores clipped to `[g_bound_low, g_bound_high]` and Kish's effective sample
+#'   size under inverse-propensity weighting. High truncation (`> 5%`) or tiny
+#'   ESS signals near-positivity violations (Petersen et al., 2012).
+#' - **`max_eif_leverage`**: Largest single observation's share of total EIF
+#'   variance. Values `> 0.10` flag an influential observation dominating the
+#'   standard error.
+#'
+#' @references
+#' Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., & van der Laan, M. J.
+#' (2012). Diagnosing and responding to violations in the positivity assumption.
+#' *Statistical Methods in Medical Research*, 21(1), 31–54.
+#'
+#' Schuler, M. S., & Rose, S. (2017). Targeted maximum likelihood estimation for
+#' causal inference in observational studies. *American Journal of Epidemiology*,
+#' 185(1), 65–73.
 #'
 #' @param x A fitted `"tmle_fit"` object.
 #' @param ... Currently unused.
@@ -140,6 +169,29 @@ glance.tmle_fit <- function(x, ...) {
 #' (`.g_hat`, `.g_trunc`), clever covariates (`.clever_h`), targeted individual
 #' treatment effects (`.ite_star`), Efficient Influence Function values
 #' (`.eif`), and fractional EIF variance leverage (`.eif_leverage`).
+#'
+#' @details
+#' ## Column Decoder Ring
+#' - **`.q0_init`, `.q1_init`**: Initial cross-fitted outcome predictions
+#'   \eqn{\bar{Q}^0(0, W)} and \eqn{\bar{Q}^0(1, W)} before targeting
+#'   (G-computation predictions).
+#' - **`.q0_star`, `.q1_star`**: Targeted TMLE counterfactual predictions
+#'   \eqn{\bar{Q}^*(0, W)} and \eqn{\bar{Q}^*(1, W)} after fluctuating along
+#'   the Clever Covariate.
+#' - **`.g_hat`, `.g_trunc`**: Raw cross-fitted propensity scores
+#'   \eqn{P(A = 1 \mid W)} and scores truncated to `g_bounds`.
+#' - **`.clever_h`**: The Clever Covariate \eqn{H_n(A, W)} linking propensity
+#'   and censoring weights to the parameter's Efficient Influence Function
+#'   (Luque-Fernandez et al., 2018).
+#' - **`.ite_star`**: Individual targeted treatment contrast
+#'   \eqn{\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)}.
+#' - **`.eif`, `.eif_leverage`**: Observation-level Efficient Influence Function
+#'   contribution \eqn{D_i^*} and variance share \eqn{{D_i^*}^2 / \sum {D_j^*}^2}.
+#'
+#' @references
+#' Luque-Fernandez, M. A., Schomaker, M., Rachet, B., & Schnitzer, M. E.
+#' (2018). Targeted maximum likelihood estimation for a binary treatment: A
+#' tutorial. *Statistics in Medicine*, 37(16), 2530–2546.
 #'
 #' @param x A fitted `"tmle_fit"` object.
 #' @param ... Currently unused.
@@ -320,7 +372,10 @@ print.tmle_fit <- function(x, ...) {
       format_sl_line(x$nuisance$C, "C", "roc_auc", "AUC")
     }
 
-    cli::cli_h3("Diagnostics")
+    cli::cli_h3("Diagnostics & Targeting Shift")
+    cli::cli_text(
+      "  Targeting shift (TMLE - plug-in): {sprintf('%+.4f', gl$plugin_vs_tmle_shift)} (epsilon = {sprintf('%.4f', gl$epsilon)})"
+    )
     warned <- FALSE
     if (abs(gl$mean_eif) > 1e-4) {
       cli::cli_alert_danger(
