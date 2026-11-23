@@ -1,0 +1,71 @@
+---
+title: "Modified Treatment Policies & DR-Learner CATE"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Modified Treatment Policies & DR-Learner CATE}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.6
+)
+```
+
+Beyond binary point-treatment effects, `tidytmle` supports **Modified Treatment Policies (LMTP)** for continuous exposures and **Doubly Robust Conditional Average Treatment Effect (DR-Learner CATE)** estimation.
+
+## Continuous Exposures via `shift()` and `scale_tx()`
+
+Use `shift(delta)` for additive policies $d(a, w) = a + \delta$ or `scale_tx(factor)` for multiplicative policies $d(a, w) = a \cdot \text{factor}$. Internally, `tidytmle` estimates the treatment density ratio nonparametrically using stacked cross-validated classification workflows without parametric normality assumptions:
+
+```{r lmtp, message = FALSE}
+library(tidytmle)
+
+df_cont <- sim_causal_cohort(
+  n = 350,
+  outcome_type = "continuous",
+  treatment_type = "continuous",
+  seed = 202
+)
+truth_cont <- attr(df_cont, "truth")
+
+fit_shift <- tmle_spec(
+  outcome    = y,
+  treatment  = a,
+  covariates = c(age, sex, starts_with("lab_")),
+  estimand   = shift(1.0)
+) |>
+  set_resamples(v_folds = 4L) |>
+  fit(data = df_cont)
+
+tidy(fit_shift)
+truth_cont$true_shift_1
+```
+
+## Heterogeneous Treatment Effects via `fit_cate()`
+
+Feed the cross-fitted Efficient Influence Function pseudo-outcomes from any binary-treatment `tmle_fit` directly into `fit_cate()` to estimate individual-level treatment effects $\hat{\tau}(V)$, evaluate Best Linear Projection heterogeneity tests via `tidy()`, predict onto new cohorts via `predict()`, and quantify uplift ranking via `qini_auc()`:
+
+```{r cate, message = FALSE}
+df_het <- sim_causal_cohort(n = 400, outcome_type = "continuous", seed = 303)
+truth_het <- attr(df_het, "truth")
+
+fit_ate <- tmle_spec(
+  outcome    = y,
+  treatment  = a,
+  covariates = c(age, sex, starts_with("lab_"))
+) |>
+  set_resamples(v_folds = 4L) |>
+  fit(data = df_het)
+
+cate <- fit_cate(fit_ate, covariates = c(age, sex, lab_1, lab_2, lab_3), v_folds = 4L)
+tidy(cate)
+qini_auc(cate)
+
+aug_cate <- augment(cate)
+cor(aug_cate$.cate, truth_het$true_cate)
+```

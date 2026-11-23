@@ -1,5 +1,5 @@
 #' Compute Adaptive or Explicit Propensity Score Truncation Bounds
-#' @keywords internal
+#' @noRd
 compute_adaptive_g_bounds <- function(n_eff, g_bounds = "adaptive") {
   if (identical(g_bounds, "adaptive")) {
     n_safe <- max(as.numeric(n_eff), 10)
@@ -14,7 +14,7 @@ compute_adaptive_g_bounds <- function(n_eff, g_bounds = "adaptive") {
 }
 
 #' Truncate Propensity Scores and Record Diagnostics
-#' @keywords internal
+#' @noRd
 truncate_propensity <- function(g_hat, bounds) {
   g_trunc <- pmin(pmax(g_hat, bounds[1L]), bounds[2L])
   is_trunc <- (g_hat < bounds[1L]) | (g_hat > bounds[2L])
@@ -29,7 +29,7 @@ truncate_propensity <- function(g_hat, bounds) {
 }
 
 #' Scale Outcome to (0, 1) and Invert Scaling
-#' @keywords internal
+#' @noRd
 scale_outcome_01 <- function(y, bounds) {
   y_min <- bounds[1L]
   y_max <- bounds[2L]
@@ -52,7 +52,7 @@ clamp_prob <- function(p, eps = 1e-5) {
 }
 
 #' Fit Weighted One-Parameter Logistic Fluctuation Submodel
-#' @keywords internal
+#' @noRd
 fit_logistic_fluctuation_1d <- function(y01, q01_init, clever_h, weights) {
   q_clamped <- clamp_prob(q01_init, eps = 1e-5)
   offset_eta <- stats::qlogis(q_clamped)
@@ -78,7 +78,7 @@ fit_logistic_fluctuation_1d <- function(y01, q01_init, clever_h, weights) {
 }
 
 #' Fit Weighted Intercept-Only Logistic Fluctuation Submodel (Submodel with Weights)
-#' @keywords internal
+#' @noRd
 fit_weighted_logistic_intercept <- function(y01, q01_init, fluc_weights) {
   q_clamped <- clamp_prob(q01_init, eps = 1e-5)
   offset_eta <- stats::qlogis(q_clamped)
@@ -103,7 +103,7 @@ fit_weighted_logistic_intercept <- function(y01, q01_init, fluc_weights) {
 }
 
 #' Targeted Fluctuation Step for Binary Point-Treatment or Policy Estimands
-#' @keywords internal
+#' @noRd
 run_tmle_targeting <- function(y_num,
                                a_num,
                                delta,
@@ -336,7 +336,7 @@ run_tmle_targeting <- function(y_num,
 }
 
 #' Target ATT or ATC Parameter via TMLE Fluctuation
-#' @keywords internal
+#' @noRd
 target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0_t,
                               w, y_bounds, outcome_type, fluctuation, target = c("att", "atc")) {
   target <- match.arg(target)
@@ -424,7 +424,7 @@ target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0
 }
 
 #' Targeted Fluctuation Step for Modified Treatment Policies (LMTP)
-#' @keywords internal
+#' @noRd
 run_policy_targeting <- function(y_num, delta, qa_init, q_shift_init, p_lambda1,
                                  c_obs_hat, weights, policy, outcome_type,
                                  y_bounds, g_bounds, fluctuation, cluster_id, conf.level) {
@@ -534,7 +534,7 @@ run_policy_targeting <- function(y_num, delta, qa_init, q_shift_init, p_lambda1,
 }
 
 #' Compute Cluster-Robust Influence Function Standard Error
-#' @keywords internal
+#' @noRd
 compute_eif_se <- function(eif_vec, cluster_id = NULL) {
   n <- length(eif_vec)
   if (!is.null(cluster_id)) {
@@ -548,7 +548,7 @@ compute_eif_se <- function(eif_vec, cluster_id = NULL) {
 }
 
 #' Compute Single-Estimand Inference (Linear or Log-Scale Delta Method)
-#' @keywords internal
+#' @noRd
 compute_single_estimand_inference <- function(est_name,
                                               psi1,
                                               psi0,
@@ -655,7 +655,7 @@ compute_single_estimand_inference <- function(est_name,
 }
 
 #' Compute VanderWeele & Ding (2017) E-values for Unmeasured Confounding Sensitivity
-#' @keywords internal
+#' @noRd
 compute_vanderweele_evalue <- function(est_name, est, se, ci_low, ci_high, y_obs) {
   calc_ev <- function(rr) {
     if (!is.finite(rr) || rr <= 0) return(NA_real_)
@@ -688,7 +688,7 @@ compute_vanderweele_evalue <- function(est_name, est, se, ci_low, ci_high, y_obs
 }
 
 #' Add Simultaneous Uniform Confidence Bands via Fast EIF Multiplier Bootstrap
-#' @keywords internal
+#' @noRd
 add_simultaneous_bands <- function(estimates_tbl, eif_list, cluster_id, conf.level, n_boot = 2500L) {
   k <- nrow(estimates_tbl)
   n <- length(eif_list[[1L]])

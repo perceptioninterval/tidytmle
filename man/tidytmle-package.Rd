@@ -8,6 +8,15 @@
 \description{
 Semiparametric Targeted Maximum Likelihood Estimation (TMLE) and cross-fitted causal inference orchestration built natively on top of 'tidymodels'. Supports 'workflows' and 'workflowsets' as cross-validated Super Learner nuisance models via 'rsample', role-aware 'recipes' splitting, automatic informative-missingness handling, adaptive positivity truncation, joint Efficient Influence Function (EIF) multi-estimand inference, instant 'retarget()' without ML refitting, Modified Treatment Policies, and Doubly Robust CATE estimation.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://tidytmle.tidymodels.org/}
+  \item \url{https://github.com/michaelespero/tidytmle}
+  \item Report bugs at \url{https://github.com/michaelespero/tidytmle/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Michael Espero \email{michael@tidytmle.org}
 

@@ -1,0 +1,91 @@
+---
+title: "Composing Workflows, Recipes, and Guardrails"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Composing Workflows, Recipes, and Guardrails}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.6
+)
+```
+
+For publication-grade pipelines, `tidytmle` accepts custom `recipes`, `parsnip` model specifications, `workflows`, and `workflowsets::workflow_set` ensembles directly—while enforcing causal guardrails automatically.
+
+## Role-Aware Recipe Splitting & `workflow_set` Super Learning
+
+A common source of subtle bugs in manual causal ML pipelines is accidentally leaking the treatment column $A$ or cluster ID into the propensity model $g(W)$ when reusing a single `recipe(y ~ ., data = df)`. `tidytmle` automatically clones and adapts the preprocessing recipe per nuisance factor (`Q`, `g`, and `C`), guaranteeing that $A$ is retained in $Q(A, W)$ and $C(A, W)$ while strictly excluded from $g$'s predictors:
+
+```{r level2, message = FALSE}
+library(tidytmle)
+library(recipes)
+library(parsnip)
+library(workflowsets)
+
+df <- sim_causal_cohort(
+  n = 350,
+  outcome_type = "continuous",
+  censoring_rate = 0.15,
+  n_clusters = 15L,
+  seed = 101
+)
+
+base_rec <- recipe(y ~ ., data = df) |>
+  step_impute_median(all_numeric_predictors()) |>
+  step_dummy(all_nominal_predictors()) |>
+  step_zv(all_predictors())
+
+q_wf_set <- workflow_set(
+  preproc = list(base = base_rec),
+  models = list(
+    glm = linear_reg() |> set_engine("glm"),
+    enet = linear_reg(penalty = 0.05, mixture = 0.5) |> set_engine("glmnet")
+  )
+)
+
+g_spec <- logistic_reg() |> set_engine("glm")
+
+fit_l2 <- tmle_spec(
+  outcome    = y,
+  treatment  = a,
+  covariates = c(age, sex, starts_with("lab_")),
+  censoring  = delta,
+  id         = clinic_id,
+  estimand   = "ate"
+) |>
+  set_preprocessing(base_rec) |>
+  set_outcome_learners(q_wf_set) |>
+  set_treatment_learners(g_spec) |>
+  set_resamples(v_folds = 5L) |>
+  fit(data = df)
+
+fit_l2
+```
+
+## Automatic Informative-Missingness Handling & Case Weights
+
+When `outcome` contains missing values (`NA`) and `censoring` is omitted, `tidytmle` automatically creates an observation indicator $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ and models informative missingness $C(A, W) = P(\Delta = 1 \mid A, W)$ rather than silently dropping incomplete rows. Native `hardhat::importance_weights()` and `hardhat::frequency_weights()` are likewise propagated through both nuisance workflows and the cluster-robust EIF variance estimator:
+
+```{r missingness, fig.alt = "Weighted covariate balance Love plot comparing unadjusted vs TMLE/IPW standardized mean differences"}
+df_miss <- dplyr::select(df, -delta)
+df_miss$survey_wt <- hardhat::importance_weights(runif(nrow(df_miss), 0.7, 1.5))
+
+fit_auto_c <- tmle_spec(
+  outcome    = y,
+  treatment  = a,
+  covariates = c(age, sex, starts_with("lab_")),
+  id         = clinic_id,
+  weights    = survey_wt
+) |>
+  set_resamples(v_folds = 5L) |>
+  fit(data = df_miss)
+
+glance(fit_auto_c)
+autoplot(fit_auto_c, type = "balance")
+```

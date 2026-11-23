@@ -2,9 +2,15 @@
 % Please edit documentation in R/cate_and_sim.R
 \name{fit_cate}
 \alias{fit_cate}
+\alias{tidy.tmle_cate}
+\alias{augment.tmle_cate}
 \title{Estimate Heterogeneous Treatment Effects (CATE) via DR-Learner}
 \usage{
 fit_cate(fit, learners = "default", covariates = NULL, v_folds = 5L)
+
+\method{tidy}{tmle_cate}(x, ...)
+
+\method{augment}{tmle_cate}(x, ...)
 }
 \arguments{
 \item{fit}{A fitted \code{"tmle_fit"} object with binary treatment.}

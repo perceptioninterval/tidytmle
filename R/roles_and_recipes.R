@@ -1,5 +1,5 @@
 #' Resolve Causal Roles and Validate Input Data
-#' @keywords internal
+#' @noRd
 resolve_causal_roles <- function(spec, data) {
   if (!is.data.frame(data)) {
     cli::cli_abort("{.arg data} must be a {.cls data.frame} or {.cls tibble}.")
@@ -274,7 +274,7 @@ parse_outcome_vector <- function(y_raw, y_obs, delta_vec, col_name, call = rlang
 }
 
 #' Map Counterfactual Values Back to Original Column Representation
-#' @keywords internal
+#' @noRd
 encode_treatment_column <- function(template, values_01_or_num) {
   if (is.factor(template)) {
     lvls <- levels(template)
@@ -291,7 +291,7 @@ encode_treatment_column <- function(template, values_01_or_num) {
 }
 
 #' Build Clean Modeling Dataframes for Nuisance Factors
-#' @keywords internal
+#' @noRd
 build_nuisance_data <- function(roles) {
   d <- roles$data
   y_col <- roles$outcome_col
@@ -331,7 +331,7 @@ build_nuisance_data <- function(roles) {
 }
 
 #' Build or Adapt Role-Safe Causal Recipes for Q, g, and C
-#' @keywords internal
+#' @noRd
 split_causal_recipes <- function(base_recipe, roles, nuisance_data) {
   rec_Q <- adapt_recipe_for_role(base_recipe, role_type = "Q", roles = roles, template_data = nuisance_data$Q)
   rec_g <- adapt_recipe_for_role(base_recipe, role_type = "g", roles = roles, template_data = nuisance_data$g)
@@ -352,7 +352,7 @@ split_causal_recipes <- function(base_recipe, roles, nuisance_data) {
 #' - `C`: outcome = `.delta`, predictors = `c(treatment_col, covariate_cols)`.
 #' - For LMTP stacked density ratio (`g_dr`): outcome = `.lambda`, predictors = `c(treatment_col, covariate_cols)`.
 #'
-#' @keywords internal
+#' @noRd
 adapt_recipe_for_role <- function(base_recipe, role_type, roles, template_data) {
   y_col <- roles$outcome_col
   a_col <- roles$treatment_col
@@ -478,7 +478,7 @@ adapt_recipe_for_role <- function(base_recipe, role_type, roles, template_data) 
 }
 
 #' Build Smart Default Resamples for Cross-Fitting
-#' @keywords internal
+#' @noRd
 build_default_resamples <- function(roles, v_folds = 10L, strata = TRUE) {
   d <- roles$data
   n <- nrow(d)

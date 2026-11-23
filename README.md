@@ -1,39 +1,107 @@
-# tidytmle
+---
+output: github_document
+---
 
-**Cross-Fitted Targeted Maximum Likelihood Estimation for `tidymodels`**
+<!-- README.md is generated from README.Rmd. Please edit that file -->
 
-`tidytmle` is a semiparametric causal inference orchestration layer built natively on top of `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick`. Instead of forcing TMLE into a prediction-only `parsnip` model specification, `tidytmle` composes any `tidymodels` workflow or `workflow_set` as cross-fitted Super Learner nuisance models while enforcing statistical guardrails automatically.
+
+
+# tidytmle <a href="https://tidytmle.tidymodels.org/"><img src="man/figures/logo.png" align="right" height="138" alt="tidytmle website" /></a>
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![CRAN status](https://www.r-pkg.org/badges/version/tidytmle)](https://CRAN.R-project.org/package=tidytmle)
+[![R-CMD-check](https://github.com/michaelespero/tidytmle/workflows/R-CMD-check/badge.svg)](https://github.com/michaelespero/tidytmle/actions)
+<!-- badges: end -->
+
+`tidytmle` is a semiparametric **Targeted Maximum Likelihood Estimation (CV-TMLE)** orchestrator built natively for the [tidymodels](https://www.tidymodels.org/) ecosystem. Rather than forcing TMLE into a prediction-only `parsnip` model specification, `tidytmle` sits above `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick` so any tidymodels workflow can serve as a cross-fitted Super Learner nuisance model.
+
+## Installation
+
+You can install the development version of `tidytmle` from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pak("michaelespero/tidytmle")
+```
 
 ## Key Capabilities
 
-- **Progressive-Disclosure Specification API**: Start with a 3-line Level 1 specification (`tmle_spec(outcome, treatment, covariates, estimand) |> fit(data)`) and scale seamlessly to Level 2 `recipes`, `parsnip` specs, `workflows`, and `workflow_set` nuisance ensembles.
-- **Role-Aware Recipe Cloning**: Automatically splits a base `recipe` across $Q(A, W)$, $g(W)$, and $C(A, W)$ so treatment $A$ never leaks into propensity models and `id`/censoring/weight columns never leak into predictors.
-- **Automatic Informative-Missingness Handling**: Detects `NA`s in `outcome` when `censoring` is omitted and introduces $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ modeled as $C(A, W) = P(\Delta = 1 \mid A, W)$.
-- **Built-In Semiparametric Guardrails**: 10-fold CV-TMLE enabled by default, bounded canonical logistic fluctuation on scaled `[0, 1]` continuous outcomes, adaptive sample-size positivity bounds (`5 / (sqrt(n) * log(n))`), joint EIF targeting for simultaneous ATE / RR / OR inference with log-scale CIs, cluster-robust EIF standard errors, native `hardhat::importance_weights()` and `frequency_weights()`, simultaneous multiplier bootstrap bands, and E-values.
-- **Instant `retarget()`**: Re-run positivity bounds, estimands, or subgroup analyses in milliseconds using cached out-of-fold nuisance predictions with zero ML refitting.
-- **Modified Treatment Policies & DR-Learner CATE**: Built-in `shift()` / `scale_tx()` density-ratio TMLE for continuous exposures and `fit_cate()` + `qini_auc()` for heterogeneous treatment effect estimation.
-- **Standard Tidymodels Verbs**: `tidy()`, `glance()`, `augment()`, `collect_metrics()`, `extract_sl_weights()`, `autoplot()` (`"overlap"`, `"learners"`, `"eif"`, `"sensitivity"`, `"balance"`), and `cli` diagnostic summaries.
+| Capability | Design & Statistical Guardrails |
+|---|---|
+| **Progressive-Disclosure API** | 3-line Level 1 `tmle_spec() \|> fit()` default scaling smoothly to Level 2 `recipes`, `workflows`, and `workflow_set` ensembles |
+| **Role-Aware Recipe Splitting** | Clones user `recipes` per nuisance (`Q`, `g`, `C`) so treatment `A` never leaks into propensity models and `id` / `weights` never leak into predictors |
+| **Automatic Informative Missingness** | Detects outcome `NA`s when `censoring` is omitted and models $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ via $C(A, W) = P(\Delta = 1 \mid A, W)$ |
+| **Built-In Semiparametric Rigor** | 10-fold CV-TMLE by default, bounded canonical logistic fluctuation on scaled `[0, 1]` outcomes, Gruber & van der Laan adaptive positivity bounds, joint EIF inference (`ate`, `rr`, `or`, `att`, `atc`), cluster-robust SEs, and `hardhat` case weights |
+| **Instant `retarget()`** | Re-runs positivity bounds, estimands, or subgroups in milliseconds using cached out-of-fold nuisance predictions with zero ML refitting |
+| **LMTP & DR-Learner CATE** | `shift()` and `scale_tx()` continuous-treatment density-ratio TMLE plus `fit_cate()` and `qini_auc()` uplift scoring |
 
-## Quick Example
+## Example
 
-```r
+Start with a 3-line cross-fitted specification using `tidyselect` causal roles and simultaneous multi-estimand inference:
+
+
+``` r
 library(tidytmle)
 
-df <- sim_causal_cohort(n = 500, outcome_type = "binary", seed = 42)
+df <- sim_causal_cohort(n = 350, outcome_type = "binary", seed = 42)
 
-# Level 1: 3-line safe default
 fit <- tmle_spec(
   outcome    = y,
   treatment  = a,
   covariates = c(age, sex, starts_with("lab_")),
   estimand   = c("ate", "rr", "or")
 ) |>
+  set_resamples(v_folds = 5L) |>
   fit(data = df)
 
-tidy(fit, e_value = TRUE)
-glance(fit)
+fit
+#> 
+#> ── TMLE Fit Summary ──
+#> 
+#> n = 350 (observed = 350) | 5-fold CV-TMLE | logistic fluctuation | 1.86s
+#> 
+#> ── Causal Estimates 
+#> ATE est = 0.1071 (SE = 0.0511) 95% CI [0.0069, 0.2074] p = 0.0362
+#> RR est = 1.3295 (SE = 0.1427) 95% CI [1.0051, 1.7587] p = 0.0460
+#> OR est = 1.5805 (SE = 0.2233) 95% CI [1.0202, 2.4484] p = 0.0404
+#> 
+#> ── Nuisance Super Learners 
+#> Q Super Learner: AUC = 0.713 (weights: glmnet 0.34, glm 0.34, ranger 0.33)
+#> g Super Learner: AUC = 0.623 (weights: ranger 0.33, glm 0.33, glmnet 0.33)
+#> 
+#> ── Diagnostics 
+#> ✔ All checks healthy: mean EIF = 5.13e-14, truncated = 0.0%, max EIF leverage = 4.2%.
 
-# Instant retarget() with zero ML refitting
-fit_strict <- retarget(fit, g_bounds = c(0.05, 0.95))
-fit_older  <- retarget(fit, subgroup = age >= 60)
+# Simultaneous uniform confidence bands & VanderWeele-Ding E-values
+tidy(fit, simultaneous = TRUE, e_value = TRUE)
+#> # A tibble: 3 × 11
+#>   estimand term  estimate std.error statistic p.value conf.low conf.high e_value
+#>   <chr>    <chr>    <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl>   <dbl>
+#> 1 ate      ATE      0.107    0.0511      2.09  0.0362 0.000382     0.214    1.74
+#> 2 rr       RR       1.33     0.143       2.00  0.0460 0.987        1.79     1.99
+#> 3 or       OR       1.58     0.223       2.05  0.0404 0.992        2.52     2.54
+#> # ℹ 2 more variables: e_value_ci <dbl>, crit.value <dbl>
+
+# Instant retargeting without ML refitting
+retarget(fit, g_bounds = c(0.05, 0.95)) |>
+  tidy()
+#> # A tibble: 3 × 8
+#>   estimand term  estimate std.error statistic p.value conf.low conf.high
+#>   <chr>    <chr>    <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl>
+#> 1 ate      ATE      0.107    0.0511      2.09  0.0362  0.00690     0.207
+#> 2 rr       RR       1.33     0.143       2.00  0.0460  1.01        1.76 
+#> 3 or       OR       1.58     0.223       2.05  0.0404  1.02        2.45
+
+# Propensity overlap diagnostic
+autoplot(fit, type = "overlap")
 ```
+
+<div class="figure">
+<img src="man/figures/README-example-1.png" alt="Mirrored propensity score overlap plot generated by autoplot(fit, type = 'overlap')" width="100%" />
+<p class="caption">plot of chunk example</p>
+</div>
+
+## Code of Conduct
+
+Please note that the `tidytmle` project is released with a [Contributor Code of Conduct](https://contributor-covenant.org/version/2/0/CODE_OF_CONDUCT.html). By contributing to this project, you agree to abide by its terms.

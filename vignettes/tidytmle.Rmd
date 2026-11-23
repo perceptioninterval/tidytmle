@@ -1,0 +1,90 @@
+---
+title: "Get started with tidytmle"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Get started with tidytmle}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.6
+)
+```
+
+`tidytmle` brings cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) into the `tidymodels` ecosystem as a semi-parametric causal orchestrator sitting above `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick`.
+
+## Level 1: The 3-Line Safe Default
+
+At Level 1, pass `outcome`, `treatment`, `covariates` (via `tidyselect`), and one or more causal `estimand`s to `tmle_spec()`, then call `fit()`. Ten-fold cross-fitting, an ensemble Super Learner library (`glm`, `glmnet`, `ranger`), adaptive positivity bounds, and bounded canonical logistic fluctuation are enabled automatically:
+
+```{r level1, message = FALSE}
+library(tidytmle)
+
+cohort <- sim_causal_cohort(n = 350, outcome_type = "binary", seed = 42)
+truth <- attr(cohort, "truth")
+
+fit <- tmle_spec(
+  outcome    = y,
+  treatment  = a,
+  covariates = c(age, sex, starts_with("lab_")),
+  estimand   = c("ate", "rr", "or")
+) |>
+  set_resamples(v_folds = 5L) |>
+  fit(data = cohort)
+
+fit
+```
+
+## Joint EIF Inference & Tidymodels S3 Verbs
+
+Standard `tidymodels` S3 verbs extract every layer of the fitted pipeline without digging through nested lists:
+
+```{r verbs}
+# Causal inference table with optional simultaneous uniform bands and E-values
+tidy(fit, simultaneous = TRUE, e_value = TRUE)
+
+# One-row causal health check
+glance(fit)
+
+# Cross-validated nuisance metrics (yardstick) and Super Learner weights
+collect_metrics(fit)
+extract_sl_weights(fit)
+```
+
+Observation-level counterfactual predictions (`.q0_init`, `.q1_init`, `.q0_star`, `.q1_star`), truncated propensity scores (`.g_trunc`), clever covariates (`.clever_h`), and Efficient Influence Function leverage (`.eif_leverage`) are returned by `augment()`:
+
+```{r augment}
+head(augment(fit)[, c("age", "a", "y", ".q0_star", ".q1_star", ".g_trunc", ".eif_leverage")])
+```
+
+## Instant `retarget()` Without ML Refitting
+
+Because cross-fitted out-of-fold nuisance predictions ($Q_n^0$, $g_n$, $C_n$) are cached inside the `tmle_fit` object, you can test stricter positivity bounds, switch estimands (`"att"`, `"atc"`), or target subgroups in milliseconds without refitting any machine learning models:
+
+```{r retarget}
+fit_strict <- retarget(fit, g_bounds = c(0.05, 0.95))
+fit_att    <- retarget(fit, estimand = "att")
+fit_older  <- retarget(fit, subgroup = age >= 55)
+
+dplyr::bind_rows(
+  dplyr::mutate(tidy(fit), scenario = "Adaptive bounds (All)"),
+  dplyr::mutate(tidy(fit_strict), scenario = "Strict bounds [0.05, 0.95]"),
+  dplyr::mutate(tidy(fit_att), scenario = "ATT"),
+  dplyr::mutate(tidy(fit_older), scenario = "Subgroup age >= 55")
+) |>
+  dplyr::select(scenario, estimand, estimate, std.error, conf.low, conf.high)
+```
+
+## Visual Causal Diagnostics (`autoplot()`)
+
+Inspect propensity overlap, nuisance learner weights, EIF leverage outliers, positivity sensitivity curves, and weighted covariate balance using `autoplot()`:
+
+```{r plots, fig.alt = "Propensity score overlap and positivity sensitivity sweep"}
+autoplot(fit, type = "overlap")
+autoplot(fit, type = "sensitivity", g_grid = seq(0.01, 0.12, by = 0.02))
+```

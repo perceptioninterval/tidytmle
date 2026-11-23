@@ -70,7 +70,7 @@ print.tmle_policy <- function(x, ...) {
 }
 
 #' Apply a Modified Treatment Policy to a treatment vector
-#' @keywords internal
+#' @noRd
 apply_policy <- function(policy, a) {
   if (inherits(policy, "tmle_shift")) {
     return(a + policy$delta)
@@ -82,7 +82,7 @@ apply_policy <- function(policy, a) {
 }
 
 #' Validate and normalize requested estimands
-#' @keywords internal
+#' @noRd
 normalize_estimand <- function(estimand) {
   valid_binary <- c("ate", "att", "atc", "rr", "or", "ey1", "ey0")
 

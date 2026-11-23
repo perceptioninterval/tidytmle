@@ -152,12 +152,14 @@ predict.tmle_cate <- function(object, new_data, ...) {
   tibble::tibble(.pred = preds)
 }
 
+#' @rdname fit_cate
 #' @method tidy tmle_cate
 #' @export
 tidy.tmle_cate <- function(x, ...) {
   x$blp
 }
 
+#' @rdname fit_cate
 #' @method augment tmle_cate
 #' @export
 augment.tmle_cate <- function(x, ...) {

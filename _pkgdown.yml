@@ -1,0 +1,85 @@
+url: https://tidytmle.tidymodels.org/
+
+template:
+  package: tidytemplate
+  bootstrap: 5
+  bslib:
+    danger: "#CA225E"
+    primary: "#CA225E"
+
+home:
+  title: Targeted Maximum Likelihood Estimation for Tidymodels • tidytmle
+  description: >
+    Cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) built natively
+    on top of workflows, workflowsets, recipes, rsample, hardhat, and yardstick.
+
+development:
+  mode: auto
+
+figures:
+  fig.width: 8
+  fig.height: 5.75
+
+reference:
+  - title: Specification & Causal Roles
+    desc: >
+      Progressive-disclosure constructors and pipeable configuration verbs
+      for causal roles, preprocessing, nuisance Super Learners, cross-fitting,
+      and targeting guardrails.
+    contents:
+      - tmle_spec
+      - set_preprocessing
+      - set_outcome_learners
+      - set_treatment_learners
+      - set_censoring_learners
+      - set_resamples
+      - set_targeting
+      - default_nuisance_learners
+
+  - title: Estimation & Instant Retargeting
+    desc: >
+      Fit cross-fitted nuisance Super Learners and iterate on positivity bounds,
+      estimands, or subgroups in milliseconds without refitting ML models.
+    contents:
+      - fit.tmle_spec
+      - retarget
+      - shift
+      - scale_tx
+
+  - title: Inference, Diagnostics & Tidymodels Verbs
+    desc: >
+      Standard tidymodels S3 verbs and causal health checks powered by the
+      joint Efficient Influence Function (EIF).
+    contents:
+      - tidy.tmle_fit
+      - glance.tmle_fit
+      - augment.tmle_fit
+      - collect_metrics.tmle_fit
+      - extract_sl_weights
+      - autoplot.tmle_fit
+
+  - title: Heterogeneous Treatment Effects (CATE) & Simulation
+    desc: >
+      Doubly Robust CATE learning, uplift evaluation, and synthetic causal
+      benchmarking cohorts.
+    contents:
+      - fit_cate
+      - predict.tmle_cate
+      - qini_auc
+      - sim_causal_cohort
+
+  - title: Re-exported Generics & Package Overview
+    contents:
+      - reexports
+      - tidytmle-package
+
+articles:
+  - title: Get started
+    navbar: ~
+    contents:
+      - tidytmle
+  - title: Articles
+    navbar: Articles
+    contents:
+      - workflows-and-super-learning
+      - lmtp-and-cate

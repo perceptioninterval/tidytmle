@@ -52,7 +52,7 @@ default_nuisance_learners <- function(mode = c("regression", "classification")) 
 }
 
 #' Normalize Polymorphic Learner Inputs into Role-Safe Workflows
-#' @keywords internal
+#' @noRd
 normalize_learner_library <- function(learners_cfg,
                                       mode,
                                       role_type,
@@ -142,7 +142,7 @@ normalize_learner_library <- function(learners_cfg,
 }
 
 #' Fit a Single Tidymodels Workflow Safely (with Case-Weight Fallback)
-#' @keywords internal
+#' @noRd
 fit_single_workflow_safe <- function(wf, train_df) {
   fit_quietly <- function(workflow_obj, df) {
     withCallingHandlers(
@@ -171,7 +171,7 @@ fit_single_workflow_safe <- function(wf, train_df) {
 }
 
 #' Predict Numeric or Probability-of-1 Vector from Fitted Workflow
-#' @keywords internal
+#' @noRd
 predict_workflow_safe <- function(fitted_wf, new_df, mode) {
   if (is.null(fitted_wf)) {
     return(rep(NA_real_, nrow(new_df)))
@@ -201,7 +201,7 @@ predict_workflow_safe <- function(fitted_wf, new_df, mode) {
 }
 
 #' Project a Numeric Vector onto the Probability Simplex
-#' @keywords internal
+#' @noRd
 project_simplex <- function(v) {
   n <- length(v)
   u <- sort(v, decreasing = TRUE)
@@ -219,7 +219,7 @@ project_simplex <- function(v) {
 #' projected gradient descent so weights satisfy \eqn{\alpha_k \ge 0},
 #' \eqn{\sum_k \alpha_k = 1}, and naturally admit sparse zeros.
 #'
-#' @keywords internal
+#' @noRd
 solve_sl_weights <- function(oof_mat,
                              y_target,
                              mode,
@@ -353,7 +353,7 @@ solve_sl_weights <- function(oof_mat,
 }
 
 #' Cross-Fit Super Learner Over rsample Folds and Candidate Workflows
-#' @keywords internal
+#' @noRd
 fit_cv_super_learner <- function(workflows_list,
                                  splits,
                                  data,
@@ -587,7 +587,7 @@ fit_cv_super_learner <- function(workflows_list,
 }
 
 #' Cross-Fit Stacked Classification Density-Ratio Super Learner for LMTP Policies
-#' @keywords internal
+#' @noRd
 fit_cv_density_ratio_sl <- function(workflows_list,
                                     splits,
                                     data,
@@ -796,7 +796,7 @@ fit_cv_density_ratio_sl <- function(workflows_list,
 }
 
 #' Compute Yardstick Metrics for Base Learners and Super Learner
-#' @keywords internal
+#' @noRd
 compute_nuisance_metrics <- function(oof_obs,
                                      sl_obs,
                                      y_target,
