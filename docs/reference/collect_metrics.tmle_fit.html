@@ -78,6 +78,39 @@ reports <code>mean</code>, <code>n</code>, and <code>std_err</code>. If <code>FA
     <p>A <code><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble::tibble()</a></code> of <code>yardstick</code> CV metrics.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="sim_causal_cohort.html">sim_causal_cohort</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">150</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="tmle_spec.html">tmle_spec</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">a</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="va">lab_1</span>, <span class="va">lab_2</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">3L</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://tune.tidymodels.org/reference/collect_predictions.html" class="external-link">collect_metrics</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 20 × 7</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    nuisance learner      .metric     .estimator  mean     n std_err</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 1</span> Q        SuperLearner rmse        standard   1.15      3 0.088<span style="text-decoration: underline;">4</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 2</span> Q        SuperLearner rsq         standard   0.672     3 0.065<span style="text-decoration: underline;">6</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 3</span> Q        glm          rmse        standard   1.17      3 0.100  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 4</span> Q        glm          rsq         standard   0.650     3 0.069<span style="text-decoration: underline;">6</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 5</span> Q        glmnet       rmse        standard   1.17      3 0.100  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 6</span> Q        glmnet       rsq         standard   0.650     3 0.069<span style="text-decoration: underline;">6</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 7</span> Q        ranger       rmse        standard   1.24      3 0.071<span style="text-decoration: underline;">7</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 8</span> Q        ranger       rsq         standard   0.663     3 0.062<span style="text-decoration: underline;">8</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;"> 9</span> g        SuperLearner brier_class binary     0.233     3 0.004<span style="text-decoration: underline;">63</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">10</span> g        SuperLearner mn_log_loss binary     0.659     3 0.009<span style="text-decoration: underline;">64</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">11</span> g        SuperLearner roc_auc     binary     0.614     3 0.014<span style="text-decoration: underline;">2</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">12</span> g        glm          brier_class binary     0.235     3 0.006<span style="text-decoration: underline;">17</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">13</span> g        glm          mn_log_loss binary     0.662     3 0.012<span style="text-decoration: underline;">7</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">14</span> g        glm          roc_auc     binary     0.616     3 0.023<span style="text-decoration: underline;">3</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">15</span> g        glmnet       brier_class binary     0.234     3 0.005<span style="text-decoration: underline;">61</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">16</span> g        glmnet       mn_log_loss binary     0.660     3 0.011<span style="text-decoration: underline;">5</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">17</span> g        glmnet       roc_auc     binary     0.617     3 0.021<span style="text-decoration: underline;">5</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">18</span> g        ranger       brier_class binary     0.244     3 0.007<span style="text-decoration: underline;">30</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">19</span> g        ranger       mn_log_loss binary     0.689     3 0.016<span style="text-decoration: underline;">1</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">20</span> g        ranger       roc_auc     binary     0.574     3 0.021<span style="text-decoration: underline;">8</span> </span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

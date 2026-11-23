@@ -108,6 +108,7 @@ without parametric normality assumptions:</p>
 <span><span class="op">)</span></span>
 <span><span class="va">truth_cont</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">df_cont</span>, <span class="st">"truth"</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Additive shift (+1 unit)</span></span>
 <span><span class="va">fit_shift</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
@@ -117,14 +118,45 @@ without parametric normality assumptions:</p>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">df_cont</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit_shift</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
-<span><span class="co">#&gt;   estimand term     estimate std.error statistic   p.value conf.low</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shift(1) shift(1)     4.89     0.202      24.2 1.31<span style="color: #949494;">e</span><span style="color: #BB0000;">-129</span>     4.50</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: conf.high &lt;dbl&gt;</span></span></span>
-<span><span class="va">truth_cont</span><span class="op">$</span><span class="va">true_shift_1</span></span>
-<span><span class="co">#&gt; [1] 4.686838</span></span></code></pre></div>
+<span><span class="co"># Multiplicative policy (90% of current dose)</span></span>
+<span><span class="va">fit_scale</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
+<span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
+<span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  estimand   <span class="op">=</span> <span class="fu"><a href="../reference/shift.html">scale_tx</a></span><span class="op">(</span><span class="fl">0.9</span><span class="op">)</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">df_cont</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_shift</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── <span style="font-weight: bold;">Plain-English TMLE Summary</span> ──</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Sample: 350 rows (350 observed outcomes) | 4-fold CV-TMLE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── 1. What the Causal Estimates Mean </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> shift(1): Expected outcome under Modified Treatment Policy is 4.8942 (95% CI [4.4982, 5.2903], p = &lt; 0.0001).</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── 2. What the Targeting Step Did </span></span>
+<span><span class="co">#&gt; Fluctuating along the Clever Covariate shifted the initial ML plug-in</span></span>
+<span><span class="co">#&gt; estimate by +0.2738 (epsilon = 0.0816) to remove residual confounding</span></span>
+<span><span class="co">#&gt; bias.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── 3. Statistical Health Check &amp; Next Steps </span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Convergence: EIF estimating equation solved (mean EIF = -1.49e-14).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Positivity: 0.0% clipped at g_bounds [0.000, 21.918] (ESS: treated = 111.2, control = 350).</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> High leverage: Top observation accounts for 30.5% of EIF variance. Inspect `augment(fit)` sorted by <span style="color: #00BB00;">.eif_leverage</span>.</span></span>
+<span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit_shift</span><span class="op">)</span>, <span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit_scale</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>true_value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">truth_cont</span><span class="op">$</span><span class="va">true_shift_1</span>, <span class="va">truth_cont</span><span class="op">$</span><span class="va">true_scale_09</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 9</span></span></span>
+<span><span class="co">#&gt;   estimand      term    estimate std.error statistic   p.value conf.low</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shift(1)      shift(…     4.89     0.202      24.2 1.31<span style="color: #949494;">e</span><span style="color: #BB0000;">-129</span>     4.50</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> scale_tx(0.9) scale_…     3.67     0.125      29.2 5.31<span style="color: #949494;">e</span><span style="color: #BB0000;">-188</span>     3.42</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: conf.high &lt;dbl&gt;, true_value &lt;dbl&gt;</span></span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit_shift</span>, type <span class="op">=</span> <span class="st">"overlap"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="lmtp-and-cate_files/figure-html/lmtp-1.png" alt="Histogram of truncated Modified Treatment Policy density ratios r(A, W)" width="672"></p>
 </div>
 <div class="section level2">
 <h2 id="heterogeneous-treatment-effects-via-fit_cate">Heterogeneous Treatment Effects via <code>fit_cate()</code><a class="anchor" aria-label="anchor" href="#heterogeneous-treatment-effects-via-fit_cate"></a>
@@ -180,9 +212,27 @@ performance via <code><a href="../reference/qini_auc.html">qini_auc()</a></code>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> qini_auc standard       0.234</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> auuc     standard       1.05</span></span>
 <span></span>
+<span><span class="co"># Out-of-fold CATE accuracy against true individual effects</span></span>
 <span><span class="va">aug_cate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/augment.html" class="external-link">augment</a></span><span class="op">(</span><span class="va">cate</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">aug_cate</span><span class="op">$</span><span class="va">.cate</span>, <span class="va">truth_het</span><span class="op">$</span><span class="va">true_cate</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.8498853</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.8498853</span></span>
+<span></span>
+<span><span class="co"># Predict individualized treatment effects on new patients</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">cate</span>, new_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df_het</span>, <span class="fl">5L</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 1</span></span></span>
+<span><span class="co">#&gt;    .pred</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.681 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 1.73  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 2.51  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 3.33  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 0.065<span style="text-decoration: underline;">6</span></span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cate</span>, type <span class="op">=</span> <span class="st">"cate"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="lmtp-and-cate_files/figure-html/cate-1.png" alt="Histogram of out-of-fold CATE predictions relative to the mean ATE" width="672"></p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cate</span>, type <span class="op">=</span> <span class="st">"qini"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="lmtp-and-cate_files/figure-html/cate-2.png" alt="Qini cumulative uplift curve shading incremental gain above random targeting" width="672"></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

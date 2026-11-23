@@ -24,7 +24,7 @@ For publication-grade pipelines, `tidytmle` accepts custom `recipes`, `parsnip` 
 
 A common source of subtle bugs in manual causal ML pipelines is accidentally leaking the treatment column $A$ or cluster ID into the propensity model $g(W)$ when reusing a single `recipe(y ~ ., data = df)`. `tidytmle` automatically clones and adapts the preprocessing recipe per nuisance factor (`Q`, `g`, and `C`), guaranteeing that $A$ is retained in $Q(A, W)$ and $C(A, W)$ while strictly excluded from $g$'s predictors:
 
-```{r level2, message = FALSE}
+```{r level2, warning = FALSE, message = FALSE, fig.alt = "Faceted bar chart comparing cross-validated risk and Super Learner metalearner weights across base workflows"}
 library(tidytmle)
 library(recipes)
 library(parsnip)
@@ -68,6 +68,8 @@ fit_l2 <- tmle_spec(
   fit(data = df)
 
 fit_l2
+extract_sl_weights(fit_l2)
+autoplot(fit_l2, type = "learners")
 ```
 
 ## Automatic Informative-Missingness Handling & Case Weights
@@ -90,6 +92,7 @@ fit_auto_c <- tmle_spec(
   set_resamples(v_folds = 5L) |>
   fit(data = df_miss)
 
+summary(fit_auto_c)
 glance(fit_auto_c)
 autoplot(fit_auto_c, type = "balance")
 ```

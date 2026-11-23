@@ -44,3 +44,10 @@ a \code{workflowsets::workflow_set}, a list of specs/workflows, or \code{"defaul
 Passing multiple learners or a \code{workflow_set} automatically activates
 cross-validated Super Learning within the exact same \code{rsample} folds.
 }
+\examples{
+spec <- tmle_spec(y, a, c(age, sex, lab_1)) |>
+  set_outcome_learners(parsnip::linear_reg() |> parsnip::set_engine("glm")) |>
+  set_treatment_learners(parsnip::logistic_reg() |> parsnip::set_engine("glm"))
+spec
+
+}

@@ -66,6 +66,73 @@ and tree/random forest) for regression or binary classification nuisances.</p>
     <p>A named list of <code>parsnip</code> <code>model_spec</code> objects.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">default_nuisance_learners</span><span class="op">(</span><span class="st">"regression"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $glm</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear Regression Model Specification (regression)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Computational engine: glm </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $glmnet</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Linear Regression Model Specification (regression)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Main Arguments:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   penalty = 0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   mixture = 0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Computational engine: glmnet </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ranger</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random Forest Model Specification (regression)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Main Arguments:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   trees = 150</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   min_n = 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Engine-Specific Arguments:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   num.threads = 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   seed = 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Computational engine: ranger </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span><span class="fu">default_nuisance_learners</span><span class="op">(</span><span class="st">"classification"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $glm</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Logistic Regression Model Specification (classification)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Computational engine: glm </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $glmnet</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Logistic Regression Model Specification (classification)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Main Arguments:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   penalty = 0.01</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   mixture = 0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Computational engine: glmnet </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $ranger</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Random Forest Model Specification (classification)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Main Arguments:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   trees = 150</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   min_n = 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Engine-Specific Arguments:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   num.threads = 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   seed = 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Computational engine: ranger </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

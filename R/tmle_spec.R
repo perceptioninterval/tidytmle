@@ -74,7 +74,7 @@
 #' @return An object of class `"tmle_spec"`.
 #'
 #' @examples
-#' df <- sim_causal_cohort(n = 200, seed = 42)
+#' df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)
 #' spec <- tmle_spec(
 #'   outcome = y,
 #'   treatment = a,
@@ -166,6 +166,15 @@ check_is_tmle_spec <- function(spec, call = rlang::caller_env()) {
 #'   formula preprocessing).
 #'
 #' @return An updated `"tmle_spec"` object.
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 120, seed = 1)
+#' rec <- recipes::recipe(y ~ ., data = df) |>
+#'   recipes::step_dummy(recipes::all_nominal_predictors())
+#' spec <- tmle_spec(y, a, c(age, sex, lab_1)) |>
+#'   set_preprocessing(rec)
+#' spec
+#'
 #' @export
 set_preprocessing <- function(spec, recipe) {
   check_is_tmle_spec(spec)
@@ -212,6 +221,13 @@ validate_learners_arg <- function(learners, call = rlang::caller_env()) {
 #'   single lowest CV-risk learner).
 #'
 #' @return An updated `"tmle_spec"` object.
+#'
+#' @examples
+#' spec <- tmle_spec(y, a, c(age, sex, lab_1)) |>
+#'   set_outcome_learners(parsnip::linear_reg() |> parsnip::set_engine("glm")) |>
+#'   set_treatment_learners(parsnip::logistic_reg() |> parsnip::set_engine("glm"))
+#' spec
+#'
 #' @export
 set_outcome_learners <- function(spec,
                                  learners,
@@ -265,6 +281,12 @@ set_censoring_learners <- function(spec,
 #'   (and binary outcome when balanced). Defaults to `TRUE`.
 #'
 #' @return An updated `"tmle_spec"` object.
+#'
+#' @examples
+#' spec <- tmle_spec(y, a, c(age, sex, lab_1)) |>
+#'   set_resamples(v_folds = 5L)
+#' spec
+#'
 #' @export
 set_resamples <- function(spec, resamples = NULL, v_folds = 10L, strata = TRUE) {
   check_is_tmle_spec(spec)
@@ -336,6 +358,12 @@ set_resamples <- function(spec, resamples = NULL, v_folds = 10L, strata = TRUE) 
 #'   `mirai::mirai_map()`.
 #'
 #' @return An updated `"tmle_spec"` object.
+#'
+#' @examples
+#' spec <- tmle_spec(y, a, c(age, sex, lab_1)) |>
+#'   set_targeting(cv_tmle = TRUE, g_bounds = c(0.05, 0.95), fluctuation = "logistic")
+#' spec
+#'
 #' @export
 set_targeting <- function(spec,
                           cv_tmle = TRUE,

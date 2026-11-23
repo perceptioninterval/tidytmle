@@ -27,6 +27,15 @@
 #'
 #' @return A [tibble::tibble()].
 #' @method tidy tmle_fit
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = c("ate", "rr", "or")) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' tidy(fit)
+#' tidy(fit, simultaneous = TRUE, e_value = TRUE)
+#'
 #' @export
 tidy.tmle_fit <- function(x,
                           conf.int = TRUE,
@@ -124,6 +133,14 @@ tidy.tmle_fit <- function(x,
 #'
 #' @return A 1-row [tibble::tibble()].
 #' @method glance tmle_fit
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' glance(fit)
+#'
 #' @export
 glance.tmle_fit <- function(x, ...) {
   idx <- x$subgroup_idx
@@ -206,6 +223,14 @@ glance.tmle_fit <- function(x, ...) {
 #'
 #' @return A [tibble::tibble()] matching the input data (or selected subgroup).
 #' @method augment tmle_fit
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' head(augment(fit)[, c(".q0_star", ".q1_star", ".g_trunc", ".clever_h", ".eif")])
+#'
 #' @export
 augment.tmle_fit <- function(x, ...) {
   idx <- x$subgroup_idx
@@ -238,6 +263,14 @@ augment.tmle_fit <- function(x, ...) {
 #'
 #' @return A [tibble::tibble()] of `yardstick` CV metrics.
 #' @method collect_metrics tmle_fit
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' collect_metrics(fit)
+#'
 #' @export
 collect_metrics.tmle_fit <- function(x,
                                      nuisance = c("all", "Q", "g", "C"),
@@ -280,6 +313,14 @@ collect_metrics.tmle_fit <- function(x,
 #'
 #' @return A [tibble::tibble()] with columns `nuisance`, (optionally `fold`),
 #'   `learner`, and `weight`.
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' extract_sl_weights(fit)
+#'
 #' @export
 extract_sl_weights <- function(x,
                                nuisance = c("all", "Q", "g", "C"),

@@ -6,6 +6,11 @@
 #' @param mode `"regression"` or `"classification"`.
 #'
 #' @return A named list of `parsnip` `model_spec` objects.
+#'
+#' @examples
+#' default_nuisance_learners("regression")
+#' default_nuisance_learners("classification")
+#'
 #' @export
 default_nuisance_learners <- function(mode = c("regression", "classification")) {
   mode <- match.arg(mode)

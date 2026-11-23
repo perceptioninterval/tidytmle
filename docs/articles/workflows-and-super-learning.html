@@ -112,9 +112,7 @@ predictors:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://perceptioninterval.github.io/tidytmle/">tidytmle</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tidymodels/recipes" class="external-link">recipes</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: package 'recipes' was built under R version 4.5.2</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tidymodels/parsnip" class="external-link">parsnip</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning: package 'parsnip' was built under R version 4.5.2</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/tidymodels/workflowsets" class="external-link">workflowsets</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_causal_cohort.html">sim_causal_cohort</a></span><span class="op">(</span></span>
@@ -159,7 +157,7 @@ predictors:</p>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (observed = 280) | 5-fold CV-TMLE | logistic fluctuation |</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">2.77s | 15 clusters</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">2.38s | 15 clusters</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Estimates </span></span>
 <span><span class="co">#&gt; ATE est = 1.7250 (SE = 0.1214) 95% CI [1.4870, 1.9630] p = &lt; 0.0001</span></span>
@@ -171,7 +169,19 @@ predictors:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Diagnostics &amp; Targeting Shift </span></span>
 <span><span class="co">#&gt; Targeting shift (TMLE - plug-in): +0.0124 (epsilon = 0.0079)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All checks healthy: mean EIF = -3.07e-15, truncated = 0.6%, max EIF leverage = 2.8%.</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All checks healthy: mean EIF = -3.07e-15, truncated = 0.6%, max EIF leverage = 2.8%.</span></span>
+<span><span class="fu"><a href="../reference/extract_sl_weights.html">extract_sl_weights</a></span><span class="op">(</span><span class="va">fit_l2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 3</span></span></span>
+<span><span class="co">#&gt;   nuisance learner            weight</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Q        base_glm         1       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Q        base_enet        0       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> g        logistic_reg_glm 1       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> C        glm              0       </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> C        glmnet           1.000   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> C        ranger           0.000<span style="text-decoration: underline;">250</span></span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit_l2</span>, type <span class="op">=</span> <span class="st">"learners"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="workflows-and-super-learning_files/figure-html/level2-1.png" alt="Faceted bar chart comparing cross-validated risk and Super Learner metalearner weights across base workflows" width="672"></p>
 </div>
 <div class="section level2">
 <h2 id="automatic-informative-missingness-handling-case-weights">Automatic Informative-Missingness Handling &amp; Case Weights<a class="anchor" aria-label="anchor" href="#automatic-informative-missingness-handling-case-weights"></a>
@@ -209,6 +219,24 @@ whether IPW/TMLE weighting brings absolute standardized mean differences
 <span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">df_miss</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Detected 70 missing outcomes (20%); automatically introducing missingness indicator <span style="color: #00BB00;">.delta</span> and modeling C(A, W) = P(Delta = 1 | A, W) instead of listwise deletion.</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_auto_c</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── <span style="font-weight: bold;">Plain-English TMLE Summary</span> ──</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Sample: 350 rows (280 observed outcomes) | 5-fold CV-TMLE</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── 1. What the Causal Estimates Mean </span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> ATE (across the full population): Treatment increases the expected outcome by 1.6073 units (95% CI [1.3975, 1.8170], p = &lt; 0.0001).</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── 2. What the Targeting Step Did </span></span>
+<span><span class="co">#&gt; Fluctuating along the Clever Covariate shifted the initial ML plug-in</span></span>
+<span><span class="co">#&gt; estimate by +0.2110 (epsilon = 0.0310) to remove residual confounding</span></span>
+<span><span class="co">#&gt; bias.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── 3. Statistical Health Check &amp; Next Steps </span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Convergence: EIF estimating equation solved (mean EIF = 4.58e-18).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Positivity: 0.0% clipped at g_bounds [0.150, 0.850] (ESS: treated = 122.7, control = 127.7).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Influence: No single observation dominates variance (max EIF leverage = 4.4%).</span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/glance.html" class="external-link">glance</a></span><span class="op">(</span><span class="va">fit_auto_c</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 19</span></span></span>
 <span><span class="co">#&gt;       n n_observed n_clusters v_folds cv_tmle epsilon mean_eif</span></span>

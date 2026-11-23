@@ -151,6 +151,13 @@ run_tmle_targeting <- function(y_num,
   }
 
   # Binary point-treatment targeting
+  if ("or" %in% estimand$names && outcome_type != "binary") {
+    cli::cli_abort(c(
+      "Odds Ratio ({.val or}) requires a binary outcome in {{0, 1}}.",
+      "i" = "For continuous outcomes, use {.val ate}, {.val att}, {.val atc}, {.val ey1}, or {.val ey0}."
+    ))
+  }
+
   g_info <- truncate_propensity(g_hat, bounds)
   g_t <- g_info$g_trunc
 
@@ -298,13 +305,50 @@ run_tmle_targeting <- function(y_num,
   eif_sq <- primary_eif^2
   eif_leverage <- if (sum(eif_sq) > 0) eif_sq / sum(eif_sq) else rep(0, n)
 
-  # Representative scalar epsilon summary
-  eps_scalar <- if (primary_est == "ey1") {
-    eps_vec["eps1"]
-  } else if (primary_est == "ey0") {
-    eps_vec["eps0"]
+  # Representative scalar epsilon, targeting outputs, and plug-in shift for primary estimand
+  if (primary_est == "att" && !is.null(att_res)) {
+    q1_out <- att_res$q1_star
+    q0_out <- att_res$q0_star
+    qa_out <- ifelse(a_num == 1L, q1_out, q0_out)
+    clever_out <- att_res$clever_h
+    eps_arms_out <- c(eps1 = att_res$eps1, eps0 = att_res$eps0)
+    eps_scalar <- mean(abs(eps_arms_out)) * sign(eps_arms_out[1L] - eps_arms_out[2L] + 1e-15)
+    primary_shift <- att_res$estimate - att_res$plugin_estimate
+  } else if (primary_est == "atc" && !is.null(atc_res)) {
+    q1_out <- atc_res$q1_star
+    q0_out <- atc_res$q0_star
+    qa_out <- ifelse(a_num == 1L, q1_out, q0_out)
+    clever_out <- atc_res$clever_h
+    eps_arms_out <- c(eps1 = atc_res$eps1, eps0 = atc_res$eps0)
+    eps_scalar <- mean(abs(eps_arms_out)) * sign(eps_arms_out[1L] - eps_arms_out[2L] + 1e-15)
+    primary_shift <- atc_res$estimate - atc_res$plugin_estimate
   } else {
-    mean(abs(eps_vec)) * sign(eps_vec[1L] - eps_vec[2L] + 1e-15)
+    q1_out <- q1_star
+    q0_out <- q0_star
+    qa_out <- qa_star
+    clever_out <- clever_h
+    eps_arms_out <- eps_vec
+    eps_scalar <- if (primary_est == "ey1") {
+      eps_vec["eps1"]
+    } else if (primary_est == "ey0") {
+      eps_vec["eps0"]
+    } else {
+      mean(abs(eps_vec)) * sign(eps_vec[1L] - eps_vec[2L] + 1e-15)
+    }
+    primary_shift <- switch(
+      primary_est,
+      ey1 = psi1 - stats::weighted.mean(q1_init, w = w),
+      ey0 = psi0 - stats::weighted.mean(q0_init, w = w),
+      rr = (psi1 / psi0) - (stats::weighted.mean(q1_init, w = w) / stats::weighted.mean(q0_init, w = w)),
+      or = {
+        p1_0 <- clamp_prob(stats::weighted.mean(q1_init, w = w), 1e-6)
+        p0_0 <- clamp_prob(stats::weighted.mean(q0_init, w = w), 1e-6)
+        p1_s <- clamp_prob(psi1, 1e-6)
+        p0_s <- clamp_prob(psi0, 1e-6)
+        (p1_s / (1 - p1_s)) / (p0_s / (1 - p0_s)) - (p1_0 / (1 - p1_0)) / (p0_0 / (1 - p0_0))
+      },
+      (psi1 - psi0) - plugin_ate
+    )
   }
 
   list(
@@ -312,23 +356,23 @@ run_tmle_targeting <- function(y_num,
     q0_init = q0_init,
     q1_init = q1_init,
     qa_init = ifelse(a_num == 1L, q1_init, q0_init),
-    q0_star = q0_star,
-    q1_star = q1_star,
-    qa_star = qa_star,
+    q0_star = q0_out,
+    q1_star = q1_out,
+    qa_star = qa_out,
     g_hat = g_hat,
     g_trunc = g_t,
     c1_hat = c1_hat,
     c0_hat = c0_hat,
-    clever_h = clever_h,
+    clever_h = clever_out,
     eif = primary_eif,
     eif_1 = d1,
     eif_0 = d0,
     eif_ate = d_ate,
     eif_leverage = eif_leverage,
     epsilon = as.numeric(eps_scalar),
-    epsilon_arms = eps_vec,
+    epsilon_arms = eps_arms_out,
     mean_eif = mean(primary_eif),
-    plugin_vs_tmle_shift = (psi1 - psi0) - plugin_ate,
+    plugin_vs_tmle_shift = as.numeric(primary_shift),
     g_info = g_info,
     ess_treated = ess_treated,
     ess_control = ess_control
@@ -369,9 +413,15 @@ target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0
       q1_s01 <- q1_01 + eps1
       q0_s01 <- q0_01 + eps0
     } else {
+      eps1 <- 0
+      eps0 <- 0
       q1_s01 <- q1_01
       q0_s01 <- q0_01
     }
+
+    q1_0_orig <- if (outcome_type == "continuous") unscale_outcome_01(q1_01, y_bounds) else q1_01
+    q0_0_orig <- if (outcome_type == "continuous") unscale_outcome_01(q0_01, y_bounds) else q0_01
+    plugin_est <- stats::weighted.mean((q1_0_orig - q0_0_orig)[a_num == 1L], w = w[a_num == 1L])
 
     q1_s <- if (outcome_type == "continuous") unscale_outcome_01(q1_s01, y_bounds) else q1_s01
     q0_s <- if (outcome_type == "continuous") unscale_outcome_01(q0_s01, y_bounds) else q0_s01
@@ -382,7 +432,12 @@ target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0
       h_obs * (ifelse(obs_mask, y_orig, 0) - ifelse(a_num == 1L, q1_s, q0_s)) +
         (a_num / p_target) * (q1_s - q0_s - psi)
     )
-    return(list(estimate = psi, eif = eif))
+    return(list(
+      estimate = psi, eif = eif,
+      eps1 = eps1, eps0 = eps0,
+      q1_star = q1_s, q0_star = q0_s,
+      clever_h = h_obs, plugin_estimate = plugin_est
+    ))
   } else {
     h1 <- ifelse(a_num == 1L & obs_mask, (1 - g_t) / (g_t * p_target * c1_t), 0)
     h0 <- ifelse(a_num == 0L & obs_mask, -1 / (p_target * c0_t), 0)
@@ -406,9 +461,15 @@ target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0
       q1_s01 <- q1_01 + eps1
       q0_s01 <- q0_01 + eps0
     } else {
+      eps1 <- 0
+      eps0 <- 0
       q1_s01 <- q1_01
       q0_s01 <- q0_01
     }
+
+    q1_0_orig <- if (outcome_type == "continuous") unscale_outcome_01(q1_01, y_bounds) else q1_01
+    q0_0_orig <- if (outcome_type == "continuous") unscale_outcome_01(q0_01, y_bounds) else q0_01
+    plugin_est <- stats::weighted.mean((q1_0_orig - q0_0_orig)[a_num == 0L], w = w[a_num == 0L])
 
     q1_s <- if (outcome_type == "continuous") unscale_outcome_01(q1_s01, y_bounds) else q1_s01
     q0_s <- if (outcome_type == "continuous") unscale_outcome_01(q0_s01, y_bounds) else q0_s01
@@ -419,7 +480,12 @@ target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0
       h_obs * (ifelse(obs_mask, y_orig, 0) - ifelse(a_num == 1L, q1_s, q0_s)) +
         ((1 - a_num) / p_target) * (q1_s - q0_s - psi)
     )
-    return(list(estimate = psi, eif = eif))
+    return(list(
+      estimate = psi, eif = eif,
+      eps1 = eps1, eps0 = eps0,
+      q1_star = q1_s, q0_star = q0_s,
+      clever_h = h_obs, plugin_estimate = plugin_est
+    ))
   }
 }
 
@@ -607,8 +673,14 @@ compute_single_estimand_inference <- function(est_name,
     ci <- c(est - z_crit * se, est + z_crit * se)
     term <- "ATC"
   } else if (est_name == "rr") {
-    p1 <- max(psi1, 1e-8)
-    p0 <- max(psi0, 1e-8)
+    if (psi1 <= 0 || psi0 <= 0) {
+      cli::cli_abort(c(
+        "Risk/Rate Ratio ({.val rr}) requires strictly positive expected potential outcomes E[Y(1)] and E[Y(0)].",
+        "x" = "Observed targeted means: E[Y(1)] = {round(psi1, 4)}, E[Y(0)] = {round(psi0, 4)}."
+      ))
+    }
+    p1 <- psi1
+    p0 <- psi0
     log_rr <- log(p1 / p0)
     eif_s <- d1 / p1 - d0 / p0
     se_log <- compute_eif_se(eif_s, cluster_id)

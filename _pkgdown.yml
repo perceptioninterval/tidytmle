@@ -65,11 +65,12 @@ reference:
 
   - title: Heterogeneous Treatment Effects (CATE) & Simulation
     desc: >
-      Doubly Robust CATE learning, uplift evaluation, and synthetic causal
-      benchmarking cohorts.
+      Doubly Robust CATE learning, Qini uplift evaluation, CATE diagnostics,
+      and synthetic causal benchmarking cohorts.
     contents:
       - fit_cate
       - predict.tmle_cate
+      - autoplot.tmle_cate
       - qini_auc
       - sim_causal_cohort
 

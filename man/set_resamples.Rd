@@ -25,3 +25,9 @@ An updated \code{"tmle_spec"} object.
 \description{
 Configure Cross-Fitting Resamples for a TMLE Specification
 }
+\examples{
+spec <- tmle_spec(y, a, c(age, sex, lab_1)) |>
+  set_resamples(v_folds = 5L)
+spec
+
+}

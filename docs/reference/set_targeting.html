@@ -141,6 +141,23 @@ International Journal of Biostatistics</em>, 6(1), Article 26.</p>
 <em>Statistical Methods in Medical Research</em>, 21(1), 31–54.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="tmle_spec.html">tmle_spec</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">a</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="va">lab_1</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">set_targeting</span><span class="op">(</span>cv_tmle <span class="op">=</span> <span class="cn">TRUE</span>, g_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.95</span><span class="op">)</span>, fluctuation <span class="op">=</span> <span class="st">"logistic"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">spec</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Targeted Maximum Likelihood Estimation (TMLE) Specification</span> ──</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Outcome: <span style="color: #00BB00;">y</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Treatment: <span style="color: #00BB00;">a</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Covariates: <span style="color: #00BB00;">c(age, sex, lab_1)</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Estimand(s): <span style="color: #0000BB;">"ate"</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> CV-TMLE: <span style="color: #0000BB;">TRUE</span> (10-fold)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Positivity bounds: <span style="color: #0000BB;">"0.05, 0.95"</span> | Fluctuation: <span style="color: #0000BB;">"logistic"</span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

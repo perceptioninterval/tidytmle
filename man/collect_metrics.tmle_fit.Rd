@@ -23,3 +23,11 @@ A \code{\link[tibble:tibble]{tibble::tibble()}} of \code{yardstick} CV metrics.
 \description{
 Collect Cross-Validated Performance Metrics for Nuisance Learners
 }
+\examples{
+df <- sim_causal_cohort(n = 150, seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+  set_resamples(v_folds = 3L) |>
+  fit(df)
+collect_metrics(fit)
+
+}

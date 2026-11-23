@@ -70,6 +70,12 @@ observed support even under extreme confounding (Gruber & van der Laan,
 2010).
 }
 }
+\examples{
+spec <- tmle_spec(y, a, c(age, sex, lab_1)) |>
+  set_targeting(cv_tmle = TRUE, g_bounds = c(0.05, 0.95), fluctuation = "logistic")
+spec
+
+}
 \references{
 Zheng, W., & van der Laan, M. J. (2011). Cross-validated targeted minimum-loss-based
 estimation. In \emph{Targeted Learning} (pp. 459–474). Springer.

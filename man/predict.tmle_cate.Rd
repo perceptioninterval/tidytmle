@@ -19,3 +19,12 @@ A 1-column \code{\link[tibble:tibble]{tibble::tibble()}} with column \code{.pred
 \description{
 Predict Conditional Average Treatment Effects on New Data
 }
+\examples{
+df <- sim_causal_cohort(n = 150, outcome_type = "continuous", seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+  set_resamples(v_folds = 3L) |>
+  fit(df)
+cate <- fit_cate(fit, v_folds = 3L)
+predict(cate, new_data = head(df, 5L))
+
+}

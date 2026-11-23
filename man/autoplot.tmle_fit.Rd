@@ -56,6 +56,15 @@ against the standard \code{0.10} balance benchmark.
 \code{"learners"} for continuous LMTPs) into one figure via \code{patchwork}.
 }
 }
+\examples{
+df <- sim_causal_cohort(n = 150, seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+  set_resamples(v_folds = 3L) |>
+  fit(df)
+autoplot(fit, type = "overlap")
+autoplot(fit, type = "targeting")
+
+}
 \references{
 Schuler, M. S., & Rose, S. (2017). Targeted maximum likelihood estimation for
 causal inference in observational studies. \emph{American Journal of Epidemiology},

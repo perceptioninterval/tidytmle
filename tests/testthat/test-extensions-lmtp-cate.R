@@ -61,4 +61,7 @@ test_that("DR-Learner CATE estimation (fit_cate, predict, tidy, augment, qini_au
   q_tbl <- qini_auc(cate_fit)
   expect_equal(q_tbl$.metric, c("qini_auc", "auuc"))
   expect_true(q_tbl$.estimate[1L] > 0)
+
+  expect_s3_class(autoplot(cate_fit, type = "qini"), "ggplot")
+  expect_s3_class(autoplot(cate_fit, type = "cate"), "ggplot")
 })

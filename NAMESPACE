@@ -2,6 +2,7 @@
 
 S3method(augment,tmle_cate)
 S3method(augment,tmle_fit)
+S3method(autoplot,tmle_cate)
 S3method(autoplot,tmle_fit)
 S3method(collect_metrics,tmle_fit)
 S3method(fit,tmle_spec)

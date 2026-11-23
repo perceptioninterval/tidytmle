@@ -112,6 +112,33 @@ test_that("Missing baseline covariates are auto-imputed cleanly at Level 1", {
   expect_true(abs(glance(fit)$mean_eif) < 1e-4)
 })
 
+test_that("Ratio guardrails catch invalid continuous OR / non-positive RR, and ATT shift is exact", {
+  df_cont <- sim_causal_cohort(n = 150, outcome_type = "continuous", seed = 919)
+  expect_error(
+    tmle_spec(y, a, c(age, sex, lab_1), estimand = "or") |>
+      set_resamples(v_folds = 3L) |>
+      fit(data = df_cont),
+    "Odds Ratio"
+  )
+
+  df_neg <- df_cont
+  df_neg$y <- df_neg$y - 10
+  expect_error(
+    tmle_spec(y, a, c(age, sex, lab_1), estimand = "rr") |>
+      set_resamples(v_folds = 3L) |>
+      fit(data = df_neg),
+    "strictly positive"
+  )
+
+  fit_att <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = "att") |>
+    set_resamples(v_folds = 3L) |>
+    fit(data = df_cont)
+  gl <- glance(fit_att)
+  expect_true(abs(gl$mean_eif) < 1e-4)
+  plug_att <- mean((fit_att$targeting$q1_init - fit_att$targeting$q0_init)[df_cont$a == 1L])
+  expect_equal(gl$plugin_vs_tmle_shift, tidy(fit_att)$estimate - plug_att, tolerance = 1e-6)
+})
+
 test_that("Bounded logistic fluctuation keeps continuous predictions in observed range under positivity stress", {
   df <- sim_causal_cohort(n = 400, outcome_type = "continuous", positivity_stress = TRUE, seed = 909)
 

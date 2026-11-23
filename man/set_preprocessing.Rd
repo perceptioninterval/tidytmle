@@ -21,3 +21,12 @@ Attaches a base \code{recipes::recipe} to a \code{\link[=tmle_spec]{tmle_spec()}
 (\code{Q}, \code{g}, \code{C}) so treatment \eqn{A} is never leaked into propensity models
 and \code{id}/\code{censoring}/\code{weights} columns are excluded from predictors.
 }
+\examples{
+df <- sim_causal_cohort(n = 120, seed = 1)
+rec <- recipes::recipe(y ~ ., data = df) |>
+  recipes::step_dummy(recipes::all_nominal_predictors())
+spec <- tmle_spec(y, a, c(age, sex, lab_1)) |>
+  set_preprocessing(rec)
+spec
+
+}

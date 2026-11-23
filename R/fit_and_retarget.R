@@ -11,6 +11,14 @@
 #'
 #' @return An S3 object of class `"tmle_fit"`.
 #' @method fit tmle_spec
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 1)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = c("ate", "rr")) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(data = df)
+#' tidy(fit)
+#'
 #' @export
 fit.tmle_spec <- function(object, data, ...) {
   t_start <- proc.time()[["elapsed"]]
@@ -275,7 +283,7 @@ fit.tmle_spec <- function(object, data, ...) {
 #' @return An updated `"tmle_fit"` object.
 #'
 #' @examples
-#' df <- sim_causal_cohort(n = 150, seed = 1)
+#' df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 1)
 #' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
 #'   set_resamples(v_folds = 3L) |>
 #'   fit(df)

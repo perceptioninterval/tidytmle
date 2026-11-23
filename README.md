@@ -51,7 +51,7 @@ Every TMLE fit executes five concrete steps mapped cleanly to `augment(fit)` and
 | **1. Initial Outcome Fit ($\bar{Q}^0$)** | Cross-validated Super Learner predicts counterfactual outcomes under treatment and control. | `.q1_init`, `.q0_init` |
 | **2. Propensity Fit ($g$)** | Classification Super Learner estimates $P(A = 1 \mid W)$ (strictly excluding $A$ and $Y$ from predictors) and applies adaptive bounds. | `.g_hat`, `.g_trunc`, `pct_truncated` |
 | **3. Clever Covariate ($H$)** | Constructs $H_n(A, W) = \frac{A}{g_n(W)} - \frac{1-A}{1-g_n(W)}$ from the Efficient Influence Function (EIF) to spotlight potential confounding bias. | `.clever_h` |
-| **4. Fluctuation ($\epsilon$)** | Runs a 1-parameter logistic regression of $Y$ on $H_n$ with $\text{logit}(\bar{Q}^0)$ as offset, nudging predictions along the optimal bias-removal path. | `epsilon`, `.q1_star`, `.q0_star`, `plugin_vs_tmle_shift` |
+| **4. Fluctuation ($\epsilon$)** | Fits a weighted-intercept logistic submodel with $\text{logit}(\bar{Q}^0)$ as offset and $|H_n|$ weights, nudging predictions along the optimal bias-removal path. | `epsilon`, `.q1_star`, `.q0_star`, `plugin_vs_tmle_shift` |
 | **5. Substitution & EIF Inference** | Averages targeted counterfactuals and computes asymptotic SEs from the EIF variance (`mean_eif` must be $\approx 0$). | `.eif`, `.eif_leverage`, `mean_eif` |
 
 For a full worked visual walkthrough—including a live demonstration of **double robustness**—read [TMLE Intuition: A Step-by-Step Visual Guide](articles/tmle-intuition.html) (or `vignette("tmle-intuition", package = "tidytmle")`).

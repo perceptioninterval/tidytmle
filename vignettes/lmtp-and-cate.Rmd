@@ -22,7 +22,7 @@ Beyond binary point-treatment effects, `tidytmle` supports **Modified Treatment 
 
 Asking *"what if every patient received dose = 0 vs. dose = 10?"* often forces impossible extrapolations for continuous exposures. Modified Treatment Policies solve this by shifting each person's observed exposure realistically (e.g., `+1` unit or `90%` of current dose). Use `shift(delta)` for additive policies $d(a, w) = a + \delta$ or `scale_tx(factor)` for multiplicative policies $d(a, w) = a \cdot \text{factor}$. Internally, `tidytmle` estimates the treatment density ratio nonparametrically using stacked cross-validated classification workflows without parametric normality assumptions:
 
-```{r lmtp, message = FALSE}
+```{r lmtp, message = FALSE, fig.alt = "Histogram of truncated Modified Treatment Policy density ratios r(A, W)"}
 library(tidytmle)
 
 df_cont <- sim_causal_cohort(
@@ -33,6 +33,7 @@ df_cont <- sim_causal_cohort(
 )
 truth_cont <- attr(df_cont, "truth")
 
+# Additive shift (+1 unit)
 fit_shift <- tmle_spec(
   outcome    = y,
   treatment  = a,
@@ -42,8 +43,21 @@ fit_shift <- tmle_spec(
   set_resamples(v_folds = 4L) |>
   fit(data = df_cont)
 
-tidy(fit_shift)
-truth_cont$true_shift_1
+# Multiplicative policy (90% of current dose)
+fit_scale <- tmle_spec(
+  outcome    = y,
+  treatment  = a,
+  covariates = c(age, sex, starts_with("lab_")),
+  estimand   = scale_tx(0.9)
+) |>
+  set_resamples(v_folds = 4L) |>
+  fit(data = df_cont)
+
+summary(fit_shift)
+dplyr::bind_rows(tidy(fit_shift), tidy(fit_scale)) |>
+  dplyr::mutate(true_value = c(truth_cont$true_shift_1, truth_cont$true_scale_09))
+
+autoplot(fit_shift, type = "overlap")
 ```
 
 ## Heterogeneous Treatment Effects via `fit_cate()`
@@ -54,7 +68,7 @@ $$\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_
 
 Because $\mathbb{E}[\varphi_i \mid V_i] = \tau(V_i)$ whenever *either* $\bar{Q}$ or $g$ is consistently estimated, `fit_cate()` can feed $\varphi_i$ directly into any `tidymodels` regression workflow to estimate individual treatment effects $\hat{\tau}(V)$, run Chernozhukov et al.'s (2018) Best Linear Projection (BLP) heterogeneity test via `tidy()`, predict onto new cohorts via `predict()`, and quantify treatment-prioritization performance via `qini_auc()`:
 
-```{r cate, message = FALSE}
+```{r cate, message = FALSE, fig.alt = c("Histogram of out-of-fold CATE predictions relative to the mean ATE", "Qini cumulative uplift curve shading incremental gain above random targeting")}
 df_het <- sim_causal_cohort(n = 400, outcome_type = "continuous", seed = 303)
 truth_het <- attr(df_het, "truth")
 
@@ -70,6 +84,13 @@ cate <- fit_cate(fit_ate, covariates = c(age, sex, lab_1, lab_2, lab_3), v_folds
 tidy(cate)
 qini_auc(cate)
 
+# Out-of-fold CATE accuracy against true individual effects
 aug_cate <- augment(cate)
 cor(aug_cate$.cate, truth_het$true_cate)
+
+# Predict individualized treatment effects on new patients
+predict(cate, new_data = head(df_het, 5L))
+
+autoplot(cate, type = "cate")
+autoplot(cate, type = "qini")
 ```

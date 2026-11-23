@@ -89,7 +89,7 @@ when both are consistent, and respects natural outcome bounds.
 }
 }
 \examples{
-df <- sim_causal_cohort(n = 200, seed = 42)
+df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)
 spec <- tmle_spec(
   outcome = y,
   treatment = a,

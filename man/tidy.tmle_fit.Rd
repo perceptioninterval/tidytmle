@@ -48,3 +48,12 @@ and \code{"or"}), \code{std.error} is reported on the \strong{log scale} (\code{
 \code{SE[log(OR)]}) and confidence intervals are computed on the log scale and
 exponentiated back so intervals remain strictly positive.
 }
+\examples{
+df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = c("ate", "rr", "or")) |>
+  set_resamples(v_folds = 3L) |>
+  fit(df)
+tidy(fit)
+tidy(fit, simultaneous = TRUE, e_value = TRUE)
+
+}

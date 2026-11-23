@@ -22,3 +22,11 @@ A \code{\link[tibble:tibble]{tibble::tibble()}} with columns \code{nuisance}, (o
 \description{
 Extract Super Learner Metalearner Weights Across Nuisance Models
 }
+\examples{
+df <- sim_causal_cohort(n = 150, seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+  set_resamples(v_folds = 3L) |>
+  fit(df)
+extract_sl_weights(fit)
+
+}

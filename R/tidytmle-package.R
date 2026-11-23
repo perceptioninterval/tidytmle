@@ -26,9 +26,10 @@ ggplot2::autoplot
 tune::collect_metrics
 
 utils::globalVariables(c(
-  ".estimate", ".estimator", ".metric", ".pred", "arm", "conf.high",
-  "conf.low", "covariate", "density", "eif", "estimand", "estimate", "fold",
-  "g", "group", "h_mag", "is_outlier", "learner", "leverage", "metric_type",
-  "nuisance", "obs_id", "pct_truncated", "smd", "term", "threshold", "val",
-  "value", "weight", "x_init", "y_star"
+  ".estimate", ".estimator", ".metric", ".pred", "arm", "cate_val",
+  "conf.high", "conf.low", "covariate", "cum_gain", "curve", "density",
+  "eif", "estimand", "estimate", "fold", "frac", "g", "gain", "group",
+  "h_mag", "is_outlier", "learner", "leverage", "metric_type", "nuisance",
+  "obs_id", "pct_truncated", "random_gain", "smd", "term", "threshold",
+  "val", "value", "weight", "x_init", "y_star"
 ))

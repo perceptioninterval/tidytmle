@@ -22,3 +22,11 @@ mechanism \eqn{g} (or density ratio for Modified Treatment Policies), and
 optional censoring/missingness mechanism \eqn{C}, caches out-of-fold nuisance
 predictions, and executes the targeted fluctuation and EIF inference step.
 }
+\examples{
+df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 1)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = c("ate", "rr")) |>
+  set_resamples(v_folds = 3L) |>
+  fit(data = df)
+tidy(fit)
+
+}

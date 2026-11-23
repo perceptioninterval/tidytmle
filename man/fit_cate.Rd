@@ -24,10 +24,14 @@ from \code{fit}.}
 
 \item{v_folds}{Number of cross-fitting folds for out-of-fold CATE evaluation
 and Best Linear Projection heterogeneity testing (default \code{5L}).}
+
+\item{x}{A fitted \code{"tmle_cate"} object passed to \code{tidy()} or \code{augment()}.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An S3 object of class \code{"tmle_cate"} supporting \code{predict()},
-\code{tidy()}, \code{augment()}, and \code{\link[=qini_auc]{qini_auc()}}.
+\code{tidy()}, \code{augment()}, \code{autoplot()}, and \code{\link[=qini_auc]{qini_auc()}}.
 }
 \description{
 Feeds the doubly-robust Efficient Influence Function pseudo-outcomes from a
@@ -46,6 +50,16 @@ estimated. Regressing \eqn{\varphi_i} on \eqn{V_i} lets any \code{tidymodels}
 regression workflow learn treatment effect heterogeneity while \code{tidy()}
 reports Chernozhukov et al.'s (2018) Best Linear Projection (BLP) test for
 significant effect modification.
+}
+\examples{
+df <- sim_causal_cohort(n = 200, outcome_type = "continuous", seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+  set_resamples(v_folds = 3L) |>
+  fit(df)
+cate <- fit_cate(fit, v_folds = 3L)
+tidy(cate)
+qini_auc(cate)
+
 }
 \references{
 Kennedy, E. H. (2023). Towards optimal doubly robust estimation of

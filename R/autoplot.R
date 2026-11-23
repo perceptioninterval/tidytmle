@@ -49,6 +49,15 @@
 #'
 #' @return A `ggplot2` object.
 #' @method autoplot tmle_fit
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' autoplot(fit, type = "overlap")
+#' autoplot(fit, type = "targeting")
+#'
 #' @export
 autoplot.tmle_fit <- function(object,
                               type = c("overlap", "targeting", "learners", "eif", "sensitivity", "balance", "dashboard"),

@@ -16,3 +16,8 @@ A named list of \code{parsnip} \code{model_spec} objects.
 Creates a fast, diverse default \code{parsnip} learner library (\code{glm}, \code{glmnet},
 and tree/random forest) for regression or binary classification nuisances.
 }
+\examples{
+default_nuisance_learners("regression")
+default_nuisance_learners("classification")
+
+}

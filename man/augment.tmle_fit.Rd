@@ -42,6 +42,14 @@ contribution \eqn{D_i^*} and variance share \eqn{{D_i^*}^2 / \sum {D_j^*}^2}.
 }
 }
 }
+\examples{
+df <- sim_causal_cohort(n = 150, seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+  set_resamples(v_folds = 3L) |>
+  fit(df)
+head(augment(fit)[, c(".q0_star", ".q1_star", ".g_trunc", ".clever_h", ".eif")])
+
+}
 \references{
 Luque-Fernandez, M. A., Schomaker, M., Rachet, B., & Schnitzer, M. E.
 (2018). Targeted maximum likelihood estimation for a binary treatment: A

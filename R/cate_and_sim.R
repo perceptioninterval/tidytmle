@@ -27,6 +27,8 @@
 #' randomized experiments. *NBER Working Paper No. 24678*.
 #'
 #' @param fit A fitted `"tmle_fit"` object with binary treatment.
+#' @param x A fitted `"tmle_cate"` object passed to `tidy()` or `augment()`.
+#' @param ... Additional arguments (currently unused).
 #' @param learners `"default"`, a `parsnip` `model_spec` (regression mode), a
 #'   `workflow`, a `workflow_set`, or a list of specs/workflows.
 #' @param covariates Optional character vector or tidyselect expression of
@@ -36,7 +38,17 @@
 #'   and Best Linear Projection heterogeneity testing (default `5L`).
 #'
 #' @return An S3 object of class `"tmle_cate"` supporting `predict()`,
-#'   `tidy()`, `augment()`, and [qini_auc()].
+#'   `tidy()`, `augment()`, `autoplot()`, and [qini_auc()].
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 200, outcome_type = "continuous", seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' cate <- fit_cate(fit, v_folds = 3L)
+#' tidy(cate)
+#' qini_auc(cate)
+#'
 #' @export
 fit_cate <- function(fit,
                      learners = "default",
@@ -159,6 +171,15 @@ fit_cate <- function(fit,
 #'
 #' @return A 1-column [tibble::tibble()] with column `.pred`.
 #' @method predict tmle_cate
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, outcome_type = "continuous", seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' cate <- fit_cate(fit, v_folds = 3L)
+#' predict(cate, new_data = head(df, 5L))
+#'
 #' @export
 predict.tmle_cate <- function(object, new_data, ...) {
   w <- object$sl_weights
@@ -207,6 +228,15 @@ print.tmle_cate <- function(x, ...) {
 #'
 #' @return A 1-row [tibble::tibble()] with columns `.metric`, `.estimator`, and
 #'   `.estimate` (`qini_auc` and `auuc`).
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 150, outcome_type = "continuous", seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' cate <- fit_cate(fit, v_folds = 3L)
+#' qini_auc(cate)
+#'
 #' @export
 qini_auc <- function(cate_fit, pseudo_outcome = NULL) {
   if (inherits(cate_fit, "tmle_cate")) {
@@ -236,6 +266,112 @@ qini_auc <- function(cate_fit, pseudo_outcome = NULL) {
   )
 }
 
+#' Diagnostic Plots for a Doubly Robust CATE (DR-Learner) Fit
+#'
+#' Visualizes treatment-effect heterogeneity and prioritization uplift for a
+#' `"tmle_cate"` object returned by [fit_cate()]:
+#' - `"qini"`: Plots the **Qini Cumulative Uplift Curve** ordering individuals
+#'   from highest to lowest predicted benefit \eqn{\hat{\tau}(V)} against the
+#'   random-targeting diagonal baseline, shading the incremental uplift gain
+#'   (Qini AUC).
+#' - `"cate"`: Plots the distribution of out-of-fold predicted CATEs
+#'   \eqn{\hat{\tau}(V)} relative to the population Average Treatment Effect,
+#'   annotating the Chernozhukov et al. (2018) heterogeneity p-value.
+#'
+#' @param object A fitted `"tmle_cate"` object.
+#' @param type Plot type: `"qini"` (default) or `"cate"`.
+#' @param ... Currently unused.
+#'
+#' @return A `ggplot2` object.
+#' @method autoplot tmle_cate
+#'
+#' @examples
+#' df <- sim_causal_cohort(n = 200, outcome_type = "continuous", seed = 42)
+#' fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+#'   set_resamples(v_folds = 3L) |>
+#'   fit(df)
+#' cate <- fit_cate(fit, v_folds = 3L)
+#' autoplot(cate, type = "qini")
+#' autoplot(cate, type = "cate")
+#'
+#' @export
+autoplot.tmle_cate <- function(object, type = c("qini", "cate"), ...) {
+  type <- match.arg(type)
+
+  if (type == "qini") {
+    score <- object$tau_oof
+    phi <- object$phi
+    n <- length(score)
+    ord <- order(score, decreasing = TRUE)
+    phi_ord <- phi[ord]
+    frac <- c(0, seq_len(n) / n)
+    cum_gain <- c(0, cumsum(phi_ord) / n)
+    random_gain <- frac * mean(phi_ord)
+    q_stats <- qini_auc(object)
+
+    df_curve <- tibble::tibble(
+      frac = frac,
+      cum_gain = cum_gain,
+      random_gain = random_gain
+    )
+    df_lines <- dplyr::bind_rows(
+      tibble::tibble(frac = frac, gain = cum_gain, curve = "DR-Learner Prioritization"),
+      tibble::tibble(frac = frac, gain = random_gain, curve = "Random Targeting")
+    )
+
+    return(
+      ggplot2::ggplot() +
+        ggplot2::geom_ribbon(
+          data = df_curve,
+          ggplot2::aes(x = frac, ymin = random_gain, ymax = cum_gain),
+          fill = "#CA225E", alpha = 0.16
+        ) +
+        ggplot2::geom_line(
+          data = df_lines,
+          ggplot2::aes(x = frac, y = gain, color = curve, linetype = curve),
+          linewidth = 0.95
+        ) +
+        ggplot2::scale_color_manual(
+          values = c("DR-Learner Prioritization" = "#CA225E", "Random Targeting" = "#5C656E")
+        ) +
+        ggplot2::scale_linetype_manual(
+          values = c("DR-Learner Prioritization" = "solid", "Random Targeting" = "dashed")
+        ) +
+        ggplot2::labs(
+          title = "Qini Cumulative Uplift Curve",
+          subtitle = sprintf(
+            "Qini AUC = %.4f | AUUC = %.4f (higher curve = stronger treatment prioritization)",
+            q_stats$.estimate[1L], q_stats$.estimate[2L]
+          ),
+          x = "Fraction of Population Targeted (Highest to Lowest Predicted Benefit)",
+          y = "Cumulative Uplift Gain",
+          color = NULL,
+          linetype = NULL
+        ) +
+        ggplot2::theme_minimal()
+    )
+  }
+
+  ate_val <- mean(object$tau_oof)
+  het_p <- object$blp$p.value[2L]
+  p_txt <- if (is.na(het_p)) "NA" else if (het_p < 1e-4) "< 0.0001" else sprintf("%.4f", het_p)
+  df_c <- tibble::tibble(cate_val = object$tau_oof)
+
+  ggplot2::ggplot(df_c, ggplot2::aes(x = cate_val)) +
+    ggplot2::geom_histogram(bins = 28L, fill = "#CA225E", alpha = 0.78, color = "white") +
+    ggplot2::geom_vline(xintercept = ate_val, linetype = "dashed", color = "#1E1E2E", linewidth = 0.85) +
+    ggplot2::labs(
+      title = "Out-of-Fold CATE Distribution",
+      subtitle = sprintf(
+        "Mean CATE = %.3f (SD = %.3f) | BLP Heterogeneity p = %s",
+        ate_val, stats::sd(object$tau_oof), p_txt
+      ),
+      x = "Predicted Individual Treatment Effect tau(V)",
+      y = "Count"
+    ) +
+    ggplot2::theme_minimal()
+}
+
 #' Simulate a Synthetic Causal Cohort with Exact Ground-Truth Parameters
 #'
 #' Generates a realistic biomedical cohort featuring nonlinear confounding,
@@ -260,6 +396,11 @@ qini_auc <- function(cate_fit, pseudo_outcome = NULL) {
 #'   `lab_3`, `a`, `y`, and optionally `delta` and `clinic_id`, plus an attribute
 #'   `"truth"` containing `true_ate`, `true_att`, `true_atc`, `true_rr`,
 #'   `true_or`, `true_shift_1`, and `true_cate`.
+#'
+#' @examples
+#' cohort <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)
+#' attr(cohort, "truth")$true_ate
+#'
 #' @export
 sim_causal_cohort <- function(n = 500L,
                               outcome_type = c("continuous", "binary"),

@@ -20,3 +20,12 @@ A 1-row \code{\link[tibble:tibble]{tibble::tibble()}} with columns \code{.metric
 Evaluates treatment-prioritization performance of predicted CATE scores
 against doubly-robust pseudo-outcomes (or observed outcomes).
 }
+\examples{
+df <- sim_causal_cohort(n = 150, outcome_type = "continuous", seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+  set_resamples(v_folds = 3L) |>
+  fit(df)
+cate <- fit_cate(fit, v_folds = 3L)
+qini_auc(cate)
+
+}

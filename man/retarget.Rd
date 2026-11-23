@@ -44,7 +44,7 @@ switch estimands, or inspect subgroup effects interactively with zero ML
 refitting.
 }
 \examples{
-df <- sim_causal_cohort(n = 150, seed = 1)
+df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 1)
 fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
   set_resamples(v_folds = 3L) |>
   fit(df)

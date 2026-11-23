@@ -46,3 +46,8 @@ optional cluster correlation, and optional positivity stress. Attaches
 ground-truth causal estimands as \code{"truth"} attribute metadata for simulation
 benchmarking and verification.
 }
+\examples{
+cohort <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)
+attr(cohort, "truth")$true_ate
+
+}
