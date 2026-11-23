@@ -24,47 +24,25 @@ knitr::opts_chunk$set(
 [![pkgdown](https://img.shields.io/badge/docs-pkgdown-CA225E.svg)](https://perceptioninterval.github.io/tidytmle/)
 <!-- badges: end -->
 
-`tidytmle` brings **Targeted Maximum Likelihood Estimation (CV-TMLE)** to the [tidymodels](https://www.tidymodels.org/) ecosystem. Rather than forcing causal estimation into a prediction-only `parsnip` model, `tidytmle` orchestrates `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick` so you can plug any machine learning pipeline into a doubly robust, locally efficient causal estimator.
+`tidytmle` brings **Cross-Fitted Targeted Maximum Likelihood Estimation (CV-TMLE)** to the [tidymodels](https://www.tidymodels.org/) ecosystem as a clear, human-centered causal inference workflow: declare your causal roles with `tidyselect`, plug in any `workflows` or `workflowsets` machine-learning models, audit your fit visually, and generate copy-paste-ready Methods and Results prose for papers or blogs.
 
-## Which Function Do I Need?
+## Why TMLE? The 30-Second Intuition
 
-| What you want to do | One-line `tidytmle` call |
+Imagine running a clinical trial using messy real-world observational data—you cannot randomly assign treatment after the fact, so treated and comparison groups differ in age, severity, and baseline risk. **TMLE resolves confounding in two intuitive stages ("Predict, Then Target"):**
+
+1. **Build Every Person's Digital Twin ($\bar{Q}^0$):** Cross-validated machine learning (*Super Learner*) predicts each person's expected outcome *if treated* vs. *if untreated*, holding all measured characteristics fixed. Because prediction models minimize global accuracy rather than causal contrast bias, a small residual bias usually remains.
+2. **Re-Balance the Scale ($\epsilon$ Calibration):** A second model estimates who tended to receive treatment ($g$) and nudges the initial predictions just enough along the optimal bias-removal path (guided by the *Clever Covariate* $H$) until weighted confounding bias cancels cleanly to zero.
+
+Think of this as wearing **Two Safety Nets (Double Robustness)**: your causal estimate remains trustworthy if *either* the outcome model $\bar{Q}$ *or* the propensity model $g$ gets the confounding structure right—while staying naturally bounded and locally efficient when both do well.
+
+| Question in Plain English | One-Line `tidytmle` Call |
 |---|---|
-| Estimate ATE, Risk Ratio, & Odds Ratio safely | `tmle_spec(y, a, c(age, sex, lab_1), estimand = c("ate", "rr", "or")) \|> fit(df)` |
-| Handle missing outcomes automatically | Omit `censoring` when `y` has `NA`s (or pass `censoring = delta`) |
-| Plug in a custom `workflow_set` Super Learner | `set_outcome_learners(wf_set) \|> set_treatment_learners(wf_set)` |
-| Account for clinic clusters or survey weights | Pass `id = clinic_id` and `weights = survey_wt` inside `tmle_spec()` |
-| Read a plain-English interpretation & health audit | `summary(fit)` or `explain_tmle(fit)` |
-| Test stricter positivity bounds or subgroups instantly | `retarget(fit, g_bounds = c(0.05, 0.95), subgroup = age >= 65)` |
-| Inspect a 4-panel visual audit dashboard | `autoplot(fit, type = "dashboard")` |
-| Shift a continuous dose without extrapolating | `tmle_spec(y, dose, c(...), estimand = shift(1.0)) \|> fit(df)` |
-| Estimate heterogeneous treatment effects (CATE) | `fit_cate(fit)` then `predict(cate, new_data)` or `qini_auc(cate)` |
-
-## Why TMLE? The 60-Second Intuition
-
-Standard machine learning regression (**G-computation**) minimizes *global* prediction error rather than the bias-variance trade-off for a causal treatment effect—leaving residual confounding bias and invalid confidence intervals. Conversely, **inverse-probability weighting (IPTW)** discards outcome modeling and blows up in variance whenever propensity scores approach `0` or `1` (*positivity violations*).
-
-**TMLE resolves both weaknesses with a simple two-stage philosophy: *"Predict, Then Target."*** (Schuler & Rose, 2017; Luque-Fernandez et al., 2018; van der Laan & Rubin, 2006):
-
-| Estimator | What It Models | Key Trade-off |
-|---|---|---|
-| **G-Computation** | Outcome $\bar{Q}^0(A, W) = E[Y \mid A, W]$ | Optimizing global outcome accuracy leaves slow-converging bias in causal contrasts. |
-| **IPTW Weighting** | Propensity $g(W) = P(A = 1 \mid W)$ | Ignores outcome structure; unstable variance when $g(W)$ is near `0` or `1`. |
-| **Targeted MLE (`tidytmle`)** | **Both** $\bar{Q}^0(A, W)$ and $g(W)$, then *fluctuates* $\bar{Q}^0 \mapsto \bar{Q}^*$ | **Doubly robust** (consistent if *either* model is right), **locally efficient**, and **bounded** inside natural outcome limits. |
-
-## The 5-Step TMLE Recipe & Decoder Ring
-
-Every TMLE fit executes five concrete steps mapped cleanly to `augment(fit)` and `glance(fit)` columns:
-
-| Step | What Happens Under the Hood | `tidytmle` Columns |
-|---|---|---|
-| **1. Initial Outcome Fit ($\bar{Q}^0$)** | Cross-validated Super Learner predicts counterfactual outcomes under treatment and control. | `.q1_init`, `.q0_init` |
-| **2. Propensity Fit ($g$)** | Classification Super Learner estimates $P(A = 1 \mid W)$ (strictly excluding $A$ and $Y$ from predictors) and applies adaptive bounds. | `.g_hat`, `.g_trunc`, `pct_truncated` |
-| **3. Clever Covariate ($H$)** | Constructs $H_n(A, W) = \frac{A}{g_n(W)} - \frac{1-A}{1-g_n(W)}$ from the Efficient Influence Function (EIF) to spotlight potential confounding bias. | `.clever_h` |
-| **4. Fluctuation ($\epsilon$)** | Fits a weighted-intercept logistic submodel with $\text{logit}(\bar{Q}^0)$ as offset and $|H_n|$ weights, nudging predictions along the optimal bias-removal path. | `epsilon`, `.q1_star`, `.q0_star`, `plugin_vs_tmle_shift` |
-| **5. Substitution & EIF Inference** | Averages targeted counterfactuals and computes asymptotic SEs from the EIF variance (`mean_eif` must be $\approx 0$). | `.eif`, `.eif_leverage`, `mean_eif` |
-
-For a full worked visual walkthrough—including a live demonstration of **double robustness**—read [TMLE Intuition: A Step-by-Step Visual Guide](articles/tmle-intuition.html) (or `vignette("tmle-intuition", package = "tidytmle")`).
+| *What is the causal effect of `a` on `y`?* | `tmle_spec(y, a, c(age, sex, starts_with("lab_")), estimand = c("ate", "rr")) \|> fit(df)` |
+| *Can I trust these numbers?* | `check_tmle(fit)` and `autoplot(fit, type = "dashboard")` |
+| *What if I change my mind on bounds or subgroups?* | `retarget(fit, g_bounds = c(0.05, 0.95), subgroup = age >= 65)` *(zero ML refitting)* |
+| *How do I write this up for a paper or blog?* | `summary(fit)` or `report_tmle(fit, outcome_label = "recovery", treatment_label = "therapy")` |
+| *What happens if we shift a continuous dose by +1?* | `tmle_spec(y, dose, c(...), estimand = shift(1.0)) \|> fit(df)` |
+| *Who benefits most from treatment?* | `fit_cate(fit)` then `autoplot(cate, type = "qini")` and `predict(cate, new_data)` |
 
 ## Installation
 
@@ -75,11 +53,11 @@ For a full worked visual walkthrough—including a live demonstration of **doubl
 pak::pak("perceptioninterval/tidytmle")
 ```
 
-## Example
+## The 4-Step Human Workflow: Question $\rightarrow$ Estimate $\rightarrow$ Audit $\rightarrow$ Paper
 
-Start with a 3-line cross-fitted specification using `tidyselect` causal roles and simultaneous multi-estimand inference, then call `summary(fit)` for a plain-English causal interpretation and health check:
+### 1. Ask your question & estimate causal effects
 
-```{r example, message = FALSE, fig.width = 7, fig.height = 4.2, fig.alt = "Mirrored propensity score overlap plot generated by autoplot(fit, type = 'overlap')"}
+```{r effect-example, message = FALSE, fig.width = 7.4, fig.height = 4.5, fig.alt = "Tufte-styled causal effect forest plot showing targeted TMLE ATE, Risk Ratio, and Odds Ratio with 95% confidence intervals"}
 library(tidytmle)
 
 df <- sim_causal_cohort(n = 350, outcome_type = "binary", seed = 42)
@@ -93,24 +71,46 @@ fit <- tmle_spec(
   set_resamples(v_folds = 5L) |>
   fit(data = df)
 
-summary(fit)
-
-# Simultaneous uniform confidence bands & VanderWeele-Ding E-values
-tidy(fit, simultaneous = TRUE, e_value = TRUE)
-
-# Instant retargeting without ML refitting
-retarget(fit, g_bounds = c(0.05, 0.95)) |>
-  tidy()
-
-# Propensity overlap diagnostic: check positivity across treated & control arms
-autoplot(fit, type = "overlap")
+# Publication-ready causal effect plot (default autoplot type = "effect")
+autoplot(fit)
 ```
 
-Inspect how much the fluctuation step adjusted initial G-computation predictions—or view all four visual causal checks together in a single 2×2 dashboard—using `autoplot()`:
+### 2. Audit comparability, calibration, balance, and stability
 
-```{r targeting-example, message = FALSE, fig.width = 9.5, fig.height = 6.8, fig.alt = "4-panel TMLE Causal Audit Dashboard showing propensity overlap, targeting step contrasts, positivity sensitivity sweep, and covariate balance Love plot"}
+Run `check_tmle(fit)` for a 5-pillar traffic-light health check, inspect the 4-panel visual dashboard, or stress-test stricter positivity bounds and subgroups instantly via `retarget()`:
+
+```{r audit-example, message = FALSE, fig.width = 9.8, fig.height = 7.0, fig.alt = "4-panel Tufte-styled TMLE Causal Audit Dashboard showing propensity overlap, targeting adjustment, positivity sensitivity sweep, and confounder balance dumbbell plot"}
+check_tmle(fit)
+
 autoplot(fit, type = "dashboard", g_grid = seq(0.01, 0.12, by = 0.02))
+
+# Test stricter overlap bounds in milliseconds without refitting ML models
+retarget(fit, g_bounds = c(0.05, 0.95)) |>
+  tidy(simultaneous = TRUE, e_value = TRUE)
 ```
+
+### 3. Generate understood Methods, Results, and Assumptions prose
+
+```{r report-example, message = FALSE}
+report_tmle(
+  fit,
+  outcome_label = "clinical recovery",
+  treatment_label = "targeted therapy",
+  style = "plain"
+)
+```
+
+## Everyday Concept $\rightarrow$ TMLE Decoder Ring
+
+| Everyday Idea | Technical TMLE Name | Where to See It in `tidytmle` |
+|---|---|---|
+| Baseline digital-twin predictions | Initial outcome model $\bar{Q}^0(a, W)$ | `.q1_init`, `.q0_init` in `augment(fit)` |
+| Likelihood of receiving treatment | Propensity score $g(W)$ | `.g_hat`, `.g_trunc` in `augment(fit)` |
+| How much each person needs re-balancing | Clever Covariate $H_n(A, W)$ | `.clever_h` in `augment(fit)` |
+| Size of the bias-removal nudge | Fluctuation parameter $\epsilon$ | `epsilon` & `plugin_vs_tmle_shift` in `glance(fit)` |
+| Uncertainty & outlier influence | Efficient Influence Function $D_i^*$ | `.eif` & `.eif_leverage` in `augment(fit)` |
+
+For a full worked visual walkthrough—including a live test of **both safety nets (double robustness)**—read [TMLE Intuition: A Step-by-Step Visual Guide](articles/tmle-intuition.html) (`vignette("tmle-intuition", package = "tidytmle")`).
 
 ## Foundational Literature
 
@@ -119,6 +119,7 @@ autoplot(fit, type = "dashboard", g_grid = seq(0.01, 0.12, by = 0.02))
 * Zheng, W., & van der Laan, M. J. (2011). Cross-validated targeted minimum-loss-based estimation. *Targeted Learning*, Springer.
 * Petersen, M. L., et al. (2012). Diagnosing and responding to violations in the positivity assumption. *Stat. Methods Med. Res.*, 21(1), 31–54.
 * Schuler, M. S., & Rose, S. (2017). Targeted maximum likelihood estimation for causal inference in observational studies. *Am. J. Epidemiol.*, 185(1), 65–73.
+* VanderWeele, T. J., & Ding, P. (2017). Sensitivity analysis in observational research: Introducing the E-value. *Ann. Intern. Med.*, 167(4), 268–274.
 * Luque-Fernandez, M. A., et al. (2018). Targeted maximum likelihood estimation for a binary treatment: A tutorial. *Stat. Med.*, 37(16), 2530–2546.
 * Díaz, I., Williams, N., Hoffman, K. L., & Schenck, E. J. (2021). Nonparametric causal effects based on longitudinal modified treatment policies. *JASA*, 118(542), 846–857.
 * Kennedy, E. H. (2023). Towards optimal doubly robust estimation of heterogeneous causal effects. *Electron. J. Stat.*, 17(2), 3008–3049.

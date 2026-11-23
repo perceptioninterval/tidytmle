@@ -11,20 +11,20 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 7,
-  fig.height = 4.6
+  fig.width = 7.4,
+  fig.height = 4.9
 )
 ```
 
-For publication-grade pipelines, `tidytmle` accepts custom `recipes`, `parsnip` model specifications, `workflows`, and `workflowsets::workflow_set` ensembles directly—while enforcing causal guardrails automatically.
+Real-world observational cohorts rarely arrive clean: you may have skewed predictors, clinic clusters, survey sampling weights, selective dropout, and preferred `tidymodels` feature engineering pipelines. `tidytmle` lets you plug in custom `recipes`, `parsnip` model specifications, `workflows`, and `workflowsets::workflow_set` ensembles directly—while enforcing causal hygiene automatically.
 
-> **Why cross-fitting and Super Learning matter here:** Following Zheng & van der Laan (2011), pairing diverse candidate algorithms inside a single cross-validated Super Learner reduces the risk of model misspecification while out-of-fold predictions eliminate Donsker-class restrictions when using random forests, regularized regressions, or boosted trees.
+> **Why cross-fitting and Super Learning matter here:** Combining diverse algorithms inside a cross-validated Super Learner lowers the chance of functional-form misspecification, while out-of-fold predictions keep standard errors honest without classical Donsker smoothness restrictions (Zheng & van der Laan, 2011).
 
 ## Role-Aware Recipe Splitting & `workflow_set` Super Learning
 
-A common source of subtle bugs in manual causal ML pipelines is accidentally leaking the treatment column $A$ or cluster ID into the propensity model $g(W)$ when reusing a single `recipe(y ~ ., data = df)`. `tidytmle` automatically clones and adapts the preprocessing recipe per nuisance factor (`Q`, `g`, and `C`), guaranteeing that $A$ is retained in $Q(A, W)$ and $C(A, W)$ while strictly excluded from $g$'s predictors:
+A subtle bug in DIY causal ML code is leaking treatment assignment `a` or cluster IDs (`clinic_id`) into the propensity model `g(W)` when reusing a single `recipe(y ~ ., data = df)`. `tidytmle` clones and adapts your recipe per nuisance role (`Q`, `g`, and `C`) so `a` stays in `Q(A, W)` and `C(A, W)` while strictly blocked from `g(W)`'s predictors:
 
-```{r level2, warning = FALSE, message = FALSE, fig.alt = "Faceted bar chart comparing cross-validated risk and Super Learner metalearner weights across base workflows"}
+```{r level2, warning = FALSE, message = FALSE, fig.width = 7.8, fig.height = 5.4, fig.alt = "Paired horizontal bar chart showing Super Learner ensemble weights alongside cross-validated error for Outcome (Q), Treatment (g), and Missingness (C)"}
 library(tidytmle)
 library(recipes)
 library(parsnip)
@@ -74,17 +74,16 @@ fit_l2 <- tmle_spec(
   fit(data = df)
 
 fit_l2
-extract_sl_weights(fit_l2)
 autoplot(fit_l2, type = "learners")
 ```
 
-## Automatic Informative-Missingness Handling & Case Weights
+## Selective Dropout (`NA` Outcomes), Cluster SEs & Survey Weights
 
-When outcomes are missing (`NA`) selectively (for instance, sicker patients dropping out of follow-up), silently listwise-deleting incomplete rows introduces **selection bias**. When `censoring` is omitted and `outcome` contains `NA`s, `tidytmle` automatically creates an observation indicator $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ and models informative missingness $C(A, W) = P(\Delta = 1 \mid A, W)$, incorporating $1 / C_n(A, W)$ directly into the Clever Covariate.
+Dropping patients whose follow-up outcomes are missing (`NA`) creates **selection bias** whenever sicker participants drop out more often. When `outcome` contains `NA`s and `censoring` is omitted, `tidytmle` automatically introduces $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$, models informative missingness $C(A, W) = P(\Delta = 1 \mid A, W)$, and folds inverse-observation weights directly into the Clever Covariate.
 
-Native `hardhat::importance_weights()` and `hardhat::frequency_weights()` are likewise propagated through both nuisance workflows and the cluster-robust EIF variance estimator, and `autoplot(fit, type = "balance")` checks whether IPW/TMLE weighting brings absolute standardized mean differences (`|SMD|`) below the `0.10` balance guideline:
+Native `hardhat::importance_weights()` and `hardhat::frequency_weights()` are likewise carried cleanly through both nuisance workflows and cluster-robust standard errors:
 
-```{r missingness, fig.alt = "Weighted covariate balance Love plot comparing unadjusted vs TMLE/IPW standardized mean differences"}
+```{r missingness, fig.alt = "Dumbbell plot comparing confounder imbalance before and after IPW/TMLE weighting"}
 df_miss <- dplyr::select(df, -delta)
 df_miss$survey_wt <- hardhat::importance_weights(runif(nrow(df_miss), 0.7, 1.5))
 
@@ -98,7 +97,8 @@ fit_auto_c <- tmle_spec(
   set_resamples(v_folds = 5L) |>
   fit(data = df_miss)
 
-summary(fit_auto_c)
-glance(fit_auto_c)
+check_tmle(fit_auto_c)
 autoplot(fit_auto_c, type = "balance")
 ```
+
+Notice how confounding imbalance drops cleanly into the green `< 0.10` balanced band—ready to generate paper prose via `report_tmle(fit_auto_c)`.

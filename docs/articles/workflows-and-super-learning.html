@@ -76,38 +76,31 @@
 
     
     
-<p>For publication-grade pipelines, <code>tidytmle</code> accepts custom
+<p>Real-world observational cohorts rarely arrive clean: you may have
+skewed predictors, clinic clusters, survey sampling weights, selective
+dropout, and preferred <code>tidymodels</code> feature engineering
+pipelines. <code>tidytmle</code> lets you plug in custom
 <code>recipes</code>, <code>parsnip</code> model specifications,
 <code>workflows</code>, and <code><a href="https://workflowsets.tidymodels.org/reference/workflow_set.html" class="external-link">workflowsets::workflow_set</a></code>
-ensembles directly—while enforcing causal guardrails automatically.</p>
+ensembles directly—while enforcing causal hygiene automatically.</p>
 <blockquote>
 <p><strong>Why cross-fitting and Super Learning matter here:</strong>
-Following Zheng &amp; van der Laan (2011), pairing diverse candidate
-algorithms inside a single cross-validated Super Learner reduces the
-risk of model misspecification while out-of-fold predictions eliminate
-Donsker-class restrictions when using random forests, regularized
-regressions, or boosted trees.</p>
+Combining diverse algorithms inside a cross-validated Super Learner
+lowers the chance of functional-form misspecification, while out-of-fold
+predictions keep standard errors honest without classical Donsker
+smoothness restrictions (Zheng &amp; van der Laan, 2011).</p>
 </blockquote>
 <div class="section level2">
 <h2 id="role-aware-recipe-splitting-workflow_set-super-learning">Role-Aware Recipe Splitting &amp; <code>workflow_set</code> Super
 Learning<a class="anchor" aria-label="anchor" href="#role-aware-recipe-splitting-workflow_set-super-learning"></a>
 </h2>
-<p>A common source of subtle bugs in manual causal ML pipelines is
-accidentally leaking the treatment column
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
-or cluster ID into the propensity model
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g(W)</annotation></semantics></math>
-when reusing a single <code>recipe(y ~ ., data = df)</code>.
-<code>tidytmle</code> automatically clones and adapts the preprocessing
-recipe per nuisance factor (<code>Q</code>, <code>g</code>, and
-<code>C</code>), guaranteeing that
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
-is retained in
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Q</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">Q(A, W)</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">C(A, W)</annotation></semantics></math>
-while strictly excluded from
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>’s
+<p>A subtle bug in DIY causal ML code is leaking treatment assignment
+<code>a</code> or cluster IDs (<code>clinic_id</code>) into the
+propensity model <code>g(W)</code> when reusing a single
+<code>recipe(y ~ ., data = df)</code>. <code>tidytmle</code> clones and
+adapts your recipe per nuisance role (<code>Q</code>, <code>g</code>,
+and <code>C</code>) so <code>a</code> stays in <code>Q(A, W)</code> and
+<code>C(A, W)</code> while strictly blocked from <code>g(W)</code>’s
 predictors:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://perceptioninterval.github.io/tidytmle/">tidytmle</a></span><span class="op">)</span></span>
@@ -162,54 +155,42 @@ predictors:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (observed = 280) | 5-fold CV-TMLE | logistic fluctuation |</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">2.37s | 15 clusters</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (280 observed) | 5-fold CV-TMLE | logistic calibration | 2.22s</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">| 15 clusters</span></span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Causal Estimates </span></span>
-<span><span class="co">#&gt; ATE est = 1.7415 (SE = 0.1383) 95% CI [1.4704, 2.0126] p = &lt; 0.0001</span></span>
+<span><span class="co">#&gt; ── Causal Effect Estimates </span></span>
+<span><span class="co">#&gt; ATE est = 1.7415 (SE = 0.1383) 95% CI [1.4704, 2.0126] p &lt; 0.0001</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Nuisance Super Learners </span></span>
-<span><span class="co">#&gt; Q Super Learner: R2 = 0.679 (weights: base_glm 1.00)</span></span>
-<span><span class="co">#&gt; g Super Learner: AUC = 0.633 (weights: logistic_reg_glm 1.00)</span></span>
-<span><span class="co">#&gt; C Super Learner: AUC = 0.661 (weights: glmnet 1.00)</span></span>
+<span><span class="co">#&gt; ── Nuisance Models (Cross-Validated Super Learner) </span></span>
+<span><span class="co">#&gt; Outcome (Q): R2 = 0.679 (weights: base_glm 100%)</span></span>
+<span><span class="co">#&gt; Treatment (g): AUC = 0.633 (weights: logistic_reg_glm 100%)</span></span>
+<span><span class="co">#&gt; Missingness (C): AUC = 0.661 (weights: glmnet 100%)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Diagnostics &amp; Targeting Shift </span></span>
-<span><span class="co">#&gt; Targeting shift (TMLE - plug-in): +0.0260 (epsilon = 0.0148)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All checks healthy: mean EIF = -1.05e-15, truncated = 0.6%, max EIF leverage = 2.8%.</span></span>
-<span><span class="fu"><a href="../reference/extract_sl_weights.html">extract_sl_weights</a></span><span class="op">(</span><span class="va">fit_l2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 3</span></span></span>
-<span><span class="co">#&gt;   nuisance learner          weight</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Q        base_glm              1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Q        base_enet             0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> g        logistic_reg_glm      1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> C        glm                   0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> C        glmnet                1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> C        ranger                0</span></span>
+<span><span class="co">#&gt; ── Causal Health &amp; Bias Adjustment </span></span>
+<span><span class="co">#&gt; Bias calibration (TMLE - initial ML): +0.0260 (epsilon = 0.0148)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All core checks healthy: mean EIF = -1.05e-15, clipped = 0.6%, top leverage = 2.8%.</span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">Next: summary(fit) | check_tmle(fit) | report_tmle(fit) |</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">autoplot(fit)</span></span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit_l2</span>, type <span class="op">=</span> <span class="st">"learners"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflows-and-super-learning_files/figure-html/level2-1.png" alt="Faceted bar chart comparing cross-validated risk and Super Learner metalearner weights across base workflows" width="672"></p>
+<p><img src="workflows-and-super-learning_files/figure-html/level2-1.png" alt="Paired horizontal bar chart showing Super Learner ensemble weights alongside cross-validated error for Outcome (Q), Treatment (g), and Missingness (C)" width="748.8"></p>
 </div>
 <div class="section level2">
-<h2 id="automatic-informative-missingness-handling-case-weights">Automatic Informative-Missingness Handling &amp; Case Weights<a class="anchor" aria-label="anchor" href="#automatic-informative-missingness-handling-case-weights"></a>
+<h2 id="selective-dropout-na-outcomes-cluster-ses-survey-weights">Selective Dropout (<code>NA</code> Outcomes), Cluster SEs &amp;
+Survey Weights<a class="anchor" aria-label="anchor" href="#selective-dropout-na-outcomes-cluster-ses-survey-weights"></a>
 </h2>
-<p>When outcomes are missing (<code>NA</code>) selectively (for
-instance, sicker patients dropping out of follow-up), silently
-listwise-deleting incomplete rows introduces <strong>selection
-bias</strong>. When <code>censoring</code> is omitted and
-<code>outcome</code> contains <code>NA</code>s, <code>tidytmle</code>
-automatically creates an observation indicator
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mo>=</mo><mi>𝕀</mi><mo stretchy="false" form="prefix">(</mo><mo>¬</mo><mtext mathvariant="normal">is.na</mtext><mo stretchy="false" form="prefix">(</mo><mi>Y</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\Delta = \mathbb{I}(\neg\text{is.na}(Y))</annotation></semantics></math>
-and models informative missingness
+<p>Dropping patients whose follow-up outcomes are missing
+(<code>NA</code>) creates <strong>selection bias</strong> whenever
+sicker participants drop out more often. When <code>outcome</code>
+contains <code>NA</code>s and <code>censoring</code> is omitted,
+<code>tidytmle</code> automatically introduces
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mo>=</mo><mi>𝕀</mi><mo stretchy="false" form="prefix">(</mo><mo>¬</mo><mtext mathvariant="normal">is.na</mtext><mo stretchy="false" form="prefix">(</mo><mi>Y</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\Delta = \mathbb{I}(\neg\text{is.na}(Y))</annotation></semantics></math>,
+models informative missingness
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Δ</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">C(A, W) = P(\Delta = 1 \mid A, W)</annotation></semantics></math>,
-incorporating
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><msub><mi>C</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">1 / C_n(A, W)</annotation></semantics></math>
-directly into the Clever Covariate.</p>
+and folds inverse-observation weights directly into the Clever
+Covariate.</p>
 <p>Native <code><a href="https://hardhat.tidymodels.org/reference/importance_weights.html" class="external-link">hardhat::importance_weights()</a></code> and
-<code><a href="https://hardhat.tidymodels.org/reference/frequency_weights.html" class="external-link">hardhat::frequency_weights()</a></code> are likewise propagated
-through both nuisance workflows and the cluster-robust EIF variance
-estimator, and <code>autoplot(fit, type = "balance")</code> checks
-whether IPW/TMLE weighting brings absolute standardized mean differences
-(<code>|SMD|</code>) below the <code>0.10</code> balance guideline:</p>
+<code><a href="https://hardhat.tidymodels.org/reference/frequency_weights.html" class="external-link">hardhat::frequency_weights()</a></code> are likewise carried cleanly
+through both nuisance workflows and cluster-robust standard errors:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_miss</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">df</span>, <span class="op">-</span><span class="va">delta</span><span class="op">)</span></span>
 <span><span class="va">df_miss</span><span class="op">$</span><span class="va">survey_wt</span> <span class="op">&lt;-</span> <span class="fu">hardhat</span><span class="fu">::</span><span class="fu"><a href="https://hardhat.tidymodels.org/reference/importance_weights.html" class="external-link">importance_weights</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df_miss</span><span class="op">)</span>, <span class="fl">0.7</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span>
@@ -225,36 +206,23 @@ whether IPW/TMLE weighting brings absolute standardized mean differences
 <span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">df_miss</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> Detected 70 missing outcomes (20%); automatically introducing missingness indicator <span style="color: #00BB00;">.delta</span> and modeling C(A, W) = P(Delta = 1 | A, W) instead of listwise deletion.</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_auto_c</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/check_tmle.html">check_tmle</a></span><span class="op">(</span><span class="va">fit_auto_c</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── <span style="font-weight: bold;">Plain-English TMLE Summary</span> ──</span></span>
+<span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Causal Health Audit (5/5 Passed)</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Sample: 350 rows (280 observed outcomes) | 5-fold CV-TMLE</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = -2.54e-16): Bias-removal step converged cleanly (targeting shift = +0.1437, epsilon = 0.0215).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Comparison Overlap (Positivity)</span> (0.0% clipped | ESS 123 vs 127): 0.0% of propensity scores hit bounds [0.150, 0.850] (ESS: treated = 122.6, control = 126.9).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Confounder Balance</span> (max |SMD| 0.421 -&gt; 0.069): Weighted confounders are well balanced (max |SMD| fell from 0.421 to 0.069, below 0.10).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 4.1% variance): No single row dominates uncertainty (row 235 holds 4.1% of EIF variance, &lt;= 10%).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q R2 = 0.700 | g AUC = 0.614): Cross-validated Super Learners captured real structure (Q R2 = 0.700, treatment AUC = 0.614).</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 1. What the Causal Estimates Mean </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> ATE (across the full population): Treatment increases the expected outcome by 1.5620 units (95% CI [1.2910, 1.8330], p = &lt; 0.0001).</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 2. What the Targeting Step Did </span></span>
-<span><span class="co">#&gt; Fluctuating along the Clever Covariate shifted the initial ML plug-in</span></span>
-<span><span class="co">#&gt; estimate by +0.1437 (epsilon = 0.0215) to remove residual confounding</span></span>
-<span><span class="co">#&gt; bias.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 3. Statistical Health Check &amp; Next Steps </span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Convergence: EIF estimating equation solved (mean EIF = -2.54e-16).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Positivity: 0.0% clipped at g_bounds [0.150, 0.850] (ESS: treated = 122.6, control = 126.9).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Influence: No single observation dominates variance (max EIF leverage = 4.1%).</span></span>
-<span><span class="fu"><a href="https://generics.r-lib.org/reference/glance.html" class="external-link">glance</a></span><span class="op">(</span><span class="va">fit_auto_c</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 19</span></span></span>
-<span><span class="co">#&gt;       n n_observed n_clusters v_folds cv_tmle epsilon  mean_eif</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   350        280         15       5 TRUE     0.021<span style="text-decoration: underline;">5</span> -<span style="color: #BB0000;">2.54</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-16</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 12 more variables: plugin_vs_tmle_shift &lt;dbl&gt;, g_min &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   g_max &lt;dbl&gt;, g_bound_low &lt;dbl&gt;, g_bound_high &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   pct_truncated &lt;dbl&gt;, ess_treated &lt;dbl&gt;, ess_control &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   max_eif_leverage &lt;dbl&gt;, q_metric &lt;dbl&gt;, g_auc &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   g_log_loss &lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">Verdict: Ready for interpretation. Generate paper prose with</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">report_tmle(fit).</span></span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit_auto_c</span>, type <span class="op">=</span> <span class="st">"balance"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="workflows-and-super-learning_files/figure-html/missingness-1.png" alt="Weighted covariate balance Love plot comparing unadjusted vs TMLE/IPW standardized mean differences" width="672"></p>
+<p><img src="workflows-and-super-learning_files/figure-html/missingness-1.png" alt="Dumbbell plot comparing confounder imbalance before and after IPW/TMLE weighting" width="710.4"></p>
+<p>Notice how confounding imbalance drops cleanly into the green
+<code>&lt; 0.10</code> balanced band—ready to generate paper prose via
+<code>report_tmle(fit_auto_c)</code>.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

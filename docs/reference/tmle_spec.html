@@ -184,12 +184,13 @@ tutorial. <em>Statistics in Medicine</em>, 37(16), 2530–2546.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Targeted Maximum Likelihood Estimation (TMLE) Specification</span> ──</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Outcome: <span style="color: #00BB00;">y</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Treatment: <span style="color: #00BB00;">a</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Covariates: <span style="color: #00BB00;">c(age, sex, starts_with("lab_"))</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Estimand(s): <span style="color: #0000BB;">"ate"</span>, <span style="color: #0000BB;">"rr"</span>, and <span style="color: #0000BB;">"or"</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> CV-TMLE: <span style="color: #0000BB;">TRUE</span> (10-fold)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Positivity bounds: <span style="color: #0000BB;">"adaptive"</span> | Fluctuation: <span style="color: #0000BB;">"logistic"</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Outcome to measure: <span style="color: #00BB00;">y</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Treatment / exposure: <span style="color: #00BB00;">a</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Confounders adjusted for: <span style="color: #00BB00;">c(age, sex, starts_with("lab_"))</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Causal question(s): <span style="color: #0000BB;">"ate"</span>, <span style="color: #0000BB;">"rr"</span>, and <span style="color: #0000BB;">"or"</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Cross-fitting: <span style="color: #0000BB;">TRUE</span> (10-fold out-of-sample)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">•</span> Safety guardrails: bounds = <span style="color: #0000BB;">"adaptive"</span> | calibration = <span style="color: #0000BB;">"logistic"</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Next: pass to fit(data = your_data) to estimate causal effects.</span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

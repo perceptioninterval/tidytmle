@@ -676,7 +676,8 @@ compute_single_estimand_inference <- function(est_name,
     if (psi1 <= 0 || psi0 <= 0) {
       cli::cli_abort(c(
         "Risk/Rate Ratio ({.val rr}) requires strictly positive expected potential outcomes E[Y(1)] and E[Y(0)].",
-        "x" = "Observed targeted means: E[Y(1)] = {round(psi1, 4)}, E[Y(0)] = {round(psi0, 4)}."
+        "x" = "Observed targeted means: E[Y(1)] = {round(psi1, 4)}, E[Y(0)] = {round(psi0, 4)}.",
+        "i" = "A ratio such as E[Y(1)] / E[Y(0)] is undefined or flips sign when outcomes cross zero; use {.code estimand = \"ate\"} for zero-centered/signed outcomes."
       ))
     }
     p1 <- psi1

@@ -40,9 +40,10 @@
     </div>
 
     <div class="section level2">
-      <h2 id="step-specification-causal-roles">Step 0 · Specification &amp; Causal Roles<a class="anchor" aria-label="anchor" href="#step-specification-causal-roles"></a></h2>
+      <h2 id="-ask-your-causal-question-compose-learners"></h2><li>Ask Your Causal Question &amp; Compose Learners</li>
 
-      <div class="section-desc"><p>Declare outcome, treatment, confounders, censoring, clusters, and case weights via tidyselect, and compose recipes, parsnip specs, workflows, or workflow_set Super Learners with built-in CV-TMLE and positivity guardrails.</p></div>
+
+      <div class="section-desc"><p>Declare outcomes, treatments, confounders, missingness indicators, clusters, and weights using tidyselect, and attach any recipes, parsnip specs, workflows, or workflow_set ensembles.</p></div>
 
 
     </div><div class="section level2">
@@ -87,9 +88,10 @@
         </dt>
         <dd>Build Default Nuisance Learner Library</dd>
       </dl></div><div class="section level2">
-      <h2 id="steps-estimation-instant-retargeting">Steps 1–5 · Estimation &amp; Instant Retargeting<a class="anchor" aria-label="anchor" href="#steps-estimation-instant-retargeting"></a></h2>
+      <h2 id="-estimate-stress-test-instantly"></h2><li>Estimate &amp; Stress-Test Instantly</li>
 
-      <div class="section-desc"><p>Run the “Predict, Then Target” CV-TMLE pipeline (fit) and re-run fluctuation, positivity bounds, estimands, or subgroups in milliseconds without refitting ML nuisance models (retarget), or target continuous exposures with Modified Treatment Policies (shift, scale_tx).</p></div>
+
+      <div class="section-desc"><p>Execute the cross-fitted “Predict, Then Target” estimator (fit), explore stricter bounds or subgroups without refitting ML models (retarget), or evaluate continuous dose policies (shift, scale_tx).</p></div>
 
 
     </div><div class="section level2">
@@ -116,9 +118,10 @@
         </dt>
         <dd>Modified Treatment Policy Constructors for Continuous Exposures</dd>
       </dl></div><div class="section level2">
-      <h2 id="inference-diagnostics-tidymodels-verbs">Inference, Diagnostics &amp; Tidymodels Verbs<a class="anchor" aria-label="anchor" href="#inference-diagnostics-tidymodels-verbs"></a></h2>
+      <h2 id="-understand-audit-report-results"></h2><li>Understand, Audit &amp; Report Results</li>
 
-      <div class="section-desc"><p>Decode every stage of the TMLE estimator via standard tidymodels S3 verbs, plain-English explanations (explain_tmle / summary), and visual diagnostics powered by the joint Efficient Influence Function (EIF).</p></div>
+
+      <div class="section-desc"><p>Run a 5-pillar causal trust audit (check_tmle), generate copy-paste-ready Methods and Results prose (report_tmle), inspect visual diagnostics (autoplot), and extract tidy tables with simultaneous CIs and E-values.</p></div>
 
 
     </div><div class="section level2">
@@ -128,16 +131,34 @@
 
       <dl><dt>
 
-          <code><a href="tidy.tmle_fit.html">tidy(<i>&lt;tmle_fit&gt;</i>)</a></code>
+          <code><a href="check_tmle.html">check_tmle()</a></code> <code><a href="check_tmle.html">print(<i>&lt;tmle_check&gt;</i>)</a></code>
 
         </dt>
-        <dd>Extract Tidy Causal Inference Table from a TMLE Fit</dd>
+        <dd>Audit a TMLE Fit Across 5 Causal Trust Pillars</dd>
+      </dl><dl><dt>
+
+          <code><a href="report_tmle.html">report_tmle()</a></code> <code><a href="report_tmle.html">as.character(<i>&lt;tmle_report&gt;</i>)</a></code> <code><a href="report_tmle.html">print(<i>&lt;tmle_report&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Generate Publication-Ready Methods, Results, and Assumptions Prose</dd>
+      </dl><dl><dt>
+
+          <code><a href="autoplot.tmle_fit.html">autoplot(<i>&lt;tmle_fit&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Human-Centered Causal Visual Diagnostics for a TMLE Fit</dd>
       </dl><dl><dt>
 
           <code><a href="explain_tmle.html">explain_tmle()</a></code> <code><a href="explain_tmle.html">summary(<i>&lt;tmle_fit&gt;</i>)</a></code>
 
         </dt>
         <dd>Plain-English Causal Interpretation &amp; Audit for a TMLE Fit</dd>
+      </dl><dl><dt>
+
+          <code><a href="tidy.tmle_fit.html">tidy(<i>&lt;tmle_fit&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Extract Tidy Causal Inference Table from a TMLE Fit</dd>
       </dl><dl><dt>
 
           <code><a href="glance.tmle_fit.html">glance(<i>&lt;tmle_fit&gt;</i>)</a></code>
@@ -162,16 +183,11 @@
 
         </dt>
         <dd>Extract Super Learner Metalearner Weights Across Nuisance Models</dd>
-      </dl><dl><dt>
-
-          <code><a href="autoplot.tmle_fit.html">autoplot(<i>&lt;tmle_fit&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Diagnostic Plots for a TMLE Fit</dd>
       </dl></div><div class="section level2">
-      <h2 id="heterogeneous-treatment-effects-cate-simulation">Heterogeneous Treatment Effects (CATE) &amp; Simulation<a class="anchor" aria-label="anchor" href="#heterogeneous-treatment-effects-cate-simulation"></a></h2>
+      <h2 id="-individualized-effects-cate-synthetic-benchmarks"></h2><li>Individualized Effects (CATE) &amp; Synthetic Benchmarks</li>
 
-      <div class="section-desc"><p>Doubly Robust CATE learning, Qini uplift evaluation, CATE diagnostics, and synthetic causal benchmarking cohorts.</p></div>
+
+      <div class="section-desc"><p>Estimate who benefits most via Doubly Robust CATE regression, evaluate treatment prioritization with Qini uplift curves, and benchmark workflows against known ground truth.</p></div>
 
 
     </div><div class="section level2">

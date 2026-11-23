@@ -11,18 +11,23 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 7,
-  fig.height = 4.6
+  fig.width = 7.4,
+  fig.height = 4.7
 )
 ```
 
-Beyond binary point-treatment effects, `tidytmle` supports **Modified Treatment Policies (LMTP)** (Díaz et al., 2021) for continuous exposures and **Doubly Robust Conditional Average Treatment Effect (DR-Learner CATE)** estimation (Kennedy, 2023).
+Not every real-world decision is binary *"treat everyone vs. treat no one."* Often you want to know:
 
-## Continuous Exposures via `shift()` and `scale_tx()`
+1. **Realistic Dose Shifts (`shift()`, `scale_tx()`):** What would happen if everyone received `+1` unit higher dose—or `90%` of their current dose—without extrapolating to impossible extremes?
+2. **Who Benefits Most (`fit_cate()`):** Which subgroups gain the largest benefit from treatment, and how much uplift do we capture by prioritizing high-benefit individuals?
 
-Asking *"what if every patient received dose = 0 vs. dose = 10?"* often forces impossible extrapolations for continuous exposures. Modified Treatment Policies solve this by shifting each person's observed exposure realistically (e.g., `+1` unit or `90%` of current dose). Use `shift(delta)` for additive policies $d(a, w) = a + \delta$ or `scale_tx(factor)` for multiplicative policies $d(a, w) = a \cdot \text{factor}$. Internally, `tidytmle` estimates the treatment density ratio nonparametrically using stacked cross-validated classification workflows without parametric normality assumptions:
+---
 
-```{r lmtp, message = FALSE, fig.alt = "Histogram of truncated Modified Treatment Policy density ratios r(A, W)"}
+## 1. Realistic Continuous Policies (`shift()` & `scale_tx()`)
+
+Following Díaz et al. (2021), Modified Treatment Policies replace hypothetical "set everyone to max dose" questions with realistic individual shifts: additive policies $d(a, w) = a + \delta$ (`shift()`) or multiplicative reductions $d(a, w) = a \cdot \text{factor}$ (`scale_tx()`). Internally, `tidytmle` estimates the induced density ratio nonparametrically using stacked cross-validated classification without assuming normality:
+
+```{r lmtp, message = FALSE, fig.alt = "Distribution of Modified Treatment Policy density-ratio weights centered near 1x"}
 library(tidytmle)
 
 df_cont <- sim_causal_cohort(
@@ -53,22 +58,23 @@ fit_scale <- tmle_spec(
   set_resamples(v_folds = 4L) |>
   fit(data = df_cont)
 
-summary(fit_shift)
 dplyr::bind_rows(tidy(fit_shift), tidy(fit_scale)) |>
   dplyr::mutate(true_value = c(truth_cont$true_shift_1, truth_cont$true_scale_09))
 
+check_tmle(fit_shift)
 autoplot(fit_shift, type = "overlap")
 ```
 
-## Heterogeneous Treatment Effects via `fit_cate()`
+---
 
-Because we never observe both $Y_i(1)$ and $Y_i(0)$ for the same person, we cannot simply regress $Y_i(1) - Y_i(0)$ on patient covariates directly. Kennedy's (2023) **Doubly Robust (DR) Learner** solves this by constructing a cross-fitted pseudo-outcome from the TMLE fit's Efficient Influence Function:
+## 2. Discovering Who Benefits Most (`fit_cate()`)
 
+Even when an average effect looks modest, treatment often helps some individuals substantially while doing little for others. Kennedy's (2023) **Doubly Robust (DR) Learner** turns each individual's Efficient Influence Function signal $\varphi_i$ into a cross-fitted target for any `tidymodels` regression workflow:
 $$\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right).$$
 
-Because $\mathbb{E}[\varphi_i \mid V_i] = \tau(V_i)$ whenever *either* $\bar{Q}$ or $g$ is consistently estimated, `fit_cate()` can feed $\varphi_i$ directly into any `tidymodels` regression workflow to estimate individual treatment effects $\hat{\tau}(V)$, run Chernozhukov et al.'s (2018) Best Linear Projection (BLP) heterogeneity test via `tidy()`, predict onto new cohorts via `predict()`, and quantify treatment-prioritization performance via `qini_auc()`:
+`fit_cate()` learns individualized effects $\hat{\tau}(V)$, tests formally whether heterogeneity is real via Chernozhukov et al.'s (2018) Best Linear Projection (`tidy(cate)`), predicts on new patients (`predict(cate, new_data)`), and measures targeting uplift via Qini curves (`qini_auc()`, `autoplot(cate, type = "qini")`):
 
-```{r cate, message = FALSE, fig.alt = c("Histogram of out-of-fold CATE predictions relative to the mean ATE", "Qini cumulative uplift curve shading incremental gain above random targeting")}
+```{r cate, message = FALSE, fig.alt = c("Histogram of predicted individualized treatment effects split at zero with dashed population mean", "Qini cumulative uplift curve comparing DR-Learner prioritization to random treatment order")}
 df_het <- sim_causal_cohort(n = 400, outcome_type = "continuous", seed = 303)
 truth_het <- attr(df_het, "truth")
 
@@ -84,11 +90,11 @@ cate <- fit_cate(fit_ate, covariates = c(age, sex, lab_1, lab_2, lab_3), v_folds
 tidy(cate)
 qini_auc(cate)
 
-# Out-of-fold CATE accuracy against true individual effects
+# Out-of-fold accuracy vs true individual treatment effects
 aug_cate <- augment(cate)
 cor(aug_cate$.cate, truth_het$true_cate)
 
-# Predict individualized treatment effects on new patients
+# Score individualized benefit for new patients
 predict(cate, new_data = head(df_het, 5L))
 
 autoplot(cate, type = "cate")

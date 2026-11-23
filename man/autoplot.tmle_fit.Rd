@@ -2,11 +2,11 @@
 % Please edit documentation in R/autoplot.R
 \name{autoplot.tmle_fit}
 \alias{autoplot.tmle_fit}
-\title{Diagnostic Plots for a TMLE Fit}
+\title{Human-Centered Causal Visual Diagnostics for a TMLE Fit}
 \usage{
 \method{autoplot}{tmle_fit}(
   object,
-  type = c("overlap", "targeting", "learners", "eif", "sensitivity", "balance",
+  type = c("effect", "overlap", "targeting", "balance", "sensitivity", "learners", "eif",
     "dashboard"),
   g_grid = seq(0.01, 0.15, by = 0.01),
   ...
@@ -15,8 +15,9 @@
 \arguments{
 \item{object}{A fitted \code{"tmle_fit"} object.}
 
-\item{type}{Diagnostic plot type: \code{"overlap"}, \code{"targeting"}, \code{"learners"},
-\code{"eif"}, \code{"sensitivity"}, \code{"balance"}, or \code{"dashboard"}.}
+\item{type}{Diagnostic plot type: \code{"effect"} (default), \code{"overlap"},
+\code{"targeting"}, \code{"balance"}, \code{"sensitivity"}, \code{"learners"}, \code{"eif"}, or
+\code{"dashboard"}.}
 
 \item{g_grid}{Numeric vector of lower positivity thresholds in \verb{(0, 0.5)}
 swept when \code{type = "sensitivity"} or \code{"dashboard"}.}
@@ -27,42 +28,43 @@ swept when \code{type = "sensitivity"} or \code{"dashboard"}.}
 A \code{ggplot2} object.
 }
 \description{
-Produces \code{ggplot2} causal diagnostics for a fitted \code{"tmle_fit"} object,
-turning every step of the TMLE estimator into an inspectable visual check:
+Produces clean, Tufte-inspired \code{ggplot2} causal figures turning every step
+of the TMLE estimator into an intuitive visual check:
 \itemize{
-\item \code{"overlap"}: \strong{Step 2 (Positivity / Overlap Check)}. Mirrored propensity
-score density by treatment arm with \code{g_bounds} truncation lines (or
-density-ratio distribution for LMTPs). Validates whether both treated and
-control units exist across confounder strata (Petersen et al., 2012).
-\item \code{"targeting"}: \strong{Steps 3–4 (Initial G-Computation vs. Targeted TMLE)}.
-Compares initial ML counterfactual contrasts (\eqn{\bar{Q}^0(1, W) - \bar{Q}^0(0, W)})
-against fluctuated TMLE contrasts (\eqn{\bar{Q}^*(1, W) - \bar{Q}^*(0, W)}),
-shaded by Clever Covariate magnitude \eqn{|H_n(A, W)|}, illustrating how the
-fluctuation step removes residual confounding bias from the initial fit.
-\item \code{"learners"}: \strong{Cross-Validated Super Learner Ensemble}. Compares CV risk
-and simplex metalearner weights across base workflows for \eqn{Q}, \eqn{g},
-and \eqn{C}.
-\item \code{"eif"}: \strong{Step 5 (Efficient Influence Function Variance Leverage)}.
-Observation-level share of total EIF variance (\eqn{D_i^2 / \sum D_j^2})
-to catch single-row outliers driving standard errors.
-\item \code{"sensitivity"}: \strong{Positivity Sensitivity Sweep}. Instantaneous
-\code{retarget()} sweep across truncation thresholds \code{g_grid} showing stability
-of point estimates, 95\% confidence intervals, and sample truncation rates.
-\item \code{"balance"}: \strong{Weighted Covariate Balance Love Plot}. Compares unadjusted
-vs. IPW/TMLE-weighted absolute standardized mean differences (\verb{|SMD|})
-against the standard \code{0.10} balance benchmark.
-\item \code{"dashboard"}: \strong{4-Panel Causal Audit Dashboard}. Combines \code{"overlap"},
-\code{"targeting"}, \code{"sensitivity"}, and \code{"balance"} (or \code{"eif"} and
-\code{"learners"} for continuous LMTPs) into one figure via \code{patchwork}.
+\item \code{"effect"}: \strong{Causal Effect Forest Plot (Default)}. Publication-ready
+effect estimates and 95\% confidence intervals with direct numeric labels, a
+\code{"No effect"} reference line, and (for binary ATE) a hollow marker showing
+the untargeted initial ML estimate before bias calibration.
+\item \code{"overlap"}: \strong{Step 2 (Fair Comparison / Positivity Check)}. Mirrored
+propensity distributions directly labeled \code{"Treated"} and \code{"Control"},
+with shaded tail clipping zones (or trimmed density-ratio distribution for
+continuous LMTPs).
+\item \code{"targeting"}: \strong{Steps 3–4 (How Much Bias Calibration Changed Things)}.
+Initial ML counterfactual contrasts plotted against targeted TMLE contrasts,
+with direct \code{"No adjustment"} reference line and population shift marker.
+\item \code{"balance"}: \strong{Confounder Balance Dumbbell Plot}. Before vs. after IPW
+imbalance (\verb{|SMD|}) ordered from largest baseline imbalance to smallest,
+highlighting the balanced \verb{< 0.10} zone without duplicate factor mirror rows.
+\item \code{"sensitivity"}: \strong{Positivity Strictness Sweep}. Instant \code{retarget()}
+sensitivity curve across clipping thresholds showing stability of point
+estimates and 95\% confidence intervals.
+\item \code{"learners"}: \strong{Cross-Validated Model Weights & Risk}. Clean paired panel
+comparing Super Learner weights and cross-validated error across candidate
+workflows for Outcome (Q), Treatment (g), and Missingness (C).
+\item \code{"eif"}: \strong{Step 5 (Outlier Influence Check)}. Observation-level share of
+total variance (\verb{\%}) flagging single rows exceeding the \verb{10\%} caution line.
+\item \code{"dashboard"}: \strong{4-Panel Causal Audit Dashboard}. Uncluttered 2x2 view
+combining Overlap, Targeting, Sensitivity, and Balance (or Influence for
+continuous policies) via \code{patchwork}.
 }
 }
 \examples{
-df <- sim_causal_cohort(n = 150, seed = 42)
-fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+df <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)
+fit <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = c("ate", "rr")) |>
   set_resamples(v_folds = 3L) |>
   fit(df)
+autoplot(fit)
 autoplot(fit, type = "overlap")
-autoplot(fit, type = "targeting")
 
 }
 \references{

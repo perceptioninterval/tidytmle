@@ -76,27 +76,33 @@
 
     
     
-<p>Beyond binary point-treatment effects, <code>tidytmle</code> supports
-<strong>Modified Treatment Policies (LMTP)</strong> (Díaz et al., 2021)
-for continuous exposures and <strong>Doubly Robust Conditional Average
-Treatment Effect (DR-Learner CATE)</strong> estimation (Kennedy,
-2023).</p>
+<p>Not every real-world decision is binary <em>“treat everyone vs. treat
+no one.”</em> Often you want to know:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Realistic Dose Shifts (<code><a href="../reference/shift.html">shift()</a></code>,
+<code><a href="../reference/shift.html">scale_tx()</a></code>):</strong> What would happen if everyone
+received <code>+1</code> unit higher dose—or <code>90%</code> of their
+current dose—without extrapolating to impossible extremes?</li>
+<li>
+<strong>Who Benefits Most (<code><a href="../reference/fit_cate.html">fit_cate()</a></code>):</strong> Which
+subgroups gain the largest benefit from treatment, and how much uplift
+do we capture by prioritizing high-benefit individuals?</li>
+</ol>
+<hr>
 <div class="section level2">
-<h2 id="continuous-exposures-via-shift-and-scale_tx">Continuous Exposures via <code>shift()</code> and
-<code>scale_tx()</code><a class="anchor" aria-label="anchor" href="#continuous-exposures-via-shift-and-scale_tx"></a>
+<h2 id="realistic-continuous-policies-shift-scale_tx">1. Realistic Continuous Policies (<code>shift()</code> &amp;
+<code>scale_tx()</code>)<a class="anchor" aria-label="anchor" href="#realistic-continuous-policies-shift-scale_tx"></a>
 </h2>
-<p>Asking <em>“what if every patient received dose = 0 vs. dose =
-10?”</em> often forces impossible extrapolations for continuous
-exposures. Modified Treatment Policies solve this by shifting each
-person’s observed exposure realistically (e.g., <code>+1</code> unit or
-<code>90%</code> of current dose). Use <code>shift(delta)</code> for
-additive policies
+<p>Following Díaz et al. (2021), Modified Treatment Policies replace
+hypothetical “set everyone to max dose” questions with realistic
+individual shifts: additive policies
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>a</mi><mo>+</mo><mi>δ</mi></mrow><annotation encoding="application/x-tex">d(a, w) = a + \delta</annotation></semantics></math>
-or <code>scale_tx(factor)</code> for multiplicative policies
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>a</mi><mo>⋅</mo><mtext mathvariant="normal">factor</mtext></mrow><annotation encoding="application/x-tex">d(a, w) = a \cdot \text{factor}</annotation></semantics></math>.
-Internally, <code>tidytmle</code> estimates the treatment density ratio
-nonparametrically using stacked cross-validated classification workflows
-without parametric normality assumptions:</p>
+(<code><a href="../reference/shift.html">shift()</a></code>) or multiplicative reductions
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>a</mi><mo>⋅</mo><mtext mathvariant="normal">factor</mtext></mrow><annotation encoding="application/x-tex">d(a, w) = a \cdot \text{factor}</annotation></semantics></math>
+(<code><a href="../reference/shift.html">scale_tx()</a></code>). Internally, <code>tidytmle</code> estimates
+the induced density ratio nonparametrically using stacked
+cross-validated classification without assuming normality:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://perceptioninterval.github.io/tidytmle/">tidytmle</a></span><span class="op">)</span></span>
 <span></span>
@@ -128,24 +134,6 @@ without parametric normality assumptions:</p>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">df_cont</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_shift</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── <span style="font-weight: bold;">Plain-English TMLE Summary</span> ──</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Sample: 350 rows (350 observed outcomes) | 4-fold CV-TMLE</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 1. What the Causal Estimates Mean </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> shift(1): Expected outcome under Modified Treatment Policy is 4.8277 (95% CI [4.4089, 5.2465], p = &lt; 0.0001).</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 2. What the Targeting Step Did </span></span>
-<span><span class="co">#&gt; Fluctuating along the Clever Covariate shifted the initial ML plug-in</span></span>
-<span><span class="co">#&gt; estimate by +0.2184 (epsilon = 0.0653) to remove residual confounding</span></span>
-<span><span class="co">#&gt; bias.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 3. Statistical Health Check &amp; Next Steps </span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Convergence: EIF estimating equation solved (mean EIF = -9.51e-14).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Positivity: 0.0% clipped at g_bounds [0.000, 21.918] (ESS: treated = 116.3, control = 350).</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> High leverage: Top observation accounts for 37.2% of EIF variance. Inspect `augment(fit)` sorted by <span style="color: #00BB00;">.eif_leverage</span>.</span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit_shift</span><span class="op">)</span>, <span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit_scale</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>true_value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">truth_cont</span><span class="op">$</span><span class="va">true_shift_1</span>, <span class="va">truth_cont</span><span class="op">$</span><span class="va">true_scale_09</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 9</span></span></span>
@@ -155,37 +143,38 @@ without parametric normality assumptions:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> scale_tx(0.9) scale_…     3.67     0.125      29.3 7.78<span style="color: #949494;">e</span><span style="color: #BB0000;">-189</span>     3.43</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: conf.high &lt;dbl&gt;, true_value &lt;dbl&gt;</span></span></span>
 <span></span>
+<span><span class="fu"><a href="../reference/check_tmle.html">check_tmle</a></span><span class="op">(</span><span class="va">fit_shift</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Causal Health Audit (3/4 Passed)</span> ──</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = -9.51e-14): Bias-removal step converged cleanly (targeting shift = +0.2184, epsilon = 0.0653).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Comparison Overlap (Positivity)</span> (0.0% capped (max r = 21.9)): 0.0% of density ratios were capped at upper bound 21.92.</span></span>
+<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 37.2% variance): Row 33 alone drives 37.2% of total EIF variance (&gt; 10% caution threshold).</span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">Suggested next step:</span> Inspect outlier row via autoplot(fit, type =</span></span>
+<span><span class="co">#&gt; 'eif') or dplyr::slice_max(augment(fit), .eif_leverage, n = 5).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q R2 = 0.755): Cross-validated outcome Super Learner captured real structure (Q R2 = 0.755).</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit_shift</span>, type <span class="op">=</span> <span class="st">"overlap"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="lmtp-and-cate_files/figure-html/lmtp-1.png" alt="Histogram of truncated Modified Treatment Policy density ratios r(A, W)" width="672"></p>
+<p><img src="lmtp-and-cate_files/figure-html/lmtp-1.png" alt="Distribution of Modified Treatment Policy density-ratio weights centered near 1x" width="710.4"></p>
+<hr>
 </div>
 <div class="section level2">
-<h2 id="heterogeneous-treatment-effects-via-fit_cate">Heterogeneous Treatment Effects via <code>fit_cate()</code><a class="anchor" aria-label="anchor" href="#heterogeneous-treatment-effects-via-fit_cate"></a>
+<h2 id="discovering-who-benefits-most-fit_cate">2. Discovering Who Benefits Most (<code>fit_cate()</code>)<a class="anchor" aria-label="anchor" href="#discovering-who-benefits-most-fit_cate"></a>
 </h2>
-<p>Because we never observe both
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">Y_i(1)</annotation></semantics></math>
-and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">Y_i(0)</annotation></semantics></math>
-for the same person, we cannot simply regress
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>Y</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">Y_i(1) - Y_i(0)</annotation></semantics></math>
-on patient covariates directly. Kennedy’s (2023) <strong>Doubly Robust
-(DR) Learner</strong> solves this by constructing a cross-fitted
-pseudo-outcome from the TMLE fit’s Efficient Influence Function:</p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>φ</mi><mi>i</mi></msub><mo>=</mo><msub><mi>H</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>Y</mi><mi>i</mi></msub><mo>−</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><msub><mi>A</mi><mi>i</mi></msub><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right).</annotation></semantics></math></p>
-<p>Because
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msub><mi>φ</mi><mi>i</mi></msub><mo>∣</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mi>τ</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[\varphi_i \mid V_i] = \tau(V_i)</annotation></semantics></math>
-whenever <em>either</em>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>Q</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar{Q}</annotation></semantics></math>
-or
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
-is consistently estimated, <code><a href="../reference/fit_cate.html">fit_cate()</a></code> can feed
+<p>Even when an average effect looks modest, treatment often helps some
+individuals substantially while doing little for others. Kennedy’s
+(2023) <strong>Doubly Robust (DR) Learner</strong> turns each
+individual’s Efficient Influence Function signal
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>φ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\varphi_i</annotation></semantics></math>
-directly into any <code>tidymodels</code> regression workflow to
-estimate individual treatment effects
+into a cross-fitted target for any <code>tidymodels</code> regression
+workflow:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>φ</mi><mi>i</mi></msub><mo>=</mo><msub><mi>H</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>Y</mi><mi>i</mi></msub><mo>−</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><msub><mi>A</mi><mi>i</mi></msub><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right).</annotation></semantics></math></p>
+<p><code><a href="../reference/fit_cate.html">fit_cate()</a></code> learns individualized effects
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>τ</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>V</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat{\tau}(V)</annotation></semantics></math>,
-run Chernozhukov et al.’s (2018) Best Linear Projection (BLP)
-heterogeneity test via <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>, predict onto new cohorts via
-<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, and quantify treatment-prioritization
-performance via <code><a href="../reference/qini_auc.html">qini_auc()</a></code>:</p>
+tests formally whether heterogeneity is real via Chernozhukov et al.’s
+(2018) Best Linear Projection (<code>tidy(cate)</code>), predicts on new
+patients (<code>predict(cate, new_data)</code>), and measures targeting
+uplift via Qini curves (<code><a href="../reference/qini_auc.html">qini_auc()</a></code>,
+<code>autoplot(cate, type = "qini")</code>):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_het</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_causal_cohort.html">sim_causal_cohort</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">400</span>, outcome_type <span class="op">=</span> <span class="st">"continuous"</span>, seed <span class="op">=</span> <span class="fl">303</span><span class="op">)</span></span>
 <span><span class="va">truth_het</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">df_het</span>, <span class="st">"truth"</span><span class="op">)</span></span>
@@ -212,12 +201,12 @@ performance via <code><a href="../reference/qini_auc.html">qini_auc()</a></code>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> qini_auc standard       0.271</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> auuc     standard       1.11</span></span>
 <span></span>
-<span><span class="co"># Out-of-fold CATE accuracy against true individual effects</span></span>
+<span><span class="co"># Out-of-fold accuracy vs true individual treatment effects</span></span>
 <span><span class="va">aug_cate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/augment.html" class="external-link">augment</a></span><span class="op">(</span><span class="va">cate</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">aug_cate</span><span class="op">$</span><span class="va">.cate</span>, <span class="va">truth_het</span><span class="op">$</span><span class="va">true_cate</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.7612203</span></span>
 <span></span>
-<span><span class="co"># Predict individualized treatment effects on new patients</span></span>
+<span><span class="co"># Score individualized benefit for new patients</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">cate</span>, new_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df_het</span>, <span class="fl">5L</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 1</span></span></span>
 <span><span class="co">#&gt;    .pred</span></span>
@@ -229,10 +218,10 @@ performance via <code><a href="../reference/qini_auc.html">qini_auc()</a></code>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> -<span style="color: #BB0000;">0.695</span></span></span>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cate</span>, type <span class="op">=</span> <span class="st">"cate"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="lmtp-and-cate_files/figure-html/cate-1.png" alt="Histogram of out-of-fold CATE predictions relative to the mean ATE" width="672"></p>
+<p><img src="lmtp-and-cate_files/figure-html/cate-1.png" alt="Histogram of predicted individualized treatment effects split at zero with dashed population mean" width="710.4"></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cate</span>, type <span class="op">=</span> <span class="st">"qini"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="lmtp-and-cate_files/figure-html/cate-2.png" alt="Qini cumulative uplift curve shading incremental gain above random targeting" width="672"></p>
+<p><img src="lmtp-and-cate_files/figure-html/cate-2.png" alt="Qini cumulative uplift curve comparing DR-Learner prioritization to random treatment order" width="710.4"></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

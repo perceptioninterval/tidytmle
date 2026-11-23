@@ -2,11 +2,17 @@
 #' @noRd
 resolve_causal_roles <- function(spec, data) {
   if (!is.data.frame(data)) {
-    cli::cli_abort("{.arg data} must be a {.cls data.frame} or {.cls tibble}.")
+    cli::cli_abort(c(
+      "{.arg data} must be a data frame or tibble, not {.cls {class(data)}}.",
+      "i" = "Example: {.code fit(spec, data = my_tibble)}"
+    ))
   }
   data <- tibble::as_tibble(data)
   if (nrow(data) < 10L) {
-    cli::cli_abort("{.arg data} must have at least 10 rows for TMLE estimation.")
+    cli::cli_abort(c(
+      "{.arg data} has only {nrow(data)} row{?s}; cross-fitted TMLE requires at least 10 observations.",
+      "i" = "For small toy tests, simulate a larger cohort with {.code sim_causal_cohort(n = 150)}."
+    ))
   }
 
   eval_single_col <- function(quo, arg_name, required = TRUE) {
@@ -36,7 +42,10 @@ resolve_causal_roles <- function(spec, data) {
   weights_col <- eval_single_col(spec$roles$weights, "weights", required = FALSE)
 
   if (identical(outcome_col, treatment_col)) {
-    cli::cli_abort("{.arg outcome} and {.arg treatment} cannot refer to the same column ({.val {outcome_col}}).")
+    cli::cli_abort(c(
+      "{.arg outcome} and {.arg treatment} cannot refer to the same column ({.val {outcome_col}}).",
+      "i" = "Causal estimation needs a distinct exposure column (`treatment`) and downstream endpoint column (`outcome`)."
+    ))
   }
 
   special_cols <- unique(c(outcome_col, treatment_col, censoring_col, id_col, weights_col))
@@ -126,7 +135,11 @@ resolve_causal_roles <- function(spec, data) {
   # Resolve treatment vector and type
   trt_raw <- data[[treatment_col]]
   if (anyNA(trt_raw)) {
-    cli::cli_abort("Treatment column {.field {treatment_col}} must not contain missing values.")
+    cli::cli_abort(c(
+      "Treatment column {.field {treatment_col}} contains missing (`NA`) values.",
+      "i" = "TMLE models can adjust for missingness in the {.emph outcome} automatically, but every unit must have an observed treatment assignment.",
+      "i" = "Filter rows with missing treatment first (or impute treatment if appropriate)."
+    ))
   }
 
   if (spec$estimand$kind == "binary") {
@@ -134,7 +147,10 @@ resolve_causal_roles <- function(spec, data) {
     n1 <- sum(a_num == 1L)
     n0 <- sum(a_num == 0L)
     if (n1 == 0L || n0 == 0L) {
-      cli::cli_abort("Treatment {.field {treatment_col}} must contain both treated (1) and control (0) units.")
+      cli::cli_abort(c(
+        "Treatment {.field {treatment_col}} must contain both treated (1) and comparison/control (0) observations.",
+        "i" = "Causal contrast requires seeing both arms in the data."
+      ))
     }
     treatment_type <- "binary"
     a_factor <- factor(a_num, levels = c("0", "1"))

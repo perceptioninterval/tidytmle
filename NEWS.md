@@ -15,6 +15,8 @@
   and VanderWeele-Ding E-values.
 * Added instantaneous `retarget()` without ML refitting, `shift()` /
   `scale_tx()` Modified Treatment Policies, DR-Learner CATE estimation
-  (`fit_cate()`, `qini_auc()`), plain-English `summary()` / `explain_tmle()`,
-  and `autoplot()` diagnostics (`"overlap"`, `"targeting"`, `"learners"`,
-  `"eif"`, `"sensitivity"`, `"balance"`, `"dashboard"`).
+  (`fit_cate()`, `qini_auc()`), 5-pillar causal trust auditing (`check_tmle()`),
+  copy-paste-ready paper/blog reporting (`report_tmle()`), plain-English
+  `summary()` / `explain_tmle()`, and Tufte-styled `autoplot()` diagnostics
+  (`"effect"`, `"overlap"`, `"targeting"`, `"balance"`, `"sensitivity"`,
+  `"learners"`, `"eif"`, `"dashboard"`).

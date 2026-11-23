@@ -11,36 +11,39 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 7,
-  fig.height = 4.5
+  fig.width = 7.4,
+  fig.height = 4.7
 )
 ```
 
-Targeted Maximum Likelihood Estimation (TMLE) has a reputation for heavy semiparametric notation, yet its core idea is remarkably down-to-earth. Drawing on the classic tutorials by Schuler & Rose (2017), Luque-Fernandez et al. (2018), and van der Laan & Rubin (2006), this guide walks through **why** TMLE exists, **how** its five steps map directly to columns inside `tidytmle`, and **how** its built-in guardrails protect your inference.
+Causal inference often feels buried under semiparametric notation, yet the core intuition of **Targeted Maximum Likelihood Estimation (TMLE)** is simple enough to explain in two analogies drawn from classic tutorials (Schuler & Rose, 2017; Luque-Fernandez et al., 2018; van der Laan & Rubin, 2006):
 
-## 1. Why Prediction Alone (and Weighting Alone) Fall Short
-
-Suppose we want the **Average Treatment Effect (ATE)** of a treatment $A \in \{0, 1\}$ on an outcome $Y$, adjusting for confounders $W$:
-$$\psi_{\text{ATE}} = \mathbb{E}[Y(1) - Y(0)].$$
-
-Applied researchers typically reach for one of two single-model strategies:
-
-| Strategy | What It Estimates | Why It Can Go Wrong |
-|---|---|---|
-| **G-Computation (Outcome Regression)** | $\bar{Q}^0(A, W) = E[Y \mid A, W]$ | Machine learning minimizes *global* prediction error across $(A, W)$, **not** the bias-variance trade-off for the causal contrast $E[Y(1) - Y(0)]$. Residual confounding bias shrinks too slowly for valid 95% confidence intervals. |
-| **Inverse Probability Weighting (IPTW)** | Propensity score $g(W) = P(A = 1 \mid W)$ | Does not optimize outcome fit directly and can blow up in variance if a handful of observations have propensity scores near $0$ or $1$ (*positivity violations*). |
-| **Targeted MLE (TMLE)** | **Both** $\bar{Q}^0(A, W)$ and $g(W)$, then *fluctuates* $\bar{Q}^0 \mapsto \bar{Q}^*$ | Combines flexible ML prediction with a targeted bias-removal step. **Doubly robust** (consistent if *either* $\bar{Q}$ or $g$ is right) and **locally efficient** (smallest asymptotic variance). |
-
-> **The Two-Word Philosophy: "Predict, Then Target."**
-> First use cross-validated machine learning (Super Learner) to predict outcomes as accurately as possible. Then give those initial predictions a gentle, mathematically targeted nudge—just enough to wipe out residual confounding bias for your causal estimand, without overfitting the rest of the curve.
+> **Analogy 1 — "Build a Digital Twin, Then Re-Balance the Scale" (*Predict, Then Target*):**
+> First, use machine learning to predict each person's outcome with and without treatment (*their digital twin*). Next, use who actually received treatment to nudge those predictions just enough to cancel any leftover confounding bias on the causal contrast you care about.
+>
+> **Analogy 2 — "Two Safety Nets" (*Double Robustness*):**
+> Pure outcome regression relies 100% on the outcome model; pure weighting relies 100% on the treatment propensity model. TMLE wears both safety nets: you still get an unbiased causal answer if *either* model gets the confounding structure right.
 
 ---
 
-## 2. The 5-Step TMLE Recipe Mapped Directly to `tidytmle`
+## 1. Comparing the Three Strategies Side-by-Side
 
-Let's fit a standard 5-fold CV-TMLE on a simulated cohort with known ground truth so we can watch every single step inside `augment(fit)` and `glance(fit)`:
+Suppose we want the **Average Treatment Effect (ATE)** of a binary treatment $A \in \{0, 1\}$ on an outcome $Y$, adjusting for measured confounders $W$:
+$$\psi_{\text{ATE}} = \mathbb{E}[Y(1) - Y(0)].$$
 
-```{r setup, message = FALSE}
+| Everyday Choice | Technical Name | Where Single-Model Methods Struggle |
+|---|---|---|
+| Predict outcomes directly | **G-Computation** ($\bar{Q}^0$) | ML minimizes *overall* prediction error across $(A, W)$, leaving slow-shrinking confounding bias in causal contrasts and invalid CIs. |
+| Re-weight individuals only | **IPTW Weighting** ($g$) | Discards outcome information and explodes in variance when some groups rarely receive treatment (*positivity violations*). |
+| **Predict, then target** | **TMLE (`tidytmle`)** | Uses flexible ML for *both* $\bar{Q}^0$ and $g$, then performs one gentle bias-removal fluctuation step ($\bar{Q}^0 \mapsto \bar{Q}^*$). |
+
+---
+
+## 2. Watching All 5 Steps Happen Inside `tidytmle`
+
+Let's run a 5-fold cross-fitted TMLE on a simulated cohort with known ground truth and inspect every diagnostic column and plot along the way:
+
+```{r setup, message = FALSE, fig.alt = "Causal effect forest plot comparing targeted TMLE ATE and 95% confidence interval against the untargeted ML plug-in"}
 library(tidytmle)
 
 cohort <- sim_causal_cohort(n = 400, outcome_type = "continuous", seed = 42)
@@ -55,51 +58,46 @@ fit <- tmle_spec(
   set_resamples(v_folds = 5L) |>
   fit(data = cohort)
 
-fit
+autoplot(fit, type = "effect")
 ```
 
-Here is what just happened under the hood, step by step:
+### Step 1 & Step 2 · Are Treated and Control Groups Comparable?
 
-### Step 1: Initial Outcome Surface ($\bar{Q}^0$)
-Cross-validated Super Learner workflows predict each person's counterfactual outcome under treatment (`.q1_init`) and control (`.q0_init`). Averaging `.q1_init - .q0_init` gives the **untargeted G-computation plug-in estimate**.
+First, cross-validated ensembles predict counterfactual outcomes under treatment (`.q1_init`) and control (`.q0_init`). Meanwhile, a separate classification Super Learner models treatment propensity $g(W) = P(A = 1 \mid W)$ (strictly blocking $A$ and $Y$ from entering predictors) and checks whether treated and untreated people actually overlap across confounder profiles:
 
-### Step 2: Propensity Score ($g$) & Overlap
-A separate classification Super Learner models $g(W) = P(A = 1 \mid W)$ (`.g_hat`) strictly excluding treatment $A$ from predictors, then applies adaptive positivity bounds to produce `.g_trunc`.
-
-```{r overlap-plot, fig.alt = "Mirrored propensity score density plot showing overlap between treated and control arms"}
+```{r overlap-plot, fig.alt = "Mirrored propensity overlap plot comparing Treated and Control arms with adaptive bounds"}
 autoplot(fit, type = "overlap")
 ```
 
-### Step 3: The "Clever Covariate" ($H$)
-How do we know *which* initial predictions need a nudge? TMLE builds a **Clever Covariate** (`.clever_h`) derived directly from the Efficient Influence Function (EIF):
-$$H_n(A, W) = \frac{A}{g_n(W)} - \frac{1 - A}{1 - g_n(W)}$$
-Look at the geometry: individuals in areas where their received treatment was *surprising* (small $g_n(W)$ when $A=1$, or small $1-g_n(W)$ when $A=0$) receive a larger $|H_n|$. The Clever Covariate forces the targeting step to pay extra attention to the exact regions of covariate space where confounding bias hides.
+We can also check directly whether propensity weights equalized baseline differences (`|SMD| < 0.10`):
 
-### Step 4: The Fluctuation Step ($\epsilon$)
+```{r balance-plot, fig.alt = "Dumbbell plot showing standardized confounder imbalances dropping inside the green < 0.10 target band after weighting"}
+autoplot(fit, type = "balance")
+```
 
-Holding the initial predictions fixed as an **offset** on the logit scale (after scaling continuous $Y$ into $[0, 1]$), TMLE fits a minimal 1-parameter logistic fluctuation submodel along the Clever Covariate. In `tidytmle`, each treatment arm uses the mathematically equivalent **weighted-intercept** parameterization (with weight $|H_n(a, W)|$ and offset $\text{logit}\,\bar{Q}^0(a, W)$):
+### Step 3 & Step 4 · How the Clever Covariate Nudges Initial Predictions
 
-$$\text{logit}\,\bar{Q}^*(a, W) = \text{logit}\,\bar{Q}^0(a, W) + \hat{\epsilon}_a \quad \text{(weighted by } |H_n(a, W)| \text{)}.$$
+Where did initial ML leave residual bias? TMLE computes a **Clever Covariate** (`.clever_h`):
+$$H_n(A, W) = \frac{A}{g_n(W)} - \frac{1 - A}{1 - g_n(W)}.$$
 
-This solves the exact same canonical EIF score equation as the textbook covariate formulation while targeting $E[Y(1)]$ and $E[Y(0)]$ simultaneously—and keeping predictions safe from extreme logit extrapolation under positivity stress.
+Look at the intuition: people who received a *surprising* treatment given their profile carry larger calibration weights $|H_n|$. Holding initial predictions fixed on the bounded logit scale, TMLE fits an arm-specific weighted-intercept fluctuation ($\epsilon$) that nudges `.q1_init -> .q1_star` and `.q0_init -> .q0_star` strictly along the causal bias-removal path:
 
-- If the initial ML model already eliminated confounding bias, $\hat{\epsilon} \approx 0$ and predictions barely move.
-- Otherwise, $\hat{\epsilon}$ shifts `.q1_init -> .q1_star` and `.q0_init -> .q0_star` strictly along the path that zeroes out the causal estimating equation.
-
-```{r targeting-plot, fig.alt = "Scatter plot comparing initial G-computation contrasts against targeted TMLE contrasts shaded by Clever Covariate magnitude"}
+```{r targeting-plot, fig.alt = "Scatter plot comparing initial ML counterfactual effects against targeted TMLE effects shaded by Clever Covariate magnitude"}
 autoplot(fit, type = "targeting")
 ```
 
-| `augment(fit)` / `glance(fit)` Column | Role in the 5-Step TMLE Recipe |
-|---|---|
-| `.q0_init`, `.q1_init` | Step 1 cross-fitted G-computation predictions $\bar{Q}^0(0, W)$ and $\bar{Q}^0(1, W)$ |
-| `.g_hat`, `.g_trunc` | Step 2 raw and bounded propensity scores $g_n(W)$ |
-| `.clever_h` | Step 3 Clever Covariate $H_n(A, W)$ weighting observations by inverse propensity |
-| `epsilon`, `plugin_vs_tmle_shift` | Step 4 fluctuation step size $\hat{\epsilon}$ and total causal bias correction |
-| `.q0_star`, `.q1_star` | Step 4 targeted counterfactual predictions $\bar{Q}^*(0, W)$ and $\bar{Q}^*(1, W)$ |
-| `.eif`, `.eif_leverage`, `mean_eif` | Step 5 Efficient Influence Function values $D_i^*$, variance share, and convergence check ($\approx 0$) |
+### Step 5 · Causal Decoder Ring (`augment()` & `glance()`)
 
-Inspecting the decoded columns inside `augment(fit)` and `glance(fit)` makes all five steps concrete:
+Every abstract quantity maps cleanly to a column inside `augment(fit)` and `glance(fit)`:
+
+| Plain-English Concept | `augment()` / `glance()` Column | Healthy Signal |
+|---|---|---|
+| Initial digital-twin predictions | `.q0_init`, `.q1_init` | Captures main outcome drivers |
+| Chance of treatment (raw & clipped) | `.g_hat`, `.g_trunc` | Substantial middle overlap between arms |
+| Re-balancing leverage per row | `.clever_h` | Bounded well away from infinity |
+| Size of targeting bias nudge | `epsilon`, `plugin_vs_tmle_shift` | Small if initial ML already captured confounding |
+| Calibrated digital-twin predictions | `.q0_star`, `.q1_star` | Stay strictly inside observed `[min(Y), max(Y)]` |
+| Uncertainty & convergence audit | `.eif`, `.eif_leverage`, `mean_eif` | `mean_eif` $\approx 0$; no single row > `10%` leverage |
 
 ```{r decoder}
 aug <- augment(fit)
@@ -108,23 +106,16 @@ head(aug[, c("a", "y", ".q0_init", ".q1_init", ".g_trunc", ".clever_h", ".q0_sta
 glance(fit)[, c("epsilon", "mean_eif", "plugin_vs_tmle_shift", "pct_truncated", "ess_treated", "ess_control")]
 ```
 
-### Step 5: Substitution Estimate & EIF Standard Errors
-Finally, TMLE averages the fluctuated counterfactuals $\frac{1}{n}\sum (\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i))$ and computes valid asymptotic standard errors directly from the variance of the **Efficient Influence Function** (`.eif`). Look how `mean_eif` is numerically zero ($\sim 10^{-16}$)—confirming the EIF score equation $\frac{1}{n}\sum D_i^* = 0$ is solved!
-
 ---
 
-## 3. Seeing Double Robustness Live (Both Directions)
+## 3. Live Test of "Two Safety Nets" (Double Robustness)
 
-One of TMLE's most celebrated guarantees is **double robustness**: consistency holds if *either* the outcome model $\bar{Q}$ *or* the propensity model $g$ is well-specified—you do not need perfection in both simultaneously.
-
-Let's test **both failure modes** head-to-head using `parsnip::null_model()` (an intercept-only model that ignores all confounders!):
-
-1. **Misspecified $Q$ (`null_model`), flexible $g$**: Untargeted G-computation collapses to `0`, yet TMLE's fluctuation step uses $g$ and the Clever Covariate to pull the estimate right back to the true ATE.
-2. **Misspecified $g$ (`null_model`), flexible $Q$**: Naive weighting assumes constant propensity, yet the cross-fitted outcome Super Learner preserves an accurate ATE.
+Watch what happens when we deliberately sabotage **one nuisance model at a time** using `parsnip::null_model()` (a blind intercept-only model that ignores every confounder!):
 
 ```{r double-robustness, warning = FALSE, message = FALSE}
 library(parsnip)
 
+# Safety net 1 broken: blind Q, flexible g
 fit_bad_q <- tmle_spec(
   outcome    = y,
   treatment  = a,
@@ -134,6 +125,7 @@ fit_bad_q <- tmle_spec(
   set_resamples(v_folds = 5L) |>
   fit(data = cohort)
 
+# Safety net 2 broken: flexible Q, blind g
 fit_bad_g <- tmle_spec(
   outcome    = y,
   treatment  = a,
@@ -146,10 +138,10 @@ fit_bad_g <- tmle_spec(
 tibble::tibble(
   Scenario = c(
     "True ATE (Ground Truth)",
-    "Both Flexible (Default CV-TMLE)",
-    "Bad Q Only (Untargeted G-Comp)",
-    "Bad Q Only -> Rescued by TMLE",
-    "Bad g Only -> Rescued by TMLE"
+    "Both Safety Nets Active (Default CV-TMLE)",
+    "Blind Q Only (Untargeted ML Plug-In)",
+    "Blind Q Only -> Rescued by TMLE Targeting",
+    "Blind g Only -> Rescued by Outcome Super Learner"
   ),
   Estimate = c(
     truth$true_ate,
@@ -162,32 +154,14 @@ tibble::tibble(
 )
 ```
 
-Notice that untargeted G-computation from the constant outcome model is `0.00` (100% wrong!), whereas TMLE recovers the causal effect accurately whenever *either* nuisance model captures the confounding structure.
+Notice how untargeted regression on the blind outcome model collapses to **`0.00`**, yet TMLE's targeting step uses propensity weights to rescue the causal estimate back toward ground truth.
 
 ---
 
-## 4. Why `tidytmle`'s Guardrails Matter
+## 4. Built-In Guardrails & Founding Papers
 
-Applied papers repeatedly highlight three pitfalls that break naive TMLE implementations in practice. `tidytmle` enables defenses for all three automatically:
+Three practical traps break naive TMLE pipelines in applied research; `tidytmle` protects against all three automatically:
 
-1. **Cross-Validated TMLE (`cv_tmle = TRUE`, Zheng & van der Laan, 2011)**:
-   Flexible tree/boosting learners routinely violate classical *Donsker class* smoothness assumptions, causing in-sample TMLE standard errors to be anti-conservative (CIs too narrow). Out-of-fold cross-fitting via `rsample` restores valid asymptotic normality without restricting your learner library.
-2. **Bounded Canonical Logistic Fluctuation (`fluctuation = "logistic"`, Gruber & van der Laan, 2010)**:
-   Linear fluctuations on unbounded outcomes can overshoot into impossible values under confounding. Scaling continuous $Y$ into $[0, 1]$, running the canonical logistic submodel, and transforming back guarantees counterfactual predictions remain inside the observed outcome range.
-3. **Adaptive Positivity Truncation (`g_bounds = "adaptive"`, Petersen et al., 2012)**:
-   Rather than clipping propensities at a rigid `0.025` regardless of sample size, `tidytmle` defaults to the $n$-aware $5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})$ rule (bounded to `[0.01, 0.15]`), reports `pct_truncated` and Kish effective sample sizes (`ess_treated`, `ess_control`), and lets you run an instant positivity sensitivity sweep via `retarget()` or `autoplot(fit, type = "sensitivity")`.
-
----
-
-## 5. Annotated Literature Guide
-
-If you want to dive deeper into the theory implemented across `tidytmle`, these are the foundational and tutorial papers to start with:
-
-- **Schuler, M. S., & Rose, S. (2017).** *Targeted maximum likelihood estimation for causal inference in observational studies.* American Journal of Epidemiology, 185(1), 65–73. — The clearest conceptual roadmap for epidemiologists and applied data scientists.
-- **Luque-Fernandez, M. A., Schomaker, M., Rachet, B., & Schnitzer, M. E. (2018).** *Targeted maximum likelihood estimation for a binary treatment: A tutorial.* Statistics in Medicine, 37(16), 2530–2546. — Step-by-step worked numerical tutorial with Clever Covariate and fluctuation walkthroughs.
-- **van der Laan, M. J., & Rubin, D. (2006).** *Targeted maximum likelihood learning.* The International Journal of Biostatistics, 2(1). — Original paper introducing TMLE.
-- **Gruber, S., & van der Laan, M. J. (2010).** *A targeted maximum likelihood estimator of a causal effect on a bounded continuous outcome.* The International Journal of Biostatistics, 6(1). — Foundation for bounded logistic fluctuation on continuous outcomes.
-- **Zheng, W., & van der Laan, M. J. (2011).** *Cross-validated targeted minimum-loss-based estimation.* In Targeted Learning, Springer. — Theoretical proof showing CV-TMLE removes Donsker restrictions.
-- **Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., & van der Laan, M. J. (2012).** *Diagnosing and responding to violations in the positivity assumption.* Statistical Methods in Medical Research, 21(1), 31–54. — Basis for overlap diagnostics and positivity truncation rules.
-- **Díaz, I., Williams, N., Hoffman, K. L., & Schenck, E. J. (2021).** *Nonparametric causal effects based on longitudinal modified treatment policies.* JASA, 118(542), 846–857. — Foundation for `shift()` and `scale_tx()` continuous-exposure density-ratio TMLE.
-- **Kennedy, E. H. (2023).** *Towards optimal doubly robust estimation of heterogeneous causal effects.* Electronic Journal of Statistics, 17(2), 3008–3049. — Foundation for `fit_cate()` DR-Learner pseudo-outcome regression.
+1. **Cross-Fitting (`cv_tmle = TRUE`, Zheng & van der Laan, 2011)**: Out-of-fold nuisance predictions preserve valid confidence intervals even when using random forests or boosted trees.
+2. **Bounded Canonical Logistic Fluctuation (`fluctuation = "logistic"`, Gruber & van der Laan, 2010)**: Scaling outcomes into `[0, 1]` before logistic targeting keeps predictions strictly inside realistic outcome bounds.
+3. **Adaptive Overlap Bounds (`g_bounds = "adaptive"`, Petersen et al., 2012)**: Sample-size-aware bounds ($5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})$ in `[0.01, 0.15]`) prevent extreme inverse weights from hijacking standard errors.

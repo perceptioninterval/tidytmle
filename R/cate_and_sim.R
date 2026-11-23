@@ -300,6 +300,7 @@ qini_auc <- function(cate_fit, pseudo_outcome = NULL) {
 #' @export
 autoplot.tmle_cate <- function(object, type = c("qini", "cate"), ...) {
   type <- match.arg(type)
+  pal <- tmle_palette()
 
   if (type == "qini") {
     score <- object$tau_oof
@@ -312,67 +313,110 @@ autoplot.tmle_cate <- function(object, type = c("qini", "cate"), ...) {
     random_gain <- frac * mean(phi_ord)
     q_stats <- qini_auc(object)
 
+    mid_i <- ceiling(0.5 * length(frac))
+    tot_ben <- cum_gain[length(cum_gain)]
+    half_share <- if (is.finite(tot_ben) && abs(tot_ben) > 1e-8) {
+      100 * cum_gain[mid_i] / tot_ben
+    } else {
+      NA_real_
+    }
+    sub_qini <- if (is.finite(half_share)) {
+      sprintf("Top 50%% prioritized captures %.0f%% of total benefit | Qini AUC = %.4f",
+              half_share, q_stats$.estimate[1L])
+    } else {
+      sprintf("Qini AUC = %.4f | AUUC = %.4f (higher curve = stronger targeting)",
+              q_stats$.estimate[1L], q_stats$.estimate[2L])
+    }
+
     df_curve <- tibble::tibble(
       frac = frac,
       cum_gain = cum_gain,
       random_gain = random_gain
     )
     df_lines <- dplyr::bind_rows(
-      tibble::tibble(frac = frac, gain = cum_gain, curve = "DR-Learner Prioritization"),
-      tibble::tibble(frac = frac, gain = random_gain, curve = "Random Targeting")
+      tibble::tibble(frac = frac, gain = cum_gain, curve = "DR-Learner"),
+      tibble::tibble(frac = frac, gain = random_gain, curve = "Random")
     )
+
+    q_lbl_i <- ceiling(0.38 * length(frac))
+    q_mid_x <- frac[q_lbl_i]
+    q_mid_y <- cum_gain[q_lbl_i]
+    r_mid_y <- random_gain[mid_i]
 
     return(
       ggplot2::ggplot() +
         ggplot2::geom_ribbon(
           data = df_curve,
           ggplot2::aes(x = frac, ymin = random_gain, ymax = cum_gain),
-          fill = "#CA225E", alpha = 0.16
+          fill = pal$crimson, alpha = 0.14
         ) +
         ggplot2::geom_line(
           data = df_lines,
           ggplot2::aes(x = frac, y = gain, color = curve, linetype = curve),
-          linewidth = 0.95
+          linewidth = 0.95, show.legend = FALSE
         ) +
-        ggplot2::scale_color_manual(
-          values = c("DR-Learner Prioritization" = "#CA225E", "Random Targeting" = "#5C656E")
+        ggplot2::annotate(
+          "text", x = q_mid_x, y = q_mid_y,
+          label = "Targeted by DR-Learner",
+          vjust = -1.25, hjust = 0.72, fontface = "bold",
+          size = 3.2, color = pal$crimson
         ) +
-        ggplot2::scale_linetype_manual(
-          values = c("DR-Learner Prioritization" = "solid", "Random Targeting" = "dashed")
+        ggplot2::annotate(
+          "text", x = 0.60, y = r_mid_y,
+          label = "Random order",
+          vjust = 1.7, hjust = 0,
+          size = 3.1, color = pal$muted
         ) +
+        ggplot2::scale_color_manual(values = c("DR-Learner" = pal$crimson, "Random" = pal$muted)) +
+        ggplot2::scale_linetype_manual(values = c("DR-Learner" = "solid", "Random" = "dashed")) +
+        ggplot2::scale_x_continuous(labels = fmt_pct) +
+        ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.05, 0.14))) +
         ggplot2::labs(
-          title = "Qini Cumulative Uplift Curve",
-          subtitle = sprintf(
-            "Qini AUC = %.4f | AUUC = %.4f (higher curve = stronger treatment prioritization)",
-            q_stats$.estimate[1L], q_stats$.estimate[2L]
-          ),
-          x = "Fraction of Population Targeted (Highest to Lowest Predicted Benefit)",
-          y = "Cumulative Uplift Gain",
-          color = NULL,
-          linetype = NULL
+          title = "Does Targeting by Predicted Benefit Outperform Random Care?",
+          subtitle = sub_qini,
+          x = "Share of Population Targeted (Highest to Lowest Predicted Benefit)",
+          y = "Cumulative Incremental Outcome Gain",
+          caption = "Shaded pink area above dashed line measures surplus benefit gained from personalized targeting."
         ) +
-        ggplot2::theme_minimal()
+        theme_tidytmle(grid = "y") +
+        ggplot2::coord_cartesian(clip = "off")
     )
   }
 
   ate_val <- mean(object$tau_oof)
+  pct_pos <- mean(object$tau_oof > 0)
   het_p <- object$blp$p.value[2L]
-  p_txt <- if (is.na(het_p)) "NA" else if (het_p < 1e-4) "< 0.0001" else sprintf("%.4f", het_p)
-  df_c <- tibble::tibble(cate_val = object$tau_oof)
+  p_txt <- format_p_human(het_p)
+  df_c <- tibble::tibble(
+    cate_val = object$tau_oof,
+    benefit_group = ifelse(object$tau_oof >= 0, "Predicted Benefit (>= 0)", "No / Negative Benefit (< 0)")
+  )
 
-  ggplot2::ggplot(df_c, ggplot2::aes(x = cate_val)) +
-    ggplot2::geom_histogram(bins = 28L, fill = "#CA225E", alpha = 0.78, color = "white") +
-    ggplot2::geom_vline(xintercept = ate_val, linetype = "dashed", color = "#1E1E2E", linewidth = 0.85) +
-    ggplot2::labs(
-      title = "Out-of-Fold CATE Distribution",
-      subtitle = sprintf(
-        "Mean CATE = %.3f (SD = %.3f) | BLP Heterogeneity p = %s",
-        ate_val, stats::sd(object$tau_oof), p_txt
-      ),
-      x = "Predicted Individual Treatment Effect tau(V)",
-      y = "Count"
+  ggplot2::ggplot(df_c, ggplot2::aes(x = cate_val, fill = benefit_group)) +
+    ggplot2::geom_histogram(bins = 28L, alpha = 0.84, color = "white", show.legend = FALSE) +
+    ggplot2::geom_vline(xintercept = 0, color = pal$ink, linewidth = 0.55) +
+    ggplot2::geom_vline(xintercept = ate_val, linetype = "dashed", color = pal$navy, linewidth = 0.85) +
+    ggplot2::annotate(
+      "text", x = ate_val, y = Inf,
+      label = sprintf(" Avg = %+.2f", ate_val),
+      vjust = 1.15, hjust = 0, fontface = "bold",
+      size = 3.2, color = pal$navy
     ) +
-    ggplot2::theme_minimal()
+    ggplot2::scale_fill_manual(
+      values = c("Predicted Benefit (>= 0)" = pal$crimson, "No / Negative Benefit (< 0)" = pal$amber)
+    ) +
+    ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.14))) +
+    ggplot2::labs(
+      title = "Who Benefits Most? Individualized Treatment Effects",
+      subtitle = sprintf(
+        "%.0f%% predicted to benefit (> 0) | SD = %.2f | Heterogeneity test: %s",
+        100 * pct_pos, stats::sd(object$tau_oof), p_txt
+      ),
+      x = "Predicted Individual Effect tau(V)",
+      y = "Number of People",
+      caption = "Solid black line marks 0 (no effect); dashed navy line marks overall average effect."
+    ) +
+    theme_tidytmle(grid = "y")
 }
 
 #' Simulate a Synthetic Causal Cohort with Exact Ground-Truth Parameters

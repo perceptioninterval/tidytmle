@@ -97,21 +97,24 @@ with actionable next steps (<code><a href="retarget.html">retarget()</a></code>,
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Plain-English TMLE Summary</span> ──</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Sample: 150 rows (150 observed outcomes) | 3-fold CV-TMLE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Cohort: 150 rows (150 with observed outcomes) | 3-fold cross-fitted</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> TMLE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── 1. What the Causal Estimates Mean </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> ATE (across the full population): Treatment increases the expected outcome by 0.1958 units (95% CI [0.0503, 0.3413], p = 0.0083).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> RR: Treatment corresponds to a 1.75x risk ratio (74.9% higher risk; 95% CI [1.14, 2.68], p = 0.0103).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> ATE (across the full study population): Treatment increases the expected outcome by 0.2186 units (95% CI [0.0535, 0.3837], p = 0.0095).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> RR: Treatment corresponds to a 1.89x risk ratio (89.4% higher risk; 95% CI [1.15, 3.11], p = 0.0119).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ── 2. What the Targeting Step Did </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Fluctuating along the Clever Covariate shifted the initial ML plug-in</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> estimate by -0.0177 (epsilon = -0.1018) to remove residual confounding</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> bias.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── 2. What the Targeting Step Did ("Predict, Then Target") </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Targeting nudged the initial ML plug-in predictions by +0.0185</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (epsilon = 0.1535) to zero out residual confounding bias.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ── 3. Statistical Health Check &amp; Next Steps </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Convergence: EIF estimating equation solved (mean EIF = -6.90e-13).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Positivity: 0.0% clipped at g_bounds [0.081, 0.919] (ESS: treated = 56, control = 85.2).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Influence: No single observation dominates variance (max EIF leverage = 4.3%).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ── 3. Can I Trust These Numbers? (Health Check &amp; Next Steps) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Convergence: Bias-removal score equation solved (mean EIF = -1.41e-12).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Comparison overlap: 0.7% clipped at [0.081, 0.919] (effective n: 52.9 treated, 82.4 control).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Confounder balance: Max standardized difference fell from 0.465 to 0.077 (well below 0.10).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Uncertainty stability: No single person dominates SEs (top observation share = 6.6%).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Next steps: report_tmle(fit) for paper-ready prose · autoplot(fit,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">type = 'dashboard') for visual audit.</span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

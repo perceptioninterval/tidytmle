@@ -11,24 +11,23 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 7,
-  fig.height = 4.6
+  fig.width = 7.4,
+  fig.height = 4.8
 )
 ```
 
-`tidytmle` brings cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) into the `tidymodels` ecosystem as a semi-parametric causal orchestrator sitting above `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick`.
+`tidytmle` brings cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) into the `tidymodels` ecosystem around a clear 4-step human workflow: **Question $\rightarrow$ Estimate $\rightarrow$ Audit $\rightarrow$ Paper**.
 
-If you are new to the theory behind TMLE, start with [TMLE Intuition: A Step-by-Step Visual Guide](tmle-intuition.html) for an accessible breakdown of the *Predict, Then Target* philosophy, Clever Covariates, and double robustness.
+If you want to understand *why* this two-step estimator outperforms regression alone or weighting alone, start with [TMLE Intuition: A Step-by-Step Visual Guide](tmle-intuition.html).
 
-## Level 1: The 3-Line Safe Default
+## Step 1 · Ask Your Question & Fit Safe Defaults
 
-At Level 1, pass `outcome`, `treatment`, `covariates` (via `tidyselect`), and one or more causal `estimand`s to `tmle_spec()`, then call `fit()`. Ten-fold cross-fitting, an ensemble Super Learner library (`glm`, `glmnet`, `ranger`), adaptive positivity bounds, and bounded canonical logistic fluctuation are enabled automatically:
+Declare which column is the `outcome`, which is the `treatment`, and which covariates (`W`) you want to adjust for using `tidyselect`, then call `fit()`. Cross-validated Super Learning, adaptive overlap bounds, and bounded logistic calibration turn on automatically:
 
 ```{r level1, message = FALSE}
 library(tidytmle)
 
 cohort <- sim_causal_cohort(n = 350, outcome_type = "binary", seed = 42)
-truth <- attr(cohort, "truth")
 
 fit <- tmle_spec(
   outcome    = y,
@@ -40,62 +39,66 @@ fit <- tmle_spec(
   fit(data = cohort)
 
 fit
-summary(fit)
 ```
 
-## Joint EIF Inference & Tidymodels S3 Verbs
+Visualize the causal conclusions right away with `autoplot(fit)` (defaults to the forest contrast plot `type = "effect"`):
 
-Standard `tidymodels` S3 verbs extract every layer of the fitted pipeline without digging through nested lists.
+```{r effect-plot, fig.alt = "Causal effect forest plot showing targeted ATE, Risk Ratio, and Odds Ratio with 95% confidence intervals"}
+autoplot(fit)
+```
 
-- **`summary(fit)` / `explain_tmle(fit)`**: Plain-English causal interpretation, targeting shift summary, and traffic-light health audit with actionable next steps.
-- **`tidy(fit)`**: Returns point estimates, influence-function standard errors, and 95% confidence intervals (on the log scale and exponentiated for ratio estimands `"rr"` and `"or"`). Setting `simultaneous = TRUE` applies a fast wild multiplier bootstrap across the joint EIF matrix so multiple estimands retain simultaneous 95% coverage; `e_value = TRUE` computes VanderWeele-Ding sensitivity bounds for unmeasured confounding.
-- **`glance(fit)`**: One-row causal health check—verify that `mean_eif` is near zero (`< 1e-4`), inspect `plugin_vs_tmle_shift` (how much the targeting step adjusted the initial ML fit), and check positivity truncation (`pct_truncated`, `ess_treated`, `ess_control`).
-- **`collect_metrics(fit)` & `extract_sl_weights(fit)`**: Inspect out-of-fold `yardstick` CV performance and simplex Super Learner metalearner weights across base learners.
+## Step 2 · Read Plain-English Findings & Tidy Tables
+
+Every `tidymodels` extraction verb works out of the box—plus plain-English summaries, simultaneous confidence bands, and sensitivity E-values:
 
 ```{r verbs}
-# Causal inference table with optional simultaneous uniform bands and E-values
+# Plain-English causal interpretation
+summary(fit)
+
+# Publication numbers with simultaneous bands & VanderWeele-Ding E-values
 tidy(fit, simultaneous = TRUE, e_value = TRUE)
 
-# One-row causal health check
-glance(fit)
-
-# Cross-validated nuisance metrics (yardstick) and Super Learner weights
+# Cross-validated nuisance performance & Super Learner ensemble weights
 collect_metrics(fit)
 extract_sl_weights(fit)
 ```
 
-Observation-level counterfactual predictions (`.q0_init`, `.q1_init`, `.q0_star`, `.q1_star`), truncated propensity scores (`.g_trunc`), clever covariates (`.clever_h`), and Efficient Influence Function leverage (`.eif_leverage`) are returned by `augment()`:
+## Step 3 · Audit Causal Health & Stress-Test Instantly
 
-```{r augment}
-head(augment(fit)[, c("age", "a", "y", ".q0_star", ".q1_star", ".g_trunc", ".eif_leverage")])
-```
+Run `check_tmle(fit)` to evaluate the 5 pillars of causal trustworthiness (*Targeting Convergence*, *Comparison Overlap*, *Confounder Balance*, *Individual Influence*, and *Model Learning Quality*), inspect the 4-panel dashboard, and test stricter assumptions in milliseconds via `retarget()`:
 
-## Instant `retarget()` Without ML Refitting
+```{r audit, fig.width = 9.5, fig.height = 6.8, fig.alt = "4-panel Tufte-styled TMLE Causal Audit Dashboard showing overlap, targeting shift, sensitivity sweep, and confounder balance dumbbell plot"}
+check_tmle(fit)
 
-Because cross-fitted out-of-fold nuisance predictions ($Q_n^0$, $g_n$, $C_n$) are cached inside the `tmle_fit` object, you can test stricter positivity bounds, switch estimands (`"att"`, `"atc"`), or target subgroups in milliseconds without refitting any machine learning models:
+if (requireNamespace("patchwork", quietly = TRUE)) {
+  autoplot(fit, type = "dashboard", g_grid = seq(0.01, 0.12, by = 0.02))
+} else {
+  autoplot(fit, type = "overlap")
+}
 
-```{r retarget}
+# Instant sensitivity check without ML refitting
 fit_strict <- retarget(fit, g_bounds = c(0.05, 0.95))
 fit_att    <- retarget(fit, estimand = "att")
 fit_older  <- retarget(fit, subgroup = age >= 55)
 
 dplyr::bind_rows(
   dplyr::mutate(tidy(fit), scenario = "Adaptive bounds (All)"),
-  dplyr::mutate(tidy(fit_strict), scenario = "Strict bounds [0.05, 0.95]"),
-  dplyr::mutate(tidy(fit_att), scenario = "ATT"),
+  dplyr::mutate(tidy(fit_strict), scenario = "Strict bounds [5%, 95%]"),
+  dplyr::mutate(tidy(fit_att), scenario = "Among treated (ATT)"),
   dplyr::mutate(tidy(fit_older), scenario = "Subgroup age >= 55")
 ) |>
   dplyr::select(scenario, estimand, estimate, std.error, conf.low, conf.high)
 ```
 
-## Visual Causal Diagnostics (`autoplot()`)
+## Step 4 · Generate Paper- & Blog-Ready Prose
 
-Inspect propensity overlap (checking positivity across arms), how strongly the fluctuation step shifted individual predictions (`"targeting"`), and positivity truncation stability across bounds (`"sensitivity"`). If `patchwork` is installed, `autoplot(fit, type = "dashboard")` combines all key checks into a single 2×2 visual audit:
+Use `report_tmle()` to draft complete **Methods**, **Results**, and **Causal Assumptions** paragraphs automatically populated from the exact models, bounds, and diagnostics in your fit (`style = "paper"`, `"plain"`, or `"markdown"`):
 
-```{r plots, fig.width = 9.2, fig.height = 6.6, fig.alt = "4-panel TMLE Causal Audit Dashboard combining propensity overlap, targeting step shifts, positivity sensitivity sweep, and covariate balance"}
-if (requireNamespace("patchwork", quietly = TRUE)) {
-  autoplot(fit, type = "dashboard", g_grid = seq(0.01, 0.12, by = 0.02))
-} else {
-  autoplot(fit, type = "overlap")
-}
+```{r report}
+report_tmle(
+  fit,
+  outcome_label = "clinical recovery",
+  treatment_label = "targeted therapy",
+  style = "paper"
+)
 ```

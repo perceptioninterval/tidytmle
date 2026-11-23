@@ -10,8 +10,8 @@ template:
 home:
   title: Targeted Maximum Likelihood Estimation for Tidymodels • tidytmle
   description: >
-    Cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) built natively
-    on top of workflows, workflowsets, recipes, rsample, hardhat, and yardstick.
+    Human-centered, cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE)
+    built natively on workflows, workflowsets, recipes, rsample, hardhat, and yardstick.
   sidebar:
     structure: [links, license, community, citation, authors, dev]
 
@@ -23,12 +23,11 @@ figures:
   fig.height: 5.75
 
 reference:
-  - title: Step 0 · Specification & Causal Roles
+  - title: 1. Ask Your Causal Question & Compose Learners
     desc: >
-      Declare outcome, treatment, confounders, censoring, clusters, and case
-      weights via tidyselect, and compose recipes, parsnip specs, workflows,
-      or workflow_set Super Learners with built-in CV-TMLE and positivity
-      guardrails.
+      Declare outcomes, treatments, confounders, missingness indicators,
+      clusters, and weights using tidyselect, and attach any recipes, parsnip
+      specs, workflows, or workflow_set ensembles.
     contents:
       - tmle_spec
       - set_preprocessing
@@ -39,36 +38,38 @@ reference:
       - set_targeting
       - default_nuisance_learners
 
-  - title: Steps 1–5 · Estimation & Instant Retargeting
+  - title: 2. Estimate & Stress-Test Instantly
     desc: >
-      Run the "Predict, Then Target" CV-TMLE pipeline (fit) and re-run
-      fluctuation, positivity bounds, estimands, or subgroups in milliseconds
-      without refitting ML nuisance models (retarget), or target continuous
-      exposures with Modified Treatment Policies (shift, scale_tx).
+      Execute the cross-fitted "Predict, Then Target" estimator (fit), explore
+      stricter bounds or subgroups without refitting ML models (retarget), or
+      evaluate continuous dose policies (shift, scale_tx).
     contents:
       - fit.tmle_spec
       - retarget
       - shift
       - scale_tx
 
-  - title: Inference, Diagnostics & Tidymodels Verbs
+  - title: 3. Understand, Audit & Report Results
     desc: >
-      Decode every stage of the TMLE estimator via standard tidymodels S3
-      verbs, plain-English explanations (explain_tmle / summary), and visual
-      diagnostics powered by the joint Efficient Influence Function (EIF).
+      Run a 5-pillar causal trust audit (check_tmle), generate copy-paste-ready
+      Methods and Results prose (report_tmle), inspect visual diagnostics
+      (autoplot), and extract tidy tables with simultaneous CIs and E-values.
     contents:
-      - tidy.tmle_fit
+      - check_tmle
+      - report_tmle
+      - autoplot.tmle_fit
       - explain_tmle
+      - tidy.tmle_fit
       - glance.tmle_fit
       - augment.tmle_fit
       - collect_metrics.tmle_fit
       - extract_sl_weights
-      - autoplot.tmle_fit
 
-  - title: Heterogeneous Treatment Effects (CATE) & Simulation
+  - title: 4. Individualized Effects (CATE) & Synthetic Benchmarks
     desc: >
-      Doubly Robust CATE learning, Qini uplift evaluation, CATE diagnostics,
-      and synthetic causal benchmarking cohorts.
+      Estimate who benefits most via Doubly Robust CATE regression, evaluate
+      treatment prioritization with Qini uplift curves, and benchmark workflows
+      against known ground truth.
     contents:
       - fit_cate
       - predict.tmle_cate

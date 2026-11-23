@@ -18,9 +18,9 @@
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Targeted Maximum Likelihood Estimation for Tidymodels • tidytmle">
-<meta name="description" content="Cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) built natively on top of workflows, workflowsets, recipes, rsample, hardhat, and yardstick.
+<meta name="description" content="Human-centered, cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) built natively on workflows, workflowsets, recipes, rsample, hardhat, and yardstick.
 ">
-<meta property="og:description" content="Cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) built natively on top of workflows, workflowsets, recipes, rsample, hardhat, and yardstick.
+<meta property="og:description" content="Human-centered, cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) built natively on workflows, workflowsets, recipes, rsample, hardhat, and yardstick.
 ">
 <meta property="og:image" content="https://perceptioninterval.github.io/tidytmle/logo.svg">
 </head>
@@ -75,157 +75,62 @@
 </div>
 <!-- badges: start -->
 
-<p><code>tidytmle</code> brings <strong>Targeted Maximum Likelihood Estimation (CV-TMLE)</strong> to the <a href="https://www.tidymodels.org/" class="external-link">tidymodels</a> ecosystem. Rather than forcing causal estimation into a prediction-only <code>parsnip</code> model, <code>tidytmle</code> orchestrates <code>workflows</code>, <code>workflowsets</code>, <code>recipes</code>, <code>rsample</code>, <code>hardhat</code>, and <code>yardstick</code> so you can plug any machine learning pipeline into a doubly robust, locally efficient causal estimator.</p>
+<p><code>tidytmle</code> brings <strong>Cross-Fitted Targeted Maximum Likelihood Estimation (CV-TMLE)</strong> to the <a href="https://www.tidymodels.org/" class="external-link">tidymodels</a> ecosystem as a clear, human-centered causal inference workflow: declare your causal roles with <code>tidyselect</code>, plug in any <code>workflows</code> or <code>workflowsets</code> machine-learning models, audit your fit visually, and generate copy-paste-ready Methods and Results prose for papers or blogs.</p>
 <div class="section level2">
-<h2 id="which-function-do-i-need">Which Function Do I Need?<a class="anchor" aria-label="anchor" href="#which-function-do-i-need"></a>
+<h2 id="why-tmle-the-30-second-intuition">Why TMLE? The 30-Second Intuition<a class="anchor" aria-label="anchor" href="#why-tmle-the-30-second-intuition"></a>
 </h2>
+<p>Imagine running a clinical trial using messy real-world observational data—you cannot randomly assign treatment after the fact, so treated and comparison groups differ in age, severity, and baseline risk. <strong>TMLE resolves confounding in two intuitive stages (“Predict, Then Target”):</strong></p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Build Every Person’s Digital Twin (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><annotation encoding="application/x-tex">\bar{Q}^0</annotation></semantics></math>):</strong> Cross-validated machine learning (<em>Super Learner</em>) predicts each person’s expected outcome <em>if treated</em> vs. <em>if untreated</em>, holding all measured characteristics fixed. Because prediction models minimize global accuracy rather than causal contrast bias, a small residual bias usually remains.</li>
+<li>
+<strong>Re-Balance the Scale (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math> Calibration):</strong> A second model estimates who tended to receive treatment (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>) and nudges the initial predictions just enough along the optimal bias-removal path (guided by the <em>Clever Covariate</em> <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>) until weighted confounding bias cancels cleanly to zero.</li>
+</ol>
+<p>Think of this as wearing <strong>Two Safety Nets (Double Robustness)</strong>: your causal estimate remains trustworthy if <em>either</em> the outcome model <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>Q</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar{Q}</annotation></semantics></math><em>or</em> the propensity model <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math> gets the confounding structure right—while staying naturally bounded and locally efficient when both do well.</p>
 <table class="table">
 <colgroup>
 <col width="50%">
 <col width="50%">
 </colgroup>
 <thead><tr>
-<th>What you want to do</th>
-<th>One-line <code>tidytmle</code> call</th>
+<th>Question in Plain English</th>
+<th>One-Line <code>tidytmle</code> Call</th>
 </tr></thead>
 <tbody>
 <tr>
-<td>Estimate ATE, Risk Ratio, &amp; Odds Ratio safely</td>
-<td><code>tmle_spec(y, a, c(age, sex, lab_1), estimand = c("ate", "rr", "or")) \|&gt; fit(df)</code></td>
+<td><em>What is the causal effect of <code>a</code> on <code>y</code>?</em></td>
+<td><code>tmle_spec(y, a, c(age, sex, starts_with("lab_")), estimand = c("ate", "rr")) \|&gt; fit(df)</code></td>
 </tr>
 <tr>
-<td>Handle missing outcomes automatically</td>
-<td>Omit <code>censoring</code> when <code>y</code> has <code>NA</code>s (or pass <code>censoring = delta</code>)</td>
-</tr>
-<tr>
-<td>Plug in a custom <code>workflow_set</code> Super Learner</td>
-<td><code>set_outcome_learners(wf_set) \|&gt; set_treatment_learners(wf_set)</code></td>
-</tr>
-<tr>
-<td>Account for clinic clusters or survey weights</td>
-<td>Pass <code>id = clinic_id</code> and <code>weights = survey_wt</code> inside <code><a href="reference/tmle_spec.html">tmle_spec()</a></code>
-</td>
-</tr>
-<tr>
-<td>Read a plain-English interpretation &amp; health audit</td>
+<td><em>Can I trust these numbers?</em></td>
 <td>
-<code>summary(fit)</code> or <code>explain_tmle(fit)</code>
+<code>check_tmle(fit)</code> and <code>autoplot(fit, type = "dashboard")</code>
 </td>
 </tr>
 <tr>
-<td>Test stricter positivity bounds or subgroups instantly</td>
-<td><code>retarget(fit, g_bounds = c(0.05, 0.95), subgroup = age &gt;= 65)</code></td>
+<td><em>What if I change my mind on bounds or subgroups?</em></td>
+<td>
+<code>retarget(fit, g_bounds = c(0.05, 0.95), subgroup = age &gt;= 65)</code> <em>(zero ML refitting)</em>
+</td>
 </tr>
 <tr>
-<td>Inspect a 4-panel visual audit dashboard</td>
-<td><code>autoplot(fit, type = "dashboard")</code></td>
+<td><em>How do I write this up for a paper or blog?</em></td>
+<td>
+<code>summary(fit)</code> or <code>report_tmle(fit, outcome_label = "recovery", treatment_label = "therapy")</code>
+</td>
 </tr>
 <tr>
-<td>Shift a continuous dose without extrapolating</td>
+<td><em>What happens if we shift a continuous dose by +1?</em></td>
 <td><code>tmle_spec(y, dose, c(...), estimand = shift(1.0)) \|&gt; fit(df)</code></td>
 </tr>
 <tr>
-<td>Estimate heterogeneous treatment effects (CATE)</td>
+<td><em>Who benefits most from treatment?</em></td>
 <td>
-<code>fit_cate(fit)</code> then <code>predict(cate, new_data)</code> or <code>qini_auc(cate)</code>
+<code>fit_cate(fit)</code> then <code>autoplot(cate, type = "qini")</code> and <code>predict(cate, new_data)</code>
 </td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section level2">
-<h2 id="why-tmle-the-60-second-intuition">Why TMLE? The 60-Second Intuition<a class="anchor" aria-label="anchor" href="#why-tmle-the-60-second-intuition"></a>
-</h2>
-<p>Standard machine learning regression (<strong>G-computation</strong>) minimizes <em>global</em> prediction error rather than the bias-variance trade-off for a causal treatment effect—leaving residual confounding bias and invalid confidence intervals. Conversely, <strong>inverse-probability weighting (IPTW)</strong> discards outcome modeling and blows up in variance whenever propensity scores approach <code>0</code> or <code>1</code> (<em>positivity violations</em>).</p>
-<p><strong>TMLE resolves both weaknesses with a simple two-stage philosophy: <em>“Predict, Then Target.”</em></strong> (Schuler &amp; Rose, 2017; Luque-Fernandez et al., 2018; van der Laan &amp; Rubin, 2006):</p>
-<table class="table">
-<colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
-</colgroup>
-<thead><tr>
-<th>Estimator</th>
-<th>What It Models</th>
-<th>Key Trade-off</th>
-</tr></thead>
-<tbody>
-<tr>
-<td><strong>G-Computation</strong></td>
-<td>Outcome <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>E</mi><mo stretchy="false" form="prefix">[</mo><mi>Y</mi><mo>∣</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\bar{Q}^0(A, W) = E[Y \mid A, W]</annotation></semantics></math>
-</td>
-<td>Optimizing global outcome accuracy leaves slow-converging bias in causal contrasts.</td>
-</tr>
-<tr>
-<td><strong>IPTW Weighting</strong></td>
-<td>Propensity <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g(W) = P(A = 1 \mid W)</annotation></semantics></math>
-</td>
-<td>Ignores outcome structure; unstable variance when <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g(W)</annotation></semantics></math> is near <code>0</code> or <code>1</code>.</td>
-</tr>
-<tr>
-<td><strong>Targeted MLE (<code>tidytmle</code>)</strong></td>
-<td>
-<strong>Both</strong> <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\bar{Q}^0(A, W)</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g(W)</annotation></semantics></math>, then <em>fluctuates</em> <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo>↦</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup></mrow><annotation encoding="application/x-tex">\bar{Q}^0 \mapsto \bar{Q}^*</annotation></semantics></math>
-</td>
-<td>
-<strong>Doubly robust</strong> (consistent if <em>either</em> model is right), <strong>locally efficient</strong>, and <strong>bounded</strong> inside natural outcome limits.</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level2">
-<h2 id="the-5-step-tmle-recipe--decoder-ring">The 5-Step TMLE Recipe &amp; Decoder Ring<a class="anchor" aria-label="anchor" href="#the-5-step-tmle-recipe--decoder-ring"></a>
-</h2>
-<p>Every TMLE fit executes five concrete steps mapped cleanly to <code>augment(fit)</code> and <code>glance(fit)</code> columns:</p>
-<table class="table">
-<colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
-</colgroup>
-<thead><tr>
-<th>Step</th>
-<th>What Happens Under the Hood</th>
-<th>
-<code>tidytmle</code> Columns</th>
-</tr></thead>
-<tbody>
-<tr>
-<td><strong>1. Initial Outcome Fit (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><annotation encoding="application/x-tex">\bar{Q}^0</annotation></semantics></math>)</strong></td>
-<td>Cross-validated Super Learner predicts counterfactual outcomes under treatment and control.</td>
-<td>
-<code>.q1_init</code>, <code>.q0_init</code>
-</td>
-</tr>
-<tr>
-<td><strong>2. Propensity Fit (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>)</strong></td>
-<td>Classification Super Learner estimates <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">P(A = 1 \mid W)</annotation></semantics></math> (strictly excluding <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Y</mi><annotation encoding="application/x-tex">Y</annotation></semantics></math> from predictors) and applies adaptive bounds.</td>
-<td>
-<code>.g_hat</code>, <code>.g_trunc</code>, <code>pct_truncated</code>
-</td>
-</tr>
-<tr>
-<td><strong>3. Clever Covariate (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>H</mi><annotation encoding="application/x-tex">H</annotation></semantics></math>)</strong></td>
-<td>Constructs <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mfrac><mi>A</mi><mrow><msub><mi>g</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow></mfrac><mo>−</mo><mfrac><mrow><mn>1</mn><mo>−</mo><mi>A</mi></mrow><mrow><mn>1</mn><mo>−</mo><msub><mi>g</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow></mfrac></mrow><annotation encoding="application/x-tex">H_n(A, W) = \frac{A}{g_n(W)} - \frac{1-A}{1-g_n(W)}</annotation></semantics></math> from the Efficient Influence Function (EIF) to spotlight potential confounding bias.</td>
-<td><code>.clever_h</code></td>
-</tr>
-<tr>
-<td><strong>4. Fluctuation (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>)</strong></td>
-<td>Fits a weighted-intercept logistic submodel with <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">logit</mtext><mo stretchy="false" form="prefix">(</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{logit}(\bar{Q}^0)</annotation></semantics></math> as offset and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>H</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">|</mo></mrow><annotation encoding="application/x-tex">|H_n|</annotation></semantics></math> weights, nudging predictions along the optimal bias-removal path.</td>
-<td>
-<code>epsilon</code>, <code>.q1_star</code>, <code>.q0_star</code>, <code>plugin_vs_tmle_shift</code>
-</td>
-</tr>
-<tr>
-<td><strong>5. Substitution &amp; EIF Inference</strong></td>
-<td>Averages targeted counterfactuals and computes asymptotic SEs from the EIF variance (<code>mean_eif</code> must be <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\approx 0</annotation></semantics></math>).</td>
-<td>
-<code>.eif</code>, <code>.eif_leverage</code>, <code>mean_eif</code>
-</td>
-</tr>
-</tbody>
-</table>
-<p>For a full worked visual walkthrough—including a live demonstration of <strong>double robustness</strong>—read <a href="articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a> (or <code><a href="articles/tmle-intuition.html">vignette("tmle-intuition", package = "tidytmle")</a></code>).</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -236,9 +141,11 @@
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu">pak</span><span class="op">(</span><span class="st">"perceptioninterval/tidytmle"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+<h2 id="the-4-step-human-workflow-question-rightarrow-estimate-rightarrow-audit-rightarrow-paper">The 4-Step Human Workflow: Question <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math> Estimate <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math> Audit <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math> Paper<a class="anchor" aria-label="anchor" href="#the-4-step-human-workflow-question-rightarrow-estimate-rightarrow-audit-rightarrow-paper"></a>
 </h2>
-<p>Start with a 3-line cross-fitted specification using <code>tidyselect</code> causal roles and simultaneous multi-estimand inference, then call <code>summary(fit)</code> for a plain-English causal interpretation and health check:</p>
+<div class="section level3">
+<h3 id="id_1-ask-your-question--estimate-causal-effects">1. Ask your question &amp; estimate causal effects<a class="anchor" aria-label="anchor" href="#id_1-ask-your-question--estimate-causal-effects"></a>
+</h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://perceptioninterval.github.io/tidytmle/">tidytmle</a></span><span class="op">)</span></span>
 <span></span>
@@ -247,59 +154,161 @@
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
-<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  estimand   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ate"</span>, <span class="st">"rr"</span>, <span class="st">"or"</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
+<span><span class="co"># Publication-ready causal effect plot (default autoplot type = "effect")</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-effect-example-1.png" alt="Tufte-styled causal effect forest plot showing targeted TMLE ATE, Risk Ratio, and Odds Ratio with 95% confidence intervals" width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="id_2-audit-comparability-calibration-balance-and-stability">2. Audit comparability, calibration, balance, and stability<a class="anchor" aria-label="anchor" href="#id_2-audit-comparability-calibration-balance-and-stability"></a>
+</h3>
+<p>Run <code>check_tmle(fit)</code> for a 5-pillar traffic-light health check, inspect the 4-panel visual dashboard, or stress-test stricter positivity bounds and subgroups instantly via <code><a href="reference/retarget.html">retarget()</a></code>:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/check_tmle.html">check_tmle</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── Plain-English TMLE Summary ──</span></span>
+<span><span class="co">#&gt; ── TMLE Causal Health Audit (5/5 Passed) ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Sample: 350 rows (350 observed outcomes) | 5-fold CV-TMLE</span></span>
+<span><span class="co">#&gt; ✔ Targeting Convergence (mean EIF = 3.37e-14): Bias-removal step converged cleanly (targeting shift = +0.0307, epsilon = 0.0781).</span></span>
+<span><span class="co">#&gt; ✔ Comparison Overlap (Positivity) (0.0% clipped | ESS 192 vs 135): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 192.2, control = 135.2).</span></span>
+<span><span class="co">#&gt; ✔ Confounder Balance (max |SMD| 0.331 -&gt; 0.051): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.051, below 0.10).</span></span>
+<span><span class="co">#&gt; ✔ Individual Influence (top obs = 2.1% variance): No single row dominates uncertainty (row 180 holds 2.1% of EIF variance, &lt;= 10%).</span></span>
+<span><span class="co">#&gt; ✔ Model Learning Quality (Q AUC = 0.723 | g AUC = 0.627): Cross-validated Super Learners captured real structure (Q AUC = 0.723, treatment AUC = 0.627).</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 1. What the Causal Estimates Mean </span></span>
-<span><span class="co">#&gt; ℹ ATE (across the full population): Treatment increases the expected outcome by 0.1072 units (95% CI [0.0072, 0.2072], p = 0.0357).</span></span>
-<span><span class="co">#&gt; ℹ RR: Treatment corresponds to a 1.33x risk ratio (32.9% higher risk; 95% CI [1.01, 1.75], p = 0.0450).</span></span>
-<span><span class="co">#&gt; ℹ OR: Treatment corresponds to an odds ratio of 1.58 (95% CI [1.02, 2.44], p = 0.0397).</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 2. What the Targeting Step Did </span></span>
-<span><span class="co">#&gt; Fluctuating along the Clever Covariate shifted the initial ML plug-in estimate</span></span>
-<span><span class="co">#&gt; by +0.0265 (epsilon = 0.0671) to remove residual confounding bias.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ── 3. Statistical Health Check &amp; Next Steps </span></span>
-<span><span class="co">#&gt; ✔ Convergence: EIF estimating equation solved (mean EIF = 6.94e-14).</span></span>
-<span><span class="co">#&gt; ✔ Positivity: 0.0% clipped at g_bounds [0.046, 0.954] (ESS: treated = 191.6, control = 132.9).</span></span>
-<span><span class="co">#&gt; ✔ Influence: No single observation dominates variance (max EIF leverage = 3.2%).</span></span>
+<span><span class="co">#&gt; Verdict: Ready for interpretation. Generate paper prose with report_tmle(fit).</span></span>
 <span></span>
-<span><span class="co"># Simultaneous uniform confidence bands &amp; VanderWeele-Ding E-values</span></span>
-<span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit</span>, simultaneous <span class="op">=</span> <span class="cn">TRUE</span>, e_value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"dashboard"</span>, g_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.12</span>, by <span class="op">=</span> <span class="fl">0.02</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-audit-example-1.png" alt="4-panel Tufte-styled TMLE Causal Audit Dashboard showing propensity overlap, targeting adjustment, positivity sensitivity sweep, and confounder balance dumbbell plot" width="100%"></p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="co"># Test stricter overlap bounds in milliseconds without refitting ML models</span></span>
+<span><span class="fu"><a href="reference/retarget.html">retarget</a></span><span class="op">(</span><span class="va">fit</span>, g_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.95</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span>simultaneous <span class="op">=</span> <span class="cn">TRUE</span>, e_value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 3 × 11</span></span>
 <span><span class="co">#&gt;   estimand term  estimate std.error statistic p.value conf.low conf.high e_value</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;    &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1 ate      ATE      0.107    0.0510      2.10  0.0357  0.00105     0.213    1.74</span></span>
-<span><span class="co">#&gt; 2 rr       RR       1.33     0.142       2.00  0.0450  0.989       1.78     1.99</span></span>
-<span><span class="co">#&gt; 3 or       OR       1.58     0.222       2.06  0.0397  0.995       2.51     2.54</span></span>
-<span><span class="co">#&gt; # ℹ 2 more variables: e_value_ci &lt;dbl&gt;, crit.value &lt;dbl&gt;</span></span>
-<span></span>
-<span><span class="co"># Instant retargeting without ML refitting</span></span>
-<span><span class="fu"><a href="reference/retarget.html">retarget</a></span><span class="op">(</span><span class="va">fit</span>, g_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.95</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; # A tibble: 3 × 8</span></span>
-<span><span class="co">#&gt;   estimand term  estimate std.error statistic p.value conf.low conf.high</span></span>
-<span><span class="co">#&gt;   &lt;chr&gt;    &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1 ate      ATE      0.107    0.0510      2.10  0.0357  0.00717     0.207</span></span>
-<span><span class="co">#&gt; 2 rr       RR       1.33     0.142       2.00  0.0450  1.01        1.75 </span></span>
-<span><span class="co">#&gt; 3 or       OR       1.58     0.222       2.06  0.0397  1.02        2.44</span></span>
-<span></span>
-<span><span class="co"># Propensity overlap diagnostic: check positivity across treated &amp; control arms</span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"overlap"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-example-1.png" alt="Mirrored propensity score overlap plot generated by autoplot(fit, type = 'overlap')" width="100%"></p>
-<p>Inspect how much the fluctuation step adjusted initial G-computation predictions—or view all four visual causal checks together in a single 2×2 dashboard—using <code><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot()</a></code>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"dashboard"</span>, g_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.12</span>, by <span class="op">=</span> <span class="fl">0.02</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-targeting-example-1.png" alt="4-panel TMLE Causal Audit Dashboard showing propensity overlap, targeting step contrasts, positivity sensitivity sweep, and covariate balance Love plot" width="100%"></p>
+<span><span class="co">#&gt; 1 ate      ATE      0.111    0.0500      2.23  0.0261  0.00837     0.214    1.76</span></span>
+<span><span class="co">#&gt; 2 rr       RR       1.35     0.140       2.12  0.0339  1.01        1.80     2.03</span></span>
+<span><span class="co">#&gt; 3 or       OR       1.61     0.219       2.18  0.0295  1.03        2.53     2.60</span></span>
+<span><span class="co">#&gt; # ℹ 2 more variables: e_value_ci &lt;dbl&gt;, crit.value &lt;dbl&gt;</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="id_3-generate-understood-methods-results-and-assumptions-prose">3. Generate understood Methods, Results, and Assumptions prose<a class="anchor" aria-label="anchor" href="#id_3-generate-understood-methods-results-and-assumptions-prose"></a>
+</h3>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/report_tmle.html">report_tmle</a></span><span class="op">(</span></span>
+<span>  <span class="va">fit</span>,</span>
+<span>  outcome_label <span class="op">=</span> <span class="st">"clinical recovery"</span>,</span>
+<span>  treatment_label <span class="op">=</span> <span class="st">"targeted therapy"</span>,</span>
+<span>  style <span class="op">=</span> <span class="st">"plain"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── Publication-Ready TMLE Report (plain style) ──</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── Methods </span></span>
+<span><span class="co">#&gt; We analyzed 350 observations (350 with observed clinical recovery) using 5-fold</span></span>
+<span><span class="co">#&gt; cross-fitted TMLE ('predict, then target'). First, cross-validated ensembles</span></span>
+<span><span class="co">#&gt; estimated each unit's expected clinical recovery under alternative values of</span></span>
+<span><span class="co">#&gt; targeted therapy adjusting for 5 baseline factors (age, sex, lab_1, lab_2,</span></span>
+<span><span class="co">#&gt; lab_3; outcome learners: glmnet (100%), glm (0%), ranger (0%)), alongside</span></span>
+<span><span class="co">#&gt; treatment weights (glmnet (58%), ranger (41%), glm (1%)). Second, a targeted</span></span>
+<span><span class="co">#&gt; logistic calibration step adjusted those initial predictions so residual</span></span>
+<span><span class="co">#&gt; confounding bias on the causal estimand was removed. Standard errors and 95%</span></span>
+<span><span class="co">#&gt; confidence intervals were derived from the sample variance of the Efficient</span></span>
+<span><span class="co">#&gt; Influence Function (EIF).</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── Results </span></span>
+<span><span class="co">#&gt; After confounder adjustment and targeting, targeted therapy shifted clinical</span></span>
+<span><span class="co">#&gt; recovery by +0.1114 units (across the full study population (ATE); 95% CI</span></span>
+<span><span class="co">#&gt; [0.0133, 0.2094], p = 0.0261; E-value = 1.76 (CI limit = 1.18)); and the</span></span>
+<span><span class="co">#&gt; relative risk ratio (RR) was 1.35 (34.6% higher risk; 95% CI [1.02, 1.77], p =</span></span>
+<span><span class="co">#&gt; 0.0339; E-value = 2.03 (CI limit = 1.18)); and the odds ratio (OR) was 1.61</span></span>
+<span><span class="co">#&gt; (95% CI [1.05, 2.47], p = 0.0295; E-value = 2.60 (CI limit = 1.27)). The</span></span>
+<span><span class="co">#&gt; targeting calibration step shifted the initial ML plug-in estimate by +0.0307</span></span>
+<span><span class="co">#&gt; (fluctuation epsilon = 0.0781) and satisfied the EIF score equation (mean EIF =</span></span>
+<span><span class="co">#&gt; 3.37e-14). Inverse-propensity weighting reduced maximum covariate standardized</span></span>
+<span><span class="co">#&gt; mean imbalance from 0.331 to 0.051. Positivity truncation affected 0.0% of</span></span>
+<span><span class="co">#&gt; observations, with maximum single-observation EIF variance leverage of 2.1%.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ── Causal Assumptions &amp; Diagnostics </span></span>
+<span><span class="co">#&gt; 1. **No unmeasured confounding:** Valid causal interpretation assumes all joint</span></span>
+<span><span class="co">#&gt; causes of targeted therapy and clinical recovery are captured in W. For the</span></span>
+<span><span class="co">#&gt; primary estimand (ATE), an unmeasured confounder would need a risk-ratio</span></span>
+<span><span class="co">#&gt; association of at least 1.76 with both treatment and outcome (beyond measured</span></span>
+<span><span class="co">#&gt; covariates) to explain away the point estimate.</span></span>
+<span><span class="co">#&gt; 2. **Positivity (real-world overlap):** Only 0.0% of observations hit bounds</span></span>
+<span><span class="co">#&gt; [0.046, 0.954] (effective sample sizes: treated = 192.2, control = 135.2).</span></span>
+<span><span class="co">#&gt; 3. **Consistency &amp; interference:** Each unit's observed outcome matches its</span></span>
+<span><span class="co">#&gt; potential outcome under the received targeted therapy level without cross-unit</span></span>
+<span><span class="co">#&gt; spillover.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Tip: Use as.character(report) or style = 'markdown' to copy directly into</span></span>
+<span><span class="co">#&gt; Quarto/R Markdown.</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="everyday-concept-rightarrow-tmle-decoder-ring">Everyday Concept <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mo>→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math> TMLE Decoder Ring<a class="anchor" aria-label="anchor" href="#everyday-concept-rightarrow-tmle-decoder-ring"></a>
+</h2>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr>
+<th>Everyday Idea</th>
+<th>Technical TMLE Name</th>
+<th>Where to See It in <code>tidytmle</code>
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Baseline digital-twin predictions</td>
+<td>Initial outcome model <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\bar{Q}^0(a, W)</annotation></semantics></math>
+</td>
+<td>
+<code>.q1_init</code>, <code>.q0_init</code> in <code>augment(fit)</code>
+</td>
+</tr>
+<tr>
+<td>Likelihood of receiving treatment</td>
+<td>Propensity score <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g(W)</annotation></semantics></math>
+</td>
+<td>
+<code>.g_hat</code>, <code>.g_trunc</code> in <code>augment(fit)</code>
+</td>
+</tr>
+<tr>
+<td>How much each person needs re-balancing</td>
+<td>Clever Covariate <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">H_n(A, W)</annotation></semantics></math>
+</td>
+<td>
+<code>.clever_h</code> in <code>augment(fit)</code>
+</td>
+</tr>
+<tr>
+<td>Size of the bias-removal nudge</td>
+<td>Fluctuation parameter <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>
+</td>
+<td>
+<code>epsilon</code> &amp; <code>plugin_vs_tmle_shift</code> in <code>glance(fit)</code>
+</td>
+</tr>
+<tr>
+<td>Uncertainty &amp; outlier influence</td>
+<td>Efficient Influence Function <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>D</mi><mi>i</mi><mo>*</mo></msubsup><annotation encoding="application/x-tex">D_i^*</annotation></semantics></math>
+</td>
+<td>
+<code>.eif</code> &amp; <code>.eif_leverage</code> in <code>augment(fit)</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p>For a full worked visual walkthrough—including a live test of <strong>both safety nets (double robustness)</strong>—read <a href="articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a> (<code><a href="articles/tmle-intuition.html">vignette("tmle-intuition", package = "tidytmle")</a></code>).</p>
 </div>
 <div class="section level2">
 <h2 id="foundational-literature">Foundational Literature<a class="anchor" aria-label="anchor" href="#foundational-literature"></a>
@@ -310,6 +319,7 @@
 <li>Zheng, W., &amp; van der Laan, M. J. (2011). Cross-validated targeted minimum-loss-based estimation. <em>Targeted Learning</em>, Springer.</li>
 <li>Petersen, M. L., et al. (2012). Diagnosing and responding to violations in the positivity assumption. <em>Stat. Methods Med. Res.</em>, 21(1), 31–54.</li>
 <li>Schuler, M. S., &amp; Rose, S. (2017). Targeted maximum likelihood estimation for causal inference in observational studies. <em>Am. J. Epidemiol.</em>, 185(1), 65–73.</li>
+<li>VanderWeele, T. J., &amp; Ding, P. (2017). Sensitivity analysis in observational research: Introducing the E-value. <em>Ann. Intern. Med.</em>, 167(4), 268–274.</li>
 <li>Luque-Fernandez, M. A., et al. (2018). Targeted maximum likelihood estimation for a binary treatment: A tutorial. <em>Stat. Med.</em>, 37(16), 2530–2546.</li>
 <li>Díaz, I., Williams, N., Hoffman, K. L., &amp; Schenck, E. J. (2021). Nonparametric causal effects based on longitudinal modified treatment policies. <em>JASA</em>, 118(542), 846–857.</li>
 <li>Kennedy, E. H. (2023). Towards optimal doubly robust estimation of heterogeneous causal effects. <em>Electron. J. Stat.</em>, 17(2), 3008–3049.</li>

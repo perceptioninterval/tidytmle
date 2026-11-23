@@ -352,13 +352,14 @@ print.tmle_spec <- function(x, ...) {
   lines <- cli::cli_format_method({
     cli::cli_h2("Targeted Maximum Likelihood Estimation (TMLE) Specification")
     cli::cli_bullets(c(
-      "*" = "Outcome: {.field {rlang::as_label(x$roles$outcome)}}",
-      "*" = "Treatment: {.field {rlang::as_label(x$roles$treatment)}}",
-      "*" = "Covariates: {.field {if (rlang::quo_is_null(x$roles$covariates)) '<all remaining>' else rlang::as_label(x$roles$covariates)}}",
-      "*" = "Estimand(s): {.val {x$estimand$names}}",
-      "*" = "CV-TMLE: {.val {x$targeting$cv_tmle}} ({x$resamples$v_folds}-fold)",
-      "*" = "Positivity bounds: {.val {paste(x$targeting$g_bounds, collapse = ', ')}} | Fluctuation: {.val {x$targeting$fluctuation}}"
+      "*" = "Outcome to measure: {.field {rlang::as_label(x$roles$outcome)}}",
+      "*" = "Treatment / exposure: {.field {rlang::as_label(x$roles$treatment)}}",
+      "*" = "Confounders adjusted for: {.field {if (rlang::quo_is_null(x$roles$covariates)) '<all remaining columns>' else rlang::as_label(x$roles$covariates)}}",
+      "*" = "Causal question(s): {.val {x$estimand$names}}",
+      "*" = "Cross-fitting: {.val {x$targeting$cv_tmle}} ({x$resamples$v_folds}-fold out-of-sample)",
+      "*" = "Safety guardrails: bounds = {.val {paste(x$targeting$g_bounds, collapse = ', ')}} | calibration = {.val {x$targeting$fluctuation}}"
     ))
+    cli::cli_text("{.emph Next: pass to fit(data = your_data) to estimate causal effects.}")
   })
   cat(lines, sep = "\n")
   invisible(x)
@@ -372,7 +373,7 @@ print.tmle_fit <- function(x, ...) {
   lines <- cli::cli_format_method({
     cli::cli_h2("TMLE Fit Summary")
     meta <- sprintf(
-      "n = %d (observed = %d) | %d-fold %s | %s fluctuation | %.2fs",
+      "n = %d (%d observed) | %d-fold %s | %s calibration | %.2fs",
       gl$n, gl$n_observed, gl$v_folds,
       if (gl$cv_tmle) "CV-TMLE" else "TMLE",
       x$spec$targeting$fluctuation,
@@ -386,17 +387,17 @@ print.tmle_fit <- function(x, ...) {
     }
     cli::cli_text("{.emph {meta}}")
 
-    cli::cli_h3("Causal Estimates")
+    cli::cli_h3("Causal Effect Estimates")
     for (i in seq_len(nrow(td))) {
       r <- td[i, ]
-      p_str <- if (r$p.value < 1e-4) "< 0.0001" else sprintf("%.4f", r$p.value)
+      p_str <- format_p_human(r$p.value)
       se_lab <- if (r$estimand %in% c("rr", "or")) "log-SE" else "SE"
       cli::cli_text(
-        "  {sprintf('%-6s', r$term)}  est = {sprintf('%8.4f', r$estimate)}  ({se_lab} = {sprintf('%.4f', r$std.error)})  95% CI [{sprintf('%.4f', r$conf.low)}, {sprintf('%.4f', r$conf.high)}]  p = {p_str}"
+        "  {sprintf('%-6s', r$term)}  est = {sprintf('%8.4f', r$estimate)}  ({se_lab} = {sprintf('%.4f', r$std.error)})  95% CI [{sprintf('%.4f', r$conf.low)}, {sprintf('%.4f', r$conf.high)}]  {p_str}"
       )
     }
 
-    cli::cli_h3("Nuisance Super Learners")
+    cli::cli_h3("Nuisance Models (Cross-Validated Super Learner)")
     format_sl_line <- function(sl_obj, label, metric_key, metric_label) {
       if (is.null(sl_obj)) return(NULL)
       m <- sl_obj$metrics |>
@@ -404,27 +405,27 @@ print.tmle_fit <- function(x, ...) {
         dplyr::summarise(val = mean(.estimate, na.rm = TRUE)) |>
         dplyr::pull(val)
       w_sorted <- sort(sl_obj$sl_weights[sl_obj$sl_weights > 0.001], decreasing = TRUE)
-      top_str <- paste(sprintf("%s %.2f", names(w_sorted), as.numeric(w_sorted)), collapse = ", ")
-      cli::cli_text("  {label} Super Learner: {metric_label} = {sprintf('%.3f', m)} (weights: {top_str})")
+      top_str <- paste(sprintf("%s %.0f%%", names(w_sorted), 100 * as.numeric(w_sorted)), collapse = ", ")
+      cli::cli_text("  {label}: {metric_label} = {sprintf('%.3f', m)} (weights: {top_str})")
     }
 
     if (x$cache$outcome_type == "binary") {
-      format_sl_line(x$nuisance$Q, "Q", "roc_auc", "AUC")
+      format_sl_line(x$nuisance$Q, "Outcome (Q)", "roc_auc", "AUC")
     } else {
-      format_sl_line(x$nuisance$Q, "Q", "rsq", "R2")
+      format_sl_line(x$nuisance$Q, "Outcome (Q)", "rsq", "R2")
     }
     if (x$cache$treatment_type == "binary") {
-      format_sl_line(x$nuisance$g, "g", "roc_auc", "AUC")
+      format_sl_line(x$nuisance$g, "Treatment (g)", "roc_auc", "AUC")
     } else {
-      format_sl_line(x$nuisance$g, "g (ratio)", "mn_log_loss", "LogLoss")
+      format_sl_line(x$nuisance$g, "Policy weight (g)", "mn_log_loss", "LogLoss")
     }
     if (!is.null(x$nuisance$C)) {
-      format_sl_line(x$nuisance$C, "C", "roc_auc", "AUC")
+      format_sl_line(x$nuisance$C, "Missingness (C)", "roc_auc", "AUC")
     }
 
-    cli::cli_h3("Diagnostics & Targeting Shift")
+    cli::cli_h3("Causal Health & Bias Adjustment")
     cli::cli_text(
-      "  Targeting shift (TMLE - plug-in): {sprintf('%+.4f', gl$plugin_vs_tmle_shift)} (epsilon = {sprintf('%.4f', gl$epsilon)})"
+      "  Bias calibration (TMLE - initial ML): {sprintf('%+.4f', gl$plugin_vs_tmle_shift)} (epsilon = {sprintf('%.4f', gl$epsilon)})"
     )
     warned <- FALSE
     if (abs(gl$mean_eif) > 1e-4) {
@@ -435,21 +436,22 @@ print.tmle_fit <- function(x, ...) {
     }
     if (gl$pct_truncated > 0.05) {
       cli::cli_alert_warning(
-        "Positivity stress: {sprintf('%.1f%%', 100 * gl$pct_truncated)} of propensity scores hit g_bounds [{sprintf('%.3f', gl$g_bound_low)}, {sprintf('%.3f', gl$g_bound_high)}]."
+        "Positivity stress: {sprintf('%.1f%%', 100 * gl$pct_truncated)} clipped at g_bounds [{sprintf('%.3f', gl$g_bound_low)}, {sprintf('%.3f', gl$g_bound_high)}]."
       )
       warned <- TRUE
     }
     if (gl$max_eif_leverage > 0.10) {
       cli::cli_alert_warning(
-        "High single-observation leverage: top observation explains {sprintf('%.1f%%', 100 * gl$max_eif_leverage)} of EIF variance."
+        "High single-row influence: top observation explains {sprintf('%.1f%%', 100 * gl$max_eif_leverage)} of uncertainty."
       )
       warned <- TRUE
     }
     if (!warned) {
       cli::cli_alert_success(
-        "All checks healthy: mean EIF = {sprintf('%.2e', gl$mean_eif)}, truncated = {sprintf('%.1f%%', 100 * gl$pct_truncated)}, max EIF leverage = {sprintf('%.1f%%', 100 * gl$max_eif_leverage)}."
+        "All core checks healthy: mean EIF = {sprintf('%.2e', gl$mean_eif)}, clipped = {sprintf('%.1f%%', 100 * gl$pct_truncated)}, top leverage = {sprintf('%.1f%%', 100 * gl$max_eif_leverage)}."
       )
     }
+    cli::cli_text("{.emph Next: summary(fit) | check_tmle(fit) | report_tmle(fit) | autoplot(fit)}")
   })
 
   cat(lines, sep = "\n")
@@ -488,49 +490,51 @@ explain_tmle <- function(x, conf.level = 0.95) {
   pct_lbl <- sprintf("%.0f%%", 100 * conf.level)
 
   describe_row <- function(r) {
-    p_txt <- if (r$p.value < 1e-4) "< 0.0001" else sprintf("%.4f", r$p.value)
+    p_txt <- format_p_human(r$p.value)
     if (r$estimand %in% c("ate", "att", "atc")) {
       pop <- switch(
         r$estimand,
-        ate = "across the full population",
-        att = "among treated units (ATT)",
-        atc = "among untreated/control units (ATC)"
+        ate = "across the full study population",
+        att = "among treated individuals (ATT)",
+        atc = "among untreated/comparison individuals (ATC)"
       )
       dir_txt <- if (r$estimate >= 0) "increases" else "decreases"
       sprintf(
-        "%s (%s): Treatment %s the expected outcome by %.4f units (%s CI [%.4f, %.4f], p = %s).",
+        "%s (%s): Treatment %s the expected outcome by %.4f units (%s CI [%.4f, %.4f], %s).",
         r$term, pop, dir_txt, abs(r$estimate), pct_lbl, r$conf.low, r$conf.high, p_txt
       )
     } else if (r$estimand == "rr") {
       pct_ch <- 100 * (r$estimate - 1)
       dir_txt <- if (r$estimate >= 1) "higher" else "lower"
       sprintf(
-        "RR: Treatment corresponds to a %.2fx risk ratio (%.1f%% %s risk; %s CI [%.2f, %.2f], p = %s).",
+        "RR: Treatment corresponds to a %.2fx risk ratio (%.1f%% %s risk; %s CI [%.2f, %.2f], %s).",
         r$estimate, abs(pct_ch), dir_txt, pct_lbl, r$conf.low, r$conf.high, p_txt
       )
     } else if (r$estimand == "or") {
       sprintf(
-        "OR: Treatment corresponds to an odds ratio of %.2f (%s CI [%.2f, %.2f], p = %s).",
+        "OR: Treatment corresponds to an odds ratio of %.2f (%s CI [%.2f, %.2f], %s).",
         r$estimate, pct_lbl, r$conf.low, r$conf.high, p_txt
       )
     } else if (r$estimand %in% c("ey1", "ey0")) {
       arm_txt <- if (r$estimand == "ey1") "everyone received treatment" else "no one received treatment"
       sprintf(
-        "%s: Counterfactual mean if %s is %.4f (%s CI [%.4f, %.4f]).",
+        "%s: Counterfactual average if %s is %.4f (%s CI [%.4f, %.4f]).",
         r$term, arm_txt, r$estimate, pct_lbl, r$conf.low, r$conf.high
       )
     } else {
       sprintf(
-        "%s: Expected outcome under Modified Treatment Policy is %.4f (%s CI [%.4f, %.4f], p = %s).",
+        "%s: Expected outcome under Modified Treatment Policy is %.4f (%s CI [%.4f, %.4f], %s).",
         r$term, r$estimate, pct_lbl, r$conf.low, r$conf.high, p_txt
       )
     }
   }
 
+  bal_info <- if (identical(x$cache$treatment_type, "binary")) compute_covariate_balance(x) else NULL
+
   lines <- cli::cli_format_method({
     cli::cli_h2("Plain-English TMLE Summary")
     cli::cli_text(
-      "Sample: {gl$n} rows ({gl$n_observed} observed outcomes) | {gl$v_folds}-fold {if (gl$cv_tmle) 'CV-TMLE' else 'TMLE'}"
+      "Cohort: {gl$n} rows ({gl$n_observed} with observed outcomes) | {gl$v_folds}-fold {if (gl$cv_tmle) 'cross-fitted TMLE' else 'TMLE'}"
     )
 
     cli::cli_h3("1. What the Causal Estimates Mean")
@@ -538,44 +542,60 @@ explain_tmle <- function(x, conf.level = 0.95) {
       cli::cli_alert_info("{describe_row(td[i, ])}")
     }
 
-    cli::cli_h3("2. What the Targeting Step Did")
+    cli::cli_h3("2. What the Targeting Step Did (\"Predict, Then Target\")")
     shift_abs <- abs(gl$plugin_vs_tmle_shift)
     if (shift_abs < 1e-3) {
       cli::cli_text(
-        "The initial ML fit had minimal residual bias (targeting shift = {sprintf('%+.4f', gl$plugin_vs_tmle_shift)}, epsilon = {sprintf('%.4f', gl$epsilon)})."
+        "The initial ML predictions already captured nearly all measured confounding bias (calibration shift = {sprintf('%+.4f', gl$plugin_vs_tmle_shift)}, epsilon = {sprintf('%.4f', gl$epsilon)})."
       )
     } else {
       cli::cli_text(
-        "Fluctuating along the Clever Covariate shifted the initial ML plug-in estimate by {sprintf('%+.4f', gl$plugin_vs_tmle_shift)} (epsilon = {sprintf('%.4f', gl$epsilon)}) to remove residual confounding bias."
+        "Targeting nudged the initial ML plug-in predictions by {sprintf('%+.4f', gl$plugin_vs_tmle_shift)} (epsilon = {sprintf('%.4f', gl$epsilon)}) to zero out residual confounding bias."
       )
     }
 
-    cli::cli_h3("3. Statistical Health Check & Next Steps")
+    cli::cli_h3("3. Can I Trust These Numbers? (Health Check & Next Steps)")
     if (abs(gl$mean_eif) <= 1e-4) {
-      cli::cli_alert_success("Convergence: EIF estimating equation solved (mean EIF = {sprintf('%.2e', gl$mean_eif)}).")
+      cli::cli_alert_success("Convergence: Bias-removal score equation solved (mean EIF = {sprintf('%.2e', gl$mean_eif)}).")
     } else {
-      cli::cli_alert_danger("Convergence: mean EIF is {sprintf('%.2e', gl$mean_eif)} (> 1e-4); inspect extreme weights or switch fluctuation.")
+      cli::cli_alert_danger("Convergence: mean EIF is {sprintf('%.2e', gl$mean_eif)} (> 1e-4); run check_tmle(fit) or inspect extreme weights.")
     }
 
     if (gl$pct_truncated <= 0.05) {
       cli::cli_alert_success(
-        "Positivity: {sprintf('%.1f%%', 100 * gl$pct_truncated)} clipped at g_bounds [{sprintf('%.3f', gl$g_bound_low)}, {sprintf('%.3f', gl$g_bound_high)}] (ESS: treated = {round(gl$ess_treated, 1)}, control = {round(gl$ess_control, 1)})."
+        "Comparison overlap: {sprintf('%.1f%%', 100 * gl$pct_truncated)} clipped at [{sprintf('%.3f', gl$g_bound_low)}, {sprintf('%.3f', gl$g_bound_high)}] (effective n: {round(gl$ess_treated, 1)} treated, {round(gl$ess_control, 1)} control)."
       )
     } else {
       cli::cli_alert_warning(
-        "Positivity stress: {sprintf('%.1f%%', 100 * gl$pct_truncated)} clipped at [{sprintf('%.3f', gl$g_bound_low)}, {sprintf('%.3f', gl$g_bound_high)}]. Run {.code autoplot(fit, type = 'sensitivity')} or {.code retarget(fit, g_bounds = c(0.05, 0.95))}."
+        "Positivity stress: {sprintf('%.1f%%', 100 * gl$pct_truncated)} clipped at [{sprintf('%.3f', gl$g_bound_low)}, {sprintf('%.3f', gl$g_bound_high)}]. Test stability with {.code autoplot(fit, type = 'sensitivity')} or {.code retarget(fit, g_bounds = c(0.05, 0.95))}."
       )
+    }
+
+    if (!is.null(bal_info) && nrow(bal_info) > 0L) {
+      max_raw <- max(bal_info$smd_raw, na.rm = TRUE)
+      max_wt <- max(bal_info$smd_wt, na.rm = TRUE)
+      if (max_wt <= 0.10) {
+        cli::cli_alert_success(
+          "Confounder balance: Max standardized difference fell from {sprintf('%.3f', max_raw)} to {sprintf('%.3f', max_wt)} (well below 0.10)."
+        )
+      } else {
+        cli::cli_alert_warning(
+          "Confounder balance: Max weighted |SMD| is {sprintf('%.3f', max_wt)} (> 0.10). Inspect {.code autoplot(fit, type = 'balance')}."
+        )
+      }
     }
 
     if (gl$max_eif_leverage <= 0.10) {
       cli::cli_alert_success(
-        "Influence: No single observation dominates variance (max EIF leverage = {sprintf('%.1f%%', 100 * gl$max_eif_leverage)})."
+        "Uncertainty stability: No single person dominates SEs (top observation share = {sprintf('%.1f%%', 100 * gl$max_eif_leverage)})."
       )
     } else {
       cli::cli_alert_warning(
-        "High leverage: Top observation accounts for {sprintf('%.1f%%', 100 * gl$max_eif_leverage)} of EIF variance. Inspect {.code augment(fit)} sorted by {.field .eif_leverage}."
+        "High leverage: Top observation accounts for {sprintf('%.1f%%', 100 * gl$max_eif_leverage)} of variance. Inspect {.code augment(fit) |> dplyr::slice_max(.eif_leverage, n = 5)}."
       )
     }
+
+    cli::cli_text("{.emph Next steps: report_tmle(fit) for paper-ready prose | autoplot(fit, type = 'dashboard') for visual audit.}")
   })
 
   cat(lines, sep = "\n")
