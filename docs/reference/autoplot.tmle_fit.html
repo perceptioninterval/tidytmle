@@ -22,6 +22,9 @@ of point estimates, 95% confidence intervals, and sample truncation rates.
 "balance": Weighted Covariate Balance Love Plot. Compares unadjusted
 vs. IPW/TMLE-weighted absolute standardized mean differences (|SMD|)
 against the standard 0.10 balance benchmark.
+"dashboard": 4-Panel Causal Audit Dashboard. Combines "overlap",
+"targeting", "sensitivity", and "balance" (or "eif" and
+"learners" for continuous LMTPs) into one figure via patchwork.
 
 '><meta property="og:description" content='Produces ggplot2 causal diagnostics for a fitted "tmle_fit" object,
 turning every step of the TMLE estimator into an inspectable visual check:
@@ -46,8 +49,11 @@ of point estimates, 95% confidence intervals, and sample truncation rates.
 "balance": Weighted Covariate Balance Love Plot. Compares unadjusted
 vs. IPW/TMLE-weighted absolute standardized mean differences (|SMD|)
 against the standard 0.10 balance benchmark.
+"dashboard": 4-Panel Causal Audit Dashboard. Combines "overlap",
+"targeting", "sensitivity", and "balance" (or "eif" and
+"learners" for continuous LMTPs) into one figure via patchwork.
 
-'><meta property="og:image" content="https://tidytmle.tidymodels.org/logo.svg"></head><body>
+'><meta property="og:image" content="https://perceptioninterval.github.io/tidytmle/logo.svg"></head><body>
     <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
@@ -76,7 +82,7 @@ against the standard 0.10 balance benchmark.
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/michaelespero/tidytmle/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/perceptioninterval/tidytmle/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul></div>
 
 
@@ -85,7 +91,7 @@ against the standard 0.10 balance benchmark.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Diagnostic Plots for a TMLE Fit</h1>
-      <small class="dont-index">Source: <a href="https://github.com/michaelespero/tidytmle/blob/HEAD/R/autoplot.R" class="external-link"><code>R/autoplot.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/perceptioninterval/tidytmle/blob/HEAD/R/autoplot.R" class="external-link"><code>R/autoplot.R</code></a></small>
       <div class="d-none name"><code>autoplot.tmle_fit.Rd</code></div>
     </div>
 
@@ -112,6 +118,9 @@ of point estimates, 95% confidence intervals, and sample truncation rates.</p></
 <li><p><code>"balance"</code>: <strong>Weighted Covariate Balance Love Plot</strong>. Compares unadjusted
 vs. IPW/TMLE-weighted absolute standardized mean differences (<code>|SMD|</code>)
 against the standard <code>0.10</code> balance benchmark.</p></li>
+<li><p><code>"dashboard"</code>: <strong>4-Panel Causal Audit Dashboard</strong>. Combines <code>"overlap"</code>,
+<code>"targeting"</code>, <code>"sensitivity"</code>, and <code>"balance"</code> (or <code>"eif"</code> and
+<code>"learners"</code> for continuous LMTPs) into one figure via <code>patchwork</code>.</p></li>
 </ul></div>
 
     <div class="section level2">
@@ -119,7 +128,8 @@ against the standard <code>0.10</code> balance benchmark.</p></li>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'tmle_fit'</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"overlap"</span>, <span class="st">"targeting"</span>, <span class="st">"learners"</span>, <span class="st">"eif"</span>, <span class="st">"sensitivity"</span>, <span class="st">"balance"</span><span class="op">)</span>,</span>
+<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"overlap"</span>, <span class="st">"targeting"</span>, <span class="st">"learners"</span>, <span class="st">"eif"</span>, <span class="st">"sensitivity"</span>, <span class="st">"balance"</span>,</span>
+<span>    <span class="st">"dashboard"</span><span class="op">)</span>,</span>
 <span>  g_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.15</span>, by <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -135,12 +145,12 @@ against the standard <code>0.10</code> balance benchmark.</p></li>
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
 <dd><p>Diagnostic plot type: <code>"overlap"</code>, <code>"targeting"</code>, <code>"learners"</code>,
-<code>"eif"</code>, <code>"sensitivity"</code>, or <code>"balance"</code>.</p></dd>
+<code>"eif"</code>, <code>"sensitivity"</code>, <code>"balance"</code>, or <code>"dashboard"</code>.</p></dd>
 
 
 <dt id="arg-g-grid">g_grid<a class="anchor" aria-label="anchor" href="#arg-g-grid"></a></dt>
 <dd><p>Numeric vector of lower positivity thresholds in <code>(0, 0.5)</code>
-swept when <code>type = "sensitivity"</code>.</p></dd>
+swept when <code>type = "sensitivity"</code> or <code>"dashboard"</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

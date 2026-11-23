@@ -40,3 +40,11 @@ influence-function standard errors, test statistics, p-values, confidence
 intervals, optional simultaneous uniform confidence bands, and optional
 VanderWeele-Ding E-values.
 }
+\details{
+For additive contrasts (\code{"ate"}, \code{"att"}, \code{"atc"}, \code{"ey1"}, \code{"ey0"}, and
+continuous Modified Treatment Policies), \code{std.error} is on the native outcome
+scale and intervals are symmetric Wald bounds. For ratio estimands (\code{"rr"}
+and \code{"or"}), \code{std.error} is reported on the \strong{log scale} (\code{SE[log(RR)]} /
+\code{SE[log(OR)]}) and confidence intervals are computed on the log scale and
+exponentiated back so intervals remain strictly positive.
+}

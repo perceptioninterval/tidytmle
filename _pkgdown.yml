@@ -1,4 +1,4 @@
-url: https://tidytmle.tidymodels.org/
+url: https://perceptioninterval.github.io/tidytmle/
 
 template:
   package: tidytemplate
@@ -52,10 +52,11 @@ reference:
   - title: Inference, Diagnostics & Tidymodels Verbs
     desc: >
       Decode every stage of the TMLE estimator via standard tidymodels S3
-      verbs and visual diagnostics powered by the joint Efficient Influence
-      Function (EIF).
+      verbs, plain-English explanations (explain_tmle / summary), and visual
+      diagnostics powered by the joint Efficient Influence Function (EIF).
     contents:
       - tidy.tmle_fit
+      - explain_tmle
       - glance.tmle_fit
       - augment.tmle_fit
       - collect_metrics.tmle_fit

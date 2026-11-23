@@ -40,13 +40,15 @@ fit <- tmle_spec(
   fit(data = cohort)
 
 fit
+summary(fit)
 ```
 
 ## Joint EIF Inference & Tidymodels S3 Verbs
 
 Standard `tidymodels` S3 verbs extract every layer of the fitted pipeline without digging through nested lists.
 
-- **`tidy(fit)`**: Returns point estimates, influence-function standard errors, and 95% confidence intervals (computed on the log scale and exponentiated for ratio estimands `"rr"` and `"or"`). Setting `simultaneous = TRUE` applies a fast wild multiplier bootstrap across the joint EIF matrix so multiple estimands retain simultaneous 95% coverage; `e_value = TRUE` computes VanderWeele-Ding sensitivity bounds for unmeasured confounding.
+- **`summary(fit)` / `explain_tmle(fit)`**: Plain-English causal interpretation, targeting shift summary, and traffic-light health audit with actionable next steps.
+- **`tidy(fit)`**: Returns point estimates, influence-function standard errors, and 95% confidence intervals (on the log scale and exponentiated for ratio estimands `"rr"` and `"or"`). Setting `simultaneous = TRUE` applies a fast wild multiplier bootstrap across the joint EIF matrix so multiple estimands retain simultaneous 95% coverage; `e_value = TRUE` computes VanderWeele-Ding sensitivity bounds for unmeasured confounding.
 - **`glance(fit)`**: One-row causal health check—verify that `mean_eif` is near zero (`< 1e-4`), inspect `plugin_vs_tmle_shift` (how much the targeting step adjusted the initial ML fit), and check positivity truncation (`pct_truncated`, `ess_treated`, `ess_control`).
 - **`collect_metrics(fit)` & `extract_sl_weights(fit)`**: Inspect out-of-fold `yardstick` CV performance and simplex Super Learner metalearner weights across base learners.
 
@@ -88,10 +90,8 @@ dplyr::bind_rows(
 
 ## Visual Causal Diagnostics (`autoplot()`)
 
-Inspect propensity overlap (checking positivity across arms), how strongly the fluctuation step shifted individual predictions (`"targeting"`), and positivity truncation stability across bounds (`"sensitivity"`):
+Inspect propensity overlap (checking positivity across arms), how strongly the fluctuation step shifted individual predictions (`"targeting"`), and positivity truncation stability across bounds (`"sensitivity"`). If `patchwork` is installed, `autoplot(fit, type = "dashboard")` combines all key checks into a single 2×2 visual audit:
 
-```{r plots, fig.alt = "Propensity score overlap, targeting shift, and positivity sensitivity sweep"}
-autoplot(fit, type = "overlap")
-autoplot(fit, type = "targeting")
-autoplot(fit, type = "sensitivity", g_grid = seq(0.01, 0.12, by = 0.02))
+```{r plots, fig.width = 9.2, fig.height = 6.6, fig.alt = "4-panel TMLE Causal Audit Dashboard combining propensity overlap, targeting step shifts, positivity sensitivity sweep, and covariate balance"}
+autoplot(fit, type = "dashboard", g_grid = seq(0.01, 0.12, by = 0.02))
 ```

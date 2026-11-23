@@ -315,25 +315,21 @@ solve_sl_weights <- function(oof_mat,
       # Backtracking projected gradient
       step_cur <- step
       accepted <- FALSE
+      delta_alpha <- 0
       for (bt in seq_len(25L)) {
         cand <- project_simplex(alpha - step_cur * gr)
         cand_loss <- loss_fn(cand)
         if (cand_loss <= cur_loss - 1e-4 * sum(gr * (alpha - cand)) + 1e-12) {
-          if (max(abs(cand - alpha)) < 1e-8) {
-            alpha <- cand
-            accepted <- TRUE
-            step <- step_cur
-            break
-          }
+          delta_alpha <- max(abs(cand - alpha))
           alpha <- cand
           cur_loss <- cand_loss
-          step <- min(step_cur * 1.5, 2.0)
+          step <- min(step_cur * 1.5, 20.0)
           accepted <- TRUE
           break
         }
         step_cur <- step_cur * 0.5
       }
-      if (!accepted || (exists("cand") && max(abs(cand - alpha)) < 1e-8)) {
+      if (!accepted || delta_alpha < 1e-8) {
         break
       }
     }

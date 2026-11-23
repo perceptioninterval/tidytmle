@@ -6,7 +6,8 @@
 \usage{
 \method{autoplot}{tmle_fit}(
   object,
-  type = c("overlap", "targeting", "learners", "eif", "sensitivity", "balance"),
+  type = c("overlap", "targeting", "learners", "eif", "sensitivity", "balance",
+    "dashboard"),
   g_grid = seq(0.01, 0.15, by = 0.01),
   ...
 )
@@ -15,10 +16,10 @@
 \item{object}{A fitted \code{"tmle_fit"} object.}
 
 \item{type}{Diagnostic plot type: \code{"overlap"}, \code{"targeting"}, \code{"learners"},
-\code{"eif"}, \code{"sensitivity"}, or \code{"balance"}.}
+\code{"eif"}, \code{"sensitivity"}, \code{"balance"}, or \code{"dashboard"}.}
 
 \item{g_grid}{Numeric vector of lower positivity thresholds in \verb{(0, 0.5)}
-swept when \code{type = "sensitivity"}.}
+swept when \code{type = "sensitivity"} or \code{"dashboard"}.}
 
 \item{...}{Currently unused.}
 }
@@ -50,6 +51,9 @@ of point estimates, 95\% confidence intervals, and sample truncation rates.
 \item \code{"balance"}: \strong{Weighted Covariate Balance Love Plot}. Compares unadjusted
 vs. IPW/TMLE-weighted absolute standardized mean differences (\verb{|SMD|})
 against the standard \code{0.10} balance benchmark.
+\item \code{"dashboard"}: \strong{4-Panel Causal Audit Dashboard}. Combines \code{"overlap"},
+\code{"targeting"}, \code{"sensitivity"}, and \code{"balance"} (or \code{"eif"} and
+\code{"learners"} for continuous LMTPs) into one figure via \code{patchwork}.
 }
 }
 \references{

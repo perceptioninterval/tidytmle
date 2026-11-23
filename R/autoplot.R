@@ -23,12 +23,15 @@
 #' - `"balance"`: **Weighted Covariate Balance Love Plot**. Compares unadjusted
 #'   vs. IPW/TMLE-weighted absolute standardized mean differences (`|SMD|`)
 #'   against the standard `0.10` balance benchmark.
+#' - `"dashboard"`: **4-Panel Causal Audit Dashboard**. Combines `"overlap"`,
+#'   `"targeting"`, `"sensitivity"`, and `"balance"` (or `"eif"` and
+#'   `"learners"` for continuous LMTPs) into one figure via `patchwork`.
 #'
 #' @param object A fitted `"tmle_fit"` object.
 #' @param type Diagnostic plot type: `"overlap"`, `"targeting"`, `"learners"`,
-#'   `"eif"`, `"sensitivity"`, or `"balance"`.
+#'   `"eif"`, `"sensitivity"`, `"balance"`, or `"dashboard"`.
 #' @param g_grid Numeric vector of lower positivity thresholds in `(0, 0.5)`
-#'   swept when `type = "sensitivity"`.
+#'   swept when `type = "sensitivity"` or `"dashboard"`.
 #' @param ... Currently unused.
 #'
 #' @references
@@ -48,7 +51,7 @@
 #' @method autoplot tmle_fit
 #' @export
 autoplot.tmle_fit <- function(object,
-                              type = c("overlap", "targeting", "learners", "eif", "sensitivity", "balance"),
+                              type = c("overlap", "targeting", "learners", "eif", "sensitivity", "balance", "dashboard"),
                               g_grid = seq(0.01, 0.15, by = 0.01),
                               ...) {
   type <- match.arg(type)
@@ -68,7 +71,39 @@ autoplot.tmle_fit <- function(object,
   if (type == "sensitivity") {
     return(autoplot_sensitivity(object, g_grid = g_grid))
   }
+  if (type == "dashboard") {
+    return(autoplot_dashboard(object, g_grid = g_grid))
+  }
   autoplot_balance(object)
+}
+
+autoplot_dashboard <- function(object, g_grid = seq(0.01, 0.15, by = 0.01)) {
+  if (!requireNamespace("patchwork", quietly = TRUE)) {
+    cli::cli_abort(c(
+      "Package {.pkg patchwork} is required for {.code autoplot(fit, type = \"dashboard\")}.",
+      "i" = "Install it with {.code install.packages(\"patchwork\")} or plot individual types directly."
+    ))
+  }
+
+  p1 <- autoplot_overlap(object) + ggplot2::labs(subtitle = NULL)
+  p2 <- autoplot_targeting(object) + ggplot2::labs(subtitle = NULL)
+  p3 <- autoplot_sensitivity(object, g_grid = g_grid) + ggplot2::labs(subtitle = NULL)
+  p4 <- if (object$cache$treatment_type == "binary") {
+    autoplot_balance(object) + ggplot2::labs(subtitle = NULL)
+  } else {
+    autoplot_eif(object) + ggplot2::labs(subtitle = NULL)
+  }
+
+  gl <- glance.tmle_fit(object)
+  patchwork::wrap_plots(p1, p2, p3, p4, ncol = 2L) +
+    patchwork::plot_annotation(
+      title = "TMLE Causal Audit Dashboard",
+      subtitle = sprintf(
+        "n = %d | %d-fold %s | mean EIF = %.2e | %.1f%% truncated",
+        gl$n, gl$v_folds, if (gl$cv_tmle) "CV-TMLE" else "TMLE",
+        gl$mean_eif, 100 * gl$pct_truncated
+      )
+    )
 }
 
 autoplot_targeting <- function(object) {

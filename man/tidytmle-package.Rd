@@ -13,9 +13,9 @@ Semiparametric Targeted Maximum Likelihood Estimation (TMLE) and cross-fitted ca
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://tidytmle.tidymodels.org/}
-  \item \url{https://github.com/michaelespero/tidytmle}
-  \item Report bugs at \url{https://github.com/michaelespero/tidytmle/issues}
+  \item \url{https://perceptioninterval.github.io/tidytmle/}
+  \item \url{https://github.com/perceptioninterval/tidytmle}
+  \item Report bugs at \url{https://github.com/perceptioninterval/tidytmle/issues}
 }
 
 }

@@ -3,6 +3,7 @@
 ^Tidymodels Ecosystem Contribution Guide - Google Gemini\.pdf$
 ^.*\.pdf$
 ^\.git$
+^\.github$
 ^\.gitignore$
 ^LICENSE\.md$
 ^_pkgdown\.yml$

@@ -6,7 +6,7 @@ articles:
   tidytmle: tidytmle.html
   tmle-intuition: tmle-intuition.html
   workflows-and-super-learning: workflows-and-super-learning.html
-last_built: 2026-11-23T01:31Z
+last_built: 2026-11-23T01:45Z
 urls:
-  reference: https://tidytmle.tidymodels.org/reference
-  article: https://tidytmle.tidymodels.org/articles
+  reference: https://perceptioninterval.github.io/tidytmle/reference
+  article: https://perceptioninterval.github.io/tidytmle/articles

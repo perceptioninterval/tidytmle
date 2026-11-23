@@ -75,15 +75,36 @@ test_that("All S3 verbs (tidy simultaneous/e_value, glance, augment, collect_met
   expect_true(all(c("nuisance", "learner", "weight") %in% names(sl_w)))
   expect_true("fold" %in% names(sl_w_fold))
 
-  # print methods
+  # print, summary, explain_tmle methods
   expect_output(print(fit$spec), "Targeted Maximum Likelihood")
   expect_output(print(fit), "TMLE Fit Summary")
+  expect_output(summary(fit), "Plain-English TMLE Summary")
+  expect_output(explain_tmle(fit), "What the Targeting Step Did")
 
-  # All 6 autoplot diagnostics
+  # All autoplot diagnostics (plus optional 4-panel dashboard)
   for (pt in c("overlap", "targeting", "learners", "eif", "sensitivity", "balance")) {
     p <- autoplot(fit, type = pt, g_grid = c(0.02, 0.05, 0.10))
     expect_s3_class(p, "ggplot")
   }
+  if (requireNamespace("patchwork", quietly = TRUE)) {
+    p_dash <- autoplot(fit, type = "dashboard", g_grid = c(0.02, 0.05, 0.10))
+    expect_s3_class(p_dash, "ggplot")
+  }
+})
+
+test_that("Classification Super Learner log-loss optimization concentrates weight on best predictor", {
+  set.seed(42)
+  n <- 300
+  y <- rbinom(n, 1, 0.4)
+  p_good <- ifelse(y == 1, 0.85, 0.15)
+  p_const <- rep(0.4, n)
+  p_bad <- ifelse(y == 1, 0.25, 0.75)
+  oof <- cbind(good = p_good, const = p_const, bad = p_bad)
+
+  w <- tidytmle:::solve_sl_weights(oof, y_target = y, mode = "classification", metalearner = "logloss")
+  expect_gt(w[["good"]], 0.90)
+  expect_lt(w[["bad"]], 0.05)
+  expect_equal(sum(w), 1, tolerance = 1e-6)
 })
 
 test_that("save_nuisance policies and mirai fine-grained parallelism work cleanly", {

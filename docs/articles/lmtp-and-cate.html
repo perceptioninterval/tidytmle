@@ -54,7 +54,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/michaelespero/tidytmle/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/perceptioninterval/tidytmle/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -70,7 +70,7 @@
       <img src="../logo.svg" class="logo" alt=""><h1>Modified Treatment Policies &amp; DR-Learner CATE</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/michaelespero/tidytmle/blob/HEAD/vignettes/lmtp-and-cate.Rmd" class="external-link"><code>vignettes/lmtp-and-cate.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/perceptioninterval/tidytmle/blob/HEAD/vignettes/lmtp-and-cate.Rmd" class="external-link"><code>vignettes/lmtp-and-cate.Rmd</code></a></small>
       <div class="d-none name"><code>lmtp-and-cate.Rmd</code></div>
     </div>
 
@@ -98,7 +98,7 @@ Internally, <code>tidytmle</code> estimates the treatment density ratio
 nonparametrically using stacked cross-validated classification workflows
 without parametric normality assumptions:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tidytmle.tidymodels.org/">tidytmle</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://perceptioninterval.github.io/tidytmle/">tidytmle</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">df_cont</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_causal_cohort.html">sim_causal_cohort</a></span><span class="op">(</span></span>
 <span>  n <span class="op">=</span> <span class="fl">350</span>,</span>
@@ -121,7 +121,7 @@ without parametric normality assumptions:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
 <span><span class="co">#&gt;   estimand term     estimate std.error statistic   p.value conf.low</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shift(1) shift(1)     4.86     0.183      26.6 1.13<span style="color: #949494;">e</span><span style="color: #BB0000;">-155</span>     4.50</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shift(1) shift(1)     4.89     0.202      24.2 1.31<span style="color: #949494;">e</span><span style="color: #BB0000;">-129</span>     4.50</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: conf.high &lt;dbl&gt;</span></span></span>
 <span><span class="va">truth_cont</span><span class="op">$</span><span class="va">true_shift_1</span></span>
 <span><span class="co">#&gt; [1] 4.686838</span></span></code></pre></div>
@@ -171,18 +171,18 @@ performance via <code><a href="../reference/qini_auc.html">qini_auc()</a></code>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 7</span></span></span>
 <span><span class="co">#&gt;   term         estimate std.error statistic  p.value conf.low conf.high</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ATE (BLP In…    1.64      0.127     12.9  5.52<span style="color: #949494;">e</span><span style="color: #BB0000;">-32</span>    1.39       1.89</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Heterogenei…    0.921     0.137      6.74 5.49<span style="color: #949494;">e</span><span style="color: #BB0000;">-11</span>    0.652      1.19</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ATE (BLP In…    1.64      0.126     12.9  3.23<span style="color: #949494;">e</span><span style="color: #BB0000;">-32</span>    1.39       1.89</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Heterogenei…    0.916     0.137      6.67 8.55<span style="color: #949494;">e</span><span style="color: #BB0000;">-11</span>    0.646      1.19</span></span>
 <span><span class="fu"><a href="../reference/qini_auc.html">qini_auc</a></span><span class="op">(</span><span class="va">cate</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   .metric  .estimator .estimate</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> qini_auc standard       0.236</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> qini_auc standard       0.234</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> auuc     standard       1.05</span></span>
 <span></span>
 <span><span class="va">aug_cate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/augment.html" class="external-link">augment</a></span><span class="op">(</span><span class="va">cate</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">aug_cate</span><span class="op">$</span><span class="va">.cate</span>, <span class="va">truth_het</span><span class="op">$</span><span class="va">true_cate</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.8414011</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.8498853</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

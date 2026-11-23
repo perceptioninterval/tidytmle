@@ -5,7 +5,7 @@ intervals, optional simultaneous uniform confidence bands, and optional
 VanderWeele-Ding E-values."><meta property="og:description" content="Returns a publication-ready inference tibble containing point estimates,
 influence-function standard errors, test statistics, p-values, confidence
 intervals, optional simultaneous uniform confidence bands, and optional
-VanderWeele-Ding E-values."><meta property="og:image" content="https://tidytmle.tidymodels.org/logo.svg"></head><body>
+VanderWeele-Ding E-values."><meta property="og:image" content="https://perceptioninterval.github.io/tidytmle/logo.svg"></head><body>
     <a href="#container" class="visually-hidden-focusable">Skip to content</a>
 
 
@@ -34,7 +34,7 @@ VanderWeele-Ding E-values."><meta property="og:image" content="https://tidytmle.
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/michaelespero/tidytmle/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/perceptioninterval/tidytmle/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul></div>
 
 
@@ -43,7 +43,7 @@ VanderWeele-Ding E-values."><meta property="og:image" content="https://tidytmle.
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Extract Tidy Causal Inference Table from a TMLE Fit</h1>
-      <small class="dont-index">Source: <a href="https://github.com/michaelespero/tidytmle/blob/HEAD/R/tidymodels_verbs.R" class="external-link"><code>R/tidymodels_verbs.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/perceptioninterval/tidytmle/blob/HEAD/R/tidymodels_verbs.R" class="external-link"><code>R/tidymodels_verbs.R</code></a></small>
       <div class="d-none name"><code>tidy.tmle_fit.Rd</code></div>
     </div>
 
@@ -103,6 +103,15 @@ unmeasured confounding.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble::tibble()</a></code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>For additive contrasts (<code>"ate"</code>, <code>"att"</code>, <code>"atc"</code>, <code>"ey1"</code>, <code>"ey0"</code>, and
+continuous Modified Treatment Policies), <code>std.error</code> is on the native outcome
+scale and intervals are symmetric Wald bounds. For ratio estimands (<code>"rr"</code>
+and <code>"or"</code>), <code>std.error</code> is reported on the <strong>log scale</strong> (<code>SE[log(RR)]</code> /
+<code>SE[log(OR)]</code>) and confidence intervals are computed on the log scale and
+exponentiated back so intervals remain strictly positive.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

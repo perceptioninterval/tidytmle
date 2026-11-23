@@ -6,15 +6,29 @@ output: github_document
 
 
 
-# tidytmle <a href="https://tidytmle.tidymodels.org/"><img src="man/figures/logo.png" align="right" height="138" alt="tidytmle website" /></a>
+# tidytmle <a href="https://perceptioninterval.github.io/tidytmle/"><img src="man/figures/logo.png" align="right" height="138" alt="tidytmle website" /></a>
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN status](https://www.r-pkg.org/badges/version/tidytmle)](https://CRAN.R-project.org/package=tidytmle)
-[![R-CMD-check](https://github.com/michaelespero/tidytmle/workflows/R-CMD-check/badge.svg)](https://github.com/michaelespero/tidytmle/actions)
+[![R-CMD-check](https://github.com/perceptioninterval/tidytmle/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/perceptioninterval/tidytmle/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 `tidytmle` brings **Targeted Maximum Likelihood Estimation (CV-TMLE)** to the [tidymodels](https://www.tidymodels.org/) ecosystem. Rather than forcing causal estimation into a prediction-only `parsnip` model, `tidytmle` orchestrates `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick` so you can plug any machine learning pipeline into a doubly robust, locally efficient causal estimator.
+
+## Which Function Do I Need?
+
+| What you want to do | One-line `tidytmle` call |
+|---|---|
+| Estimate ATE, Risk Ratio, & Odds Ratio safely | `tmle_spec(y, a, c(age, sex, lab_1), estimand = c("ate", "rr", "or")) \|> fit(df)` |
+| Handle missing outcomes automatically | Omit `censoring` when `y` has `NA`s (or pass `censoring = delta`) |
+| Plug in a custom `workflow_set` Super Learner | `set_outcome_learners(wf_set) \|> set_treatment_learners(wf_set)` |
+| Account for clinic clusters or survey weights | Pass `id = clinic_id` and `weights = survey_wt` inside `tmle_spec()` |
+| Read a plain-English interpretation & health audit | `summary(fit)` or `explain_tmle(fit)` |
+| Test stricter positivity bounds or subgroups instantly | `retarget(fit, g_bounds = c(0.05, 0.95), subgroup = age >= 65)` |
+| Inspect a 4-panel visual audit dashboard | `autoplot(fit, type = "dashboard")` |
+| Shift a continuous dose without extrapolating | `tmle_spec(y, dose, c(...), estimand = shift(1.0)) \|> fit(df)` |
+| Estimate heterogeneous treatment effects (CATE) | `fit_cate(fit)` then `predict(cate, new_data)` or `qini_auc(cate)` |
 
 ## Why TMLE? The 60-Second Intuition
 
@@ -44,27 +58,16 @@ For a full worked visual walkthrough—including a live demonstration of **doubl
 
 ## Installation
 
-You can install the development version of `tidytmle` from [GitHub](https://github.com/) with:
+You can install the development version of `tidytmle` from [GitHub](https://github.com/perceptioninterval/tidytmle) with:
 
 ``` r
 # install.packages("pak")
-pak::pak("michaelespero/tidytmle")
+pak::pak("perceptioninterval/tidytmle")
 ```
-
-## Key Guardrails & Capabilities
-
-| Capability | Plain-English Benefit |
-|---|---|
-| **Progressive-Disclosure API** | 3-line Level 1 `tmle_spec() |> fit()` default scaling cleanly to Level 2 `recipes`, `workflows`, and `workflow_set` Super Learners |
-| **Role-Aware Recipe Splitting** | Automatically clones `recipes` per nuisance (`Q`, `g`, `C`) so treatment `A` never leaks into propensity models and `id` / `weights` never leak into predictors |
-| **Automatic Informative Missingness** | Detects outcome `NA`s when `censoring` is omitted and models $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ via $C(A, W) = P(\Delta = 1 \mid A, W)$ instead of silent listwise deletion |
-| **Built-In Semiparametric Guardrails** | 10-fold CV-TMLE (removes Donsker assumptions), bounded canonical logistic fluctuation on `[0, 1]` scaled outcomes, adaptive $5/(\sqrt{n}\ln n)$ positivity truncation, joint EIF inference (`ate`, `rr`, `or`, `att`, `atc`), cluster-robust SEs, and `hardhat` case weights |
-| **Instant `retarget()`** | Re-runs positivity bounds, estimands, or subgroups in milliseconds using cached out-of-fold predictions with zero ML refitting |
-| **LMTP & DR-Learner CATE** | `shift()` and `scale_tx()` continuous-treatment density-ratio TMLE plus `fit_cate()` and `qini_auc()` uplift scoring |
 
 ## Example
 
-Start with a 3-line cross-fitted specification using `tidyselect` causal roles and simultaneous multi-estimand inference:
+Start with a 3-line cross-fitted specification using `tidyselect` causal roles and simultaneous multi-estimand inference, then call `summary(fit)` for a plain-English causal interpretation and health check:
 
 
 ``` r
@@ -81,33 +84,34 @@ fit <- tmle_spec(
   set_resamples(v_folds = 5L) |>
   fit(data = df)
 
-fit
+summary(fit)
 #> 
-#> ── TMLE Fit Summary ──
+#> ── Plain-English TMLE Summary ──
 #> 
-#> n = 350 (observed = 350) | 5-fold CV-TMLE | logistic fluctuation | 2.06s
+#> Sample: 350 rows (350 observed outcomes) | 5-fold CV-TMLE
 #> 
-#> ── Causal Estimates 
-#> ATE est = 0.1071 (SE = 0.0511) 95% CI [0.0069, 0.2074] p = 0.0362
-#> RR est = 1.3295 (SE = 0.1427) 95% CI [1.0051, 1.7587] p = 0.0460
-#> OR est = 1.5805 (SE = 0.2233) 95% CI [1.0202, 2.4484] p = 0.0404
+#> ── 1. What the Causal Estimates Mean 
+#> ℹ ATE (across the full population): Treatment increases the expected outcome by 0.1034 units (95% CI [0.0031, 0.2038], p = 0.0434).
+#> ℹ RR: Treatment corresponds to a 1.32x risk ratio (31.5% higher risk; 95% CI [1.00, 1.74], p = 0.0541).
+#> ℹ OR: Treatment corresponds to an odds ratio of 1.55 (95% CI [1.00, 2.41], p = 0.0480).
 #> 
-#> ── Nuisance Super Learners 
-#> Q Super Learner: AUC = 0.713 (weights: glmnet 0.34, glm 0.34, ranger 0.33)
-#> g Super Learner: AUC = 0.623 (weights: ranger 0.33, glm 0.33, glmnet 0.33)
+#> ── 2. What the Targeting Step Did 
+#> Fluctuating along the Clever Covariate shifted the initial ML plug-in estimate
+#> by +0.0219 (epsilon = 0.0556) to remove residual confounding bias.
 #> 
-#> ── Diagnostics & Targeting Shift 
-#> Targeting shift (TMLE - plug-in): +0.0332 (epsilon = 0.0825)
-#> ✔ All checks healthy: mean EIF = 5.13e-14, truncated = 0.0%, max EIF leverage = 4.2%.
+#> ── 3. Statistical Health Check & Next Steps 
+#> ✔ Convergence: EIF estimating equation solved (mean EIF = 3.91e-14).
+#> ✔ Positivity: 0.0% clipped at g_bounds [0.046, 0.954] (ESS: treated = 190.8, control = 134.6).
+#> ✔ Influence: No single observation dominates variance (max EIF leverage = 4.4%).
 
 # Simultaneous uniform confidence bands & VanderWeele-Ding E-values
 tidy(fit, simultaneous = TRUE, e_value = TRUE)
 #> # A tibble: 3 × 11
 #>   estimand term  estimate std.error statistic p.value conf.low conf.high e_value
 #>   <chr>    <chr>    <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl>   <dbl>
-#> 1 ate      ATE      0.107    0.0511      2.09  0.0362 0.000382     0.214    1.74
-#> 2 rr       RR       1.33     0.143       2.00  0.0460 0.987        1.79     1.99
-#> 3 or       OR       1.58     0.223       2.05  0.0404 0.992        2.52     2.54
+#> 1 ate      ATE      0.103    0.0512      2.02  0.0434 -0.00254     0.209    1.72
+#> 2 rr       RR       1.32     0.142       1.93  0.0541  0.980       1.77     1.96
+#> 3 or       OR       1.55     0.223       1.98  0.0480  0.980       2.47     2.48
 #> # ℹ 2 more variables: e_value_ci <dbl>, crit.value <dbl>
 
 # Instant retargeting without ML refitting
@@ -116,9 +120,9 @@ retarget(fit, g_bounds = c(0.05, 0.95)) |>
 #> # A tibble: 3 × 8
 #>   estimand term  estimate std.error statistic p.value conf.low conf.high
 #>   <chr>    <chr>    <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl>
-#> 1 ate      ATE      0.107    0.0511      2.09  0.0362  0.00690     0.207
-#> 2 rr       RR       1.33     0.143       2.00  0.0460  1.01        1.76 
-#> 3 or       OR       1.58     0.223       2.05  0.0404  1.02        2.45
+#> 1 ate      ATE      0.103    0.0512      2.02  0.0434  0.00307     0.204
+#> 2 rr       RR       1.32     0.142       1.93  0.0541  0.995       1.74 
+#> 3 or       OR       1.55     0.223       1.98  0.0480  1.00        2.41
 
 # Propensity overlap diagnostic: check positivity across treated & control arms
 autoplot(fit, type = "overlap")
@@ -126,14 +130,14 @@ autoplot(fit, type = "overlap")
 
 <img src="man/figures/README-example-1.png" alt="Mirrored propensity score overlap plot generated by autoplot(fit, type = 'overlap')" width="100%" />
 
-Inspect how much the fluctuation step adjusted initial G-computation predictions—and which high-leverage Clever Covariate observations drove that adjustment—using `autoplot(fit, type = "targeting")`:
+Inspect how much the fluctuation step adjusted initial G-computation predictions—or view all four visual causal checks together in a single 2×2 dashboard—using `autoplot()`:
 
 
 ``` r
-autoplot(fit, type = "targeting")
+autoplot(fit, type = "dashboard", g_grid = seq(0.01, 0.12, by = 0.02))
 ```
 
-<img src="man/figures/README-targeting-example-1.png" alt="Targeting scatter plot comparing initial G-computation vs fluctuated TMLE contrasts shaded by Clever Covariate magnitude" width="100%" />
+<img src="man/figures/README-targeting-example-1.png" alt="4-panel TMLE Causal Audit Dashboard showing propensity overlap, targeting step contrasts, positivity sensitivity sweep, and covariate balance Love plot" width="100%" />
 
 ## Foundational Literature
 
