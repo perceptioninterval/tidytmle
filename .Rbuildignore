@@ -1,0 +1,7 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^Tidymodels Ecosystem Contribution Guide - Google Gemini\.pdf$
+^.*\.pdf$
+^\.git$
+^\.gitignore$
+^LICENSE\.md$

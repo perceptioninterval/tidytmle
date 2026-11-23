@@ -1,0 +1,49 @@
+Package: tidytmle
+Title: Targeted Maximum Likelihood Estimation for Tidymodels
+Version: 0.1.0
+Authors@R: 
+    person("Michael", "Espero", email = "michael@tidytmle.org", role = c("aut", "cre"))
+Description: Semiparametric Targeted Maximum Likelihood Estimation (TMLE) and
+    cross-fitted causal inference orchestration built natively on top of
+    'tidymodels'. Supports 'workflows' and 'workflowsets' as cross-validated
+    Super Learner nuisance models via 'rsample', role-aware 'recipes'
+    splitting, automatic informative-missingness handling, adaptive positivity
+    truncation, joint Efficient Influence Function (EIF) multi-estimand
+    inference, instant 'retarget()' without ML refitting, Modified Treatment
+    Policies, and Doubly Robust CATE estimation.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.1.0)
+Imports:
+    broom,
+    cli,
+    dplyr,
+    generics,
+    ggplot2,
+    hardhat,
+    parsnip,
+    purrr,
+    recipes,
+    rlang,
+    rsample,
+    stats,
+    tibble,
+    tidyselect,
+    tune,
+    workflows,
+    workflowsets,
+    yardstick
+Suggests:
+    butcher,
+    glmnet,
+    knitr,
+    mgcv,
+    mirai,
+    ranger,
+    rmarkdown,
+    rpart,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
