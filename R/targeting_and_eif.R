@@ -375,7 +375,8 @@ run_tmle_targeting <- function(y_num,
     plugin_vs_tmle_shift = as.numeric(primary_shift),
     g_info = g_info,
     ess_treated = ess_treated,
-    ess_control = ess_control
+    ess_control = ess_control,
+    conf_level = conf.level
   )
 }
 
@@ -595,7 +596,8 @@ run_policy_targeting <- function(y_num, delta, qa_init, q_shift_init, p_lambda1,
       bounds = c(0, max_r)
     ),
     ess_treated = ess_p,
-    ess_control = n
+    ess_control = n,
+    conf_level = conf.level
   )
 }
 
@@ -604,10 +606,16 @@ run_policy_targeting <- function(y_num, delta, qa_init, q_shift_init, p_lambda1,
 compute_eif_se <- function(eif_vec, cluster_id = NULL) {
   n <- length(eif_vec)
   if (!is.null(cluster_id)) {
-    cl_sums <- as.numeric(tapply(eif_vec, cluster_id, sum))
+    cl_fac <- droplevels(factor(cluster_id))
+    cl_sums <- as.numeric(tapply(eif_vec, cl_fac, sum))
+    cl_sums <- cl_sums[is.finite(cl_sums)]
     J <- length(cl_sums)
+    if (J < 2L) {
+      cli::cli_warn("Subgroup contains only {J} cluster; falling back to observation-level EIF standard error.")
+      return(sqrt(max(stats::var(eif_vec) / n, 1e-16)))
+    }
     # Variance of (1/n) * sum_c D_c = (J / (J - 1)) * (1 / n^2) * sum_c (D_c - mean(D_c))^2
-    var_est <- (J / max(J - 1L, 1L)) * sum((cl_sums - mean(cl_sums))^2) / (n^2)
+    var_est <- (J / (J - 1L)) * sum((cl_sums - mean(cl_sums))^2) / (n^2)
     return(sqrt(max(var_est, 1e-16)))
   }
   sqrt(max(stats::var(eif_vec) / n, 1e-16))
@@ -780,15 +788,16 @@ add_simultaneous_bands <- function(estimates_tbl, eif_list, cluster_id, conf.lev
   }
   set.seed(12345L)
 
-  if (!is.null(cluster_id)) {
-    # Aggregate EIFs by cluster for cluster-valid multiplier bootstrap
-    E_cl <- apply(E, 2L, function(col) as.numeric(tapply(col, cluster_id, sum)))
+  cl_fac <- if (!is.null(cluster_id)) droplevels(factor(cluster_id)) else NULL
+  if (!is.null(cl_fac) && nlevels(cl_fac) >= 2L) {
+    # Aggregate EIFs by active clusters for cluster-valid multiplier bootstrap
+    E_cl <- apply(E, 2L, function(col) as.numeric(tapply(col, cl_fac, sum)))
     J <- nrow(E_cl)
     E_centered <- sweep(E_cl, 2L, colMeans(E_cl), "-")
-    ses <- sqrt(pmax((J / max(J - 1L, 1L)) * colSums(E_centered^2) / (n^2), 1e-16))
+    ses <- sqrt(pmax((J / (J - 1L)) * colSums(E_centered^2) / (n^2), 1e-16))
     # Wild Rademacher multipliers (+1 / -1)
     xi <- matrix(sample(c(-1, 1), size = J * n_boot, replace = TRUE), nrow = J, ncol = n_boot)
-    T_boot <- abs(crossprod(E_centered, xi) / n) / ses * sqrt(J / max(J - 1L, 1L))
+    T_boot <- abs(crossprod(E_centered, xi) / n) / ses * sqrt(J / (J - 1L))
   } else {
     E_centered <- sweep(E, 2L, colMeans(E), "-")
     ses <- sqrt(pmax(apply(E_centered, 2L, stats::var) / n, 1e-16))

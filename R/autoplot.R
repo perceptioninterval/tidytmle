@@ -98,13 +98,14 @@ theme_tidytmle <- function(base_size = 11,
 }
 
 compute_covariate_balance <- function(object) {
+  empty_bal <- tibble::tibble(
+    covariate = character(),
+    smd_raw = numeric(),
+    smd_wt = numeric(),
+    improved = logical()
+  )
   if (!identical(object$cache$treatment_type, "binary")) {
-    return(tibble::tibble(
-      covariate = character(),
-      smd_raw = numeric(),
-      smd_wt = numeric(),
-      improved = logical()
-    ))
+    return(empty_bal)
   }
   idx <- object$subgroup_idx
   df <- object$cache$data[idx, object$cache$covariate_cols, drop = FALSE]
@@ -113,29 +114,52 @@ compute_covariate_balance <- function(object) {
   g_t <- object$targeting$g_trunc
   w_ipw <- w_base * ifelse(a == 1L, 1 / g_t, 1 / (1 - g_t))
 
-  # Use full-rank model matrix so 2-level factors yield 1 row instead of redundant mirror pairs
-  mm <- if (ncol(df) > 1L || is.factor(df[[1L]]) || is.character(df[[1L]])) {
-    m_full <- stats::model.matrix(~ ., data = df)
-    if ("(Intercept)" %in% colnames(m_full)) m_full[, -1L, drop = FALSE] else m_full
-  } else {
-    as.matrix(df)
+  # Expand column-by-column so NA covariates keep exact row alignment and
+  # 1-level factors/characters in subgroups are skipped cleanly instead of erroring.
+  cols_expanded <- list()
+  for (cn in names(df)) {
+    col <- df[[cn]]
+    if (is.numeric(col) || is.integer(col) || is.logical(col)) {
+      v <- as.numeric(col)
+      if (length(unique(v[is.finite(v)])) >= 2L) {
+        cols_expanded[[cn]] <- v
+      }
+    } else if (is.factor(col) || is.character(col)) {
+      obs_vals <- as.character(col[!is.na(col)])
+      lvls <- if (is.factor(col)) {
+        intersect(levels(col), unique(obs_vals))
+      } else {
+        sort(unique(obs_vals))
+      }
+      if (length(lvls) >= 2L) {
+        col_chr <- as.character(col)
+        for (lv in lvls[-1L]) {
+          cols_expanded[[paste0(cn, lv)]] <- ifelse(is.na(col_chr), NA_real_, as.numeric(col_chr == lv))
+        }
+      }
+    }
+  }
+
+  if (length(cols_expanded) == 0L) {
+    return(empty_bal)
   }
 
   calc_smd <- function(x, a_vec, wt) {
-    i1 <- a_vec == 1L
-    i0 <- a_vec == 0L
-    m1 <- stats::weighted.mean(x[i1], wt[i1], na.rm = TRUE)
-    m0 <- stats::weighted.mean(x[i0], wt[i0], na.rm = TRUE)
-    v1 <- stats::var(x[i1], na.rm = TRUE)
-    v0 <- stats::var(x[i0], na.rm = TRUE)
+    ok <- is.finite(x) & !is.na(a_vec) & is.finite(wt)
+    i1 <- ok & (a_vec == 1L)
+    i0 <- ok & (a_vec == 0L)
+    if (sum(i1) < 2L || sum(i0) < 2L) return(0)
+    m1 <- stats::weighted.mean(x[i1], wt[i1])
+    m0 <- stats::weighted.mean(x[i0], wt[i0])
+    v1 <- stats::var(x[i1])
+    v0 <- stats::var(x[i0])
     pooled_sd <- sqrt(0.5 * (v1 + v0))
     if (!is.finite(pooled_sd) || pooled_sd <= 1e-12) return(0)
     abs(m1 - m0) / pooled_sd
   }
 
-  cov_names <- colnames(mm)
-  purrr::map_dfr(cov_names, function(cn) {
-    xv <- mm[, cn]
+  purrr::map_dfr(names(cols_expanded), function(cn) {
+    xv <- cols_expanded[[cn]]
     s_raw <- calc_smd(xv, a, w_base)
     s_wt <- calc_smd(xv, a, w_ipw)
     tibble::tibble(
@@ -277,14 +301,18 @@ autoplot_effect <- function(object, compact = FALSE) {
     )
   df_e$label_human <- factor(df_e$label_human, levels = rev(unique(df_e$label_human)))
 
-  has_ate <- "ate" %in% df_e$estimand && identical(object$cache$treatment_type, "binary")
-  df_plugin <- if (has_ate) {
-    ate_row <- df_e[df_e$estimand == "ate", , drop = FALSE][1L, ]
-    ate_row$plugin_est <- ate_row$estimate - gl$plugin_vs_tmle_shift
-    ate_row
+  primary_est <- df_e$estimand[1L]
+  show_plugin <- identical(object$cache$treatment_type, "binary") &&
+    primary_est %in% c("ate", "att", "atc")
+  df_plugin <- if (show_plugin) {
+    p_row <- df_e[1L, , drop = FALSE]
+    p_row$plugin_est <- p_row$estimate - gl$plugin_vs_tmle_shift
+    p_row
   } else {
     NULL
   }
+
+  ci_pct <- round(100 * (if (!is.null(object$targeting$conf_level)) object$targeting$conf_level else 0.95))
 
   n_scales <- length(unique(df_e$scale_group))
   ref_df <- df_e |>
@@ -321,20 +349,20 @@ autoplot_effect <- function(object, compact = FALSE) {
   }
 
   sub_txt <- sprintf(
-    "n = %d (%d-fold %s) | Targeting adjusted initial ML ATE by %+.4f",
-    gl$n, gl$v_folds, if (gl$cv_tmle) "CV-TMLE" else "TMLE", gl$plugin_vs_tmle_shift
+    "n = %d (%d-fold %s) | Targeting shifted initial ML %s by %+.4f",
+    gl$n, gl$v_folds, if (gl$cv_tmle) "CV-TMLE" else "TMLE", td$term[1L], gl$plugin_vs_tmle_shift
   )
-  cap_txt <- if (has_ate) {
-    "Solid crimson dot = targeted TMLE estimate with 95% CI; hollow diamond = initial untargeted ML plug-in."
+  cap_txt <- if (show_plugin) {
+    sprintf("Solid crimson dot = targeted TMLE estimate with %d%% CI; hollow diamond = initial untargeted ML plug-in.", ci_pct)
   } else {
-    "Solid crimson dot = targeted TMLE estimate with 95% confidence interval."
+    sprintf("Solid crimson dot = targeted TMLE estimate with %d%% confidence interval.", ci_pct)
   }
 
   p +
     ggplot2::labs(
       title = "Estimated Causal Effect & Uncertainty",
       subtitle = sub_txt,
-      x = "Causal Estimate (95% Confidence Interval)",
+      x = sprintf("Causal Estimate (%d%% Confidence Interval)", ci_pct),
       y = NULL,
       caption = cap_txt
     ) +
@@ -760,8 +788,19 @@ autoplot_balance <- function(object, compact = FALSE) {
   }
   pal <- tmle_palette()
   bal_wide <- compute_covariate_balance(object)
+  if (nrow(bal_wide) == 0L) {
+    cli::cli_abort(c(
+      "No varying baseline covariates remain in the analyzed sample or subgroup to plot balance.",
+      "i" = "Reset the subgroup with {.code retarget(fit, subgroup = TRUE)} or inspect {.code autoplot(fit, type = \"overlap\")}."
+    ))
+  }
   max_raw <- max(bal_wide$smd_raw, na.rm = TRUE)
   max_wt <- max(bal_wide$smd_wt, na.rm = TRUE)
+  bal_sub <- if (max_wt < max_raw) {
+    sprintf("Max standardized difference dropped from %.3f (raw) to %.3f (weighted)", max_raw, max_wt)
+  } else {
+    sprintf("Max standardized difference was %.3f (raw) vs. %.3f (weighted)", max_raw, max_wt)
+  }
 
   bal_wide$covariate <- stats::reorder(bal_wide$covariate, bal_wide$smd_raw)
   bal_long <- dplyr::bind_rows(
@@ -792,7 +831,7 @@ autoplot_balance <- function(object, compact = FALSE) {
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.02, 0.14))) +
     ggplot2::labs(
       title = "Did Propensity Weighting Balance Confounders?",
-      subtitle = sprintf("Max standardized difference dropped from %.3f (raw) to %.3f (weighted)", max_raw, max_wt),
+      subtitle = bal_sub,
       x = if (compact) "Imbalance |SMD|" else "Absolute Standardized Mean Difference |SMD|",
       y = NULL,
       color = NULL,

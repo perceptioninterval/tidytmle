@@ -71,7 +71,7 @@ refitting.</p>
 <span>  estimand <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subgroup <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fluctuation <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  conf.level <span class="op">=</span> <span class="fl">0.95</span></span>
+<span>  conf.level <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -96,7 +96,8 @@ refitting.</p>
 <dt id="arg-subgroup">subgroup<a class="anchor" aria-label="anchor" href="#arg-subgroup"></a></dt>
 <dd><p>Optional unquoted filtering expression (e.g. <code>age &gt;= 65</code>)
 evaluated on the cached cohort data to perform instant subgroup TMLE
-re-targeting.</p></dd>
+re-targeting. When <code>NULL</code> (default), preserves the currently active
+subgroup; pass <code>subgroup = TRUE</code> to reset back to the full cohort.</p></dd>
 
 
 <dt id="arg-fluctuation">fluctuation<a class="anchor" aria-label="anchor" href="#arg-fluctuation"></a></dt>
@@ -105,7 +106,8 @@ re-targeting.</p></dd>
 
 
 <dt id="arg-conf-level">conf.level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
-<dd><p>Confidence level for intervals (default <code>0.95</code>).</p></dd>
+<dd><p>Confidence level for intervals; defaults to the level stored
+in <code>object</code> (<code>0.95</code> initially).</p></dd>
 
 </dl></div>
     <div class="section level2">

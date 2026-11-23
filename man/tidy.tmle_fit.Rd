@@ -7,7 +7,7 @@
 \method{tidy}{tmle_fit}(
   x,
   conf.int = TRUE,
-  conf.level = 0.95,
+  conf.level = NULL,
   simultaneous = FALSE,
   e_value = FALSE,
   ...
@@ -19,7 +19,8 @@
 \item{conf.int}{Logical; whether to include \code{conf.low} and \code{conf.high}
 columns (default \code{TRUE}).}
 
-\item{conf.level}{Confidence level for intervals (default \code{0.95}).}
+\item{conf.level}{Confidence level for intervals; defaults to the level stored
+on \code{x} (\code{0.95} initially unless changed via \code{\link[=retarget]{retarget()}}).}
 
 \item{simultaneous}{Logical; if \code{TRUE} and multiple estimands are present,
 computes simultaneous uniform confidence bands via a fast Rademacher wild

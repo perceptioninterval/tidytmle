@@ -65,7 +65,7 @@ metrics are extracted directly from the fitted object so nothing is hand-typed.<
 <span>  treatment_label <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  units <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  style <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"paper"</span>, <span class="st">"plain"</span>, <span class="st">"markdown"</span><span class="op">)</span>,</span>
-<span>  conf.level <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  conf.level <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  simultaneous <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  e_value <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
@@ -107,7 +107,8 @@ Markdown document with results table).</p></dd>
 
 
 <dt id="arg-conf-level">conf.level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
-<dd><p>Confidence level for reported intervals (default <code>0.95</code>).</p></dd>
+<dd><p>Confidence level for reported intervals; defaults to the
+level stored on <code>x</code> (<code>0.95</code> initially unless updated via <code><a href="retarget.html">retarget()</a></code>).</p></dd>
 
 
 <dt id="arg-simultaneous">simultaneous<a class="anchor" aria-label="anchor" href="#arg-simultaneous"></a></dt>
@@ -148,9 +149,9 @@ with elements <code>methods</code>, <code>results</code>, <code>assumptions</cod
 <span class="r-out co"><span class="r-pr">#&gt;</span> Likelihood Estimation (CV-TMLE; van der Laan &amp; Rubin, 2006; Zheng &amp;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> van der Laan, 2011). Initial conditional expectations E[30-day</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> recovery | therapy, W] were fit with a cross-validated Super Learner</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ensemble combining [glmnet (100%), glm (0%), ranger (0%)]. The</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ensemble combining [glmnet (87%), ranger (13%), glm (0%)]. The</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> treatment propensity mechanism g(W) = P(therapy = 1 | W) was estimated</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> with [glmnet (85%), ranger (15%), glm (0%)] and bounded using adaptive</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> with [glmnet (100%), glm (0%), ranger (0%)] and bounded using adaptive</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> sample-size-aware positivity bounds [0.081, 0.919] (Petersen et al.,</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2012). Outcome measurements were complete across all analyzed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> observations. Standard errors and 95% confidence intervals were</span>
@@ -161,27 +162,28 @@ with elements <code>methods</code>, <code>results</code>, <code>assumptions</cod
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── Results </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> After confounder adjustment and targeting, therapy shifted 30-day</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> recovery by +0.1796 units (across the full study population (ATE); 95%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> CI [0.0173, 0.3419], p = 0.0300; E-value = 2.15 (CI limit = 1.22));</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> and the relative risk ratio (RR) was 1.68 (67.8% higher risk; 95% CI</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1.05, 2.68], p = 0.0309; E-value = 2.74 (CI limit = 1.27)). The</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> targeting calibration step shifted the initial ML plug-in estimate by</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -0.0252 (fluctuation epsilon = -0.1875) and satisfied the EIF score</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> equation (mean EIF = 8.97e-17). Inverse-propensity weighting reduced</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> maximum covariate standardized mean imbalance from 0.465 to 0.094.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Positivity truncation affected 0.0% of observations, with maximum</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> single-observation EIF variance leverage of 7.1%.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> recovery by +0.1962 (probability scale) (across the full study</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> population (ATE); 95% CI [0.0449, 0.3476], p = 0.0110; E-value = 2.25</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (CI limit = 1.40)); and the relative risk ratio (RR) was 1.76 (75.6%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> higher risk; 95% CI [1.13, 2.74], p = 0.0130; E-value = 2.91 (CI limit</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> = 1.50)). The targeting calibration step shifted the initial ML</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plug-in estimate by +0.0011 (fluctuation epsilon = 0.1099) and</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> satisfied the EIF score equation (mean EIF = 9.40e-17).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Inverse-propensity weighting reduced maximum covariate standardized</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mean imbalance from 0.465 to 0.039. Positivity truncation affected</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 0.0% of observations, with maximum single-observation EIF variance</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> leverage of 4.5%.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── Causal Assumptions &amp; Diagnostics </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1. **No unmeasured confounding:** Valid causal interpretation assumes</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> all joint causes of therapy and 30-day recovery are captured in W. For</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> the primary estimand (ATE), an unmeasured confounder would need a</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> risk-ratio association of at least 2.15 with both treatment and</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> risk-ratio association of at least 2.25 with both treatment and</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> outcome (beyond measured covariates) to explain away the point</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> estimate.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2. **Positivity (real-world overlap):** Only 0.0% of observations hit</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> bounds [0.081, 0.919] (effective sample sizes: treated = 52.3, control</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> = 83.4).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> bounds [0.081, 0.919] (effective sample sizes: treated = 55.3, control</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> = 85.5).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3. **Consistency &amp; interference:** Each unit's observed outcome</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> matches its potential outcome under the received therapy level without</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cross-unit spillover.</span>

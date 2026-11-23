@@ -5,14 +5,15 @@
 \alias{summary.tmle_fit}
 \title{Plain-English Causal Interpretation & Audit for a TMLE Fit}
 \usage{
-explain_tmle(x, conf.level = 0.95)
+explain_tmle(x, conf.level = NULL)
 
-\method{summary}{tmle_fit}(object, conf.level = 0.95, ...)
+\method{summary}{tmle_fit}(object, conf.level = NULL, ...)
 }
 \arguments{
 \item{x, object}{A fitted \code{"tmle_fit"} object.}
 
-\item{conf.level}{Confidence level for interval statements (default \code{0.95}).}
+\item{conf.level}{Confidence level for interval statements; defaults to the
+level stored on \code{x} (\code{0.95} initially).}
 
 \item{...}{Currently unused.}
 }

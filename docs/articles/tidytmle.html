@@ -114,7 +114,7 @@ bounds, and bounded logistic calibration turn on automatically:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (350 observed) | 5-fold CV-TMLE | logistic calibration | 1.90s</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (350 observed) | 5-fold CV-TMLE | logistic calibration | 2.08s</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Effect Estimates </span></span>
 <span><span class="co">#&gt; ATE est = 0.0985 (SE = 0.0515) 95% CI [-0.0024, 0.1993] p = 0.0558</span></span>
@@ -303,18 +303,18 @@ models, bounds, and diagnostics in your fit
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Results </span></span>
 <span><span class="co">#&gt; After confounder adjustment and targeting, targeted therapy shifted</span></span>
-<span><span class="co">#&gt; clinical recovery by +0.0985 units (across the full study population</span></span>
-<span><span class="co">#&gt; (ATE); 95% CI [-0.0024, 0.1993], p = 0.0558; E-value = 1.69 (CI limit</span></span>
-<span><span class="co">#&gt; = 1.00)); and the relative risk ratio (RR) was 1.29 (29.5% higher</span></span>
-<span><span class="co">#&gt; risk; 95% CI [0.98, 1.71], p = 0.0665; E-value = 1.91 (CI limit =</span></span>
-<span><span class="co">#&gt; 1.00)); and the odds ratio (OR) was 1.52 (95% CI [0.98, 2.35], p =</span></span>
-<span><span class="co">#&gt; 0.0603; E-value = 2.41 (CI limit = 1.00)). The targeting calibration</span></span>
-<span><span class="co">#&gt; step shifted the initial ML plug-in estimate by +0.0171 (fluctuation</span></span>
-<span><span class="co">#&gt; epsilon = 0.0435) and satisfied the EIF score equation (mean EIF =</span></span>
-<span><span class="co">#&gt; 5.03e-14). Inverse-propensity weighting reduced maximum covariate</span></span>
-<span><span class="co">#&gt; standardized mean imbalance from 0.331 to 0.017. Positivity truncation</span></span>
-<span><span class="co">#&gt; affected 0.0% of observations, with maximum single-observation EIF</span></span>
-<span><span class="co">#&gt; variance leverage of 4.3%.</span></span>
+<span><span class="co">#&gt; clinical recovery by +0.0985 (probability scale) (across the full</span></span>
+<span><span class="co">#&gt; study population (ATE); 95% CI [-0.0024, 0.1993], p = 0.0558; E-value</span></span>
+<span><span class="co">#&gt; = 1.69 (CI limit = 1.00)); and the relative risk ratio (RR) was 1.29</span></span>
+<span><span class="co">#&gt; (29.5% higher risk; 95% CI [0.98, 1.71], p = 0.0665; E-value = 1.91</span></span>
+<span><span class="co">#&gt; (CI limit = 1.00)); and the odds ratio (OR) was 1.52 (95% CI [0.98,</span></span>
+<span><span class="co">#&gt; 2.35], p = 0.0603; E-value = 2.41 (CI limit = 1.00)). The targeting</span></span>
+<span><span class="co">#&gt; calibration step shifted the initial ML plug-in estimate by +0.0171</span></span>
+<span><span class="co">#&gt; (fluctuation epsilon = 0.0435) and satisfied the EIF score equation</span></span>
+<span><span class="co">#&gt; (mean EIF = 5.03e-14). Inverse-propensity weighting reduced maximum</span></span>
+<span><span class="co">#&gt; covariate standardized mean imbalance from 0.331 to 0.017. Positivity</span></span>
+<span><span class="co">#&gt; truncation affected 0.0% of observations, with maximum</span></span>
+<span><span class="co">#&gt; single-observation EIF variance leverage of 4.3%.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Assumptions &amp; Diagnostics </span></span>
 <span><span class="co">#&gt; 1. **No unmeasured confounding:** Valid causal interpretation assumes</span></span>

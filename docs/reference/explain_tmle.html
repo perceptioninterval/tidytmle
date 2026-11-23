@@ -59,10 +59,10 @@ with actionable next steps (<code><a href="retarget.html">retarget()</a></code>,
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">explain_tmle</span><span class="op">(</span><span class="va">x</span>, conf.level <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">explain_tmle</span><span class="op">(</span><span class="va">x</span>, conf.level <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'tmle_fit'</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">object</span>, conf.level <span class="op">=</span> <span class="fl">0.95</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">object</span>, conf.level <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -74,7 +74,8 @@ with actionable next steps (<code><a href="retarget.html">retarget()</a></code>,
 
 
 <dt id="arg-conf-level">conf.level<a class="anchor" aria-label="anchor" href="#arg-conf-level"></a></dt>
-<dd><p>Confidence level for interval statements (default <code>0.95</code>).</p></dd>
+<dd><p>Confidence level for interval statements; defaults to the
+level stored on <code>x</code> (<code>0.95</code> initially).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -101,19 +102,19 @@ with actionable next steps (<code><a href="retarget.html">retarget()</a></code>,
 <span class="r-out co"><span class="r-pr">#&gt;</span> TMLE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── 1. What the Causal Estimates Mean </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> ATE (across the full study population): Treatment increases the expected outcome by 0.2186 units (95% CI [0.0535, 0.3837], p = 0.0095).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> RR: Treatment corresponds to a 1.89x risk ratio (89.4% higher risk; 95% CI [1.15, 3.11], p = 0.0119).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> ATE (across the full study population): Treatment increases the expected outcome by 0.2381 units (95% CI [0.0808, 0.3954], p = 0.0030).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> RR: Treatment corresponds to a 1.95x risk ratio (95.1% higher risk; 95% CI [1.25, 3.06], p = 0.0035).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── 2. What the Targeting Step Did ("Predict, Then Target") </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Targeting nudged the initial ML plug-in predictions by +0.0185</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (epsilon = 0.1535) to zero out residual confounding bias.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Targeting nudged the initial ML plug-in predictions by +0.0449</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (epsilon = 0.1295) to zero out residual confounding bias.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── 3. Can I Trust These Numbers? (Health Check &amp; Next Steps) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Convergence: Bias-removal score equation solved (mean EIF = -1.41e-12).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Comparison overlap: 0.7% clipped at [0.081, 0.919] (effective n: 52.9 treated, 82.4 control).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Confounder balance: Max standardized difference fell from 0.465 to 0.077 (well below 0.10).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Uncertainty stability: No single person dominates SEs (top observation share = 6.6%).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Next steps: report_tmle(fit) for paper-ready prose · autoplot(fit,</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Convergence: Bias-removal score equation solved (mean EIF = 7.14e-17).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Comparison overlap: 0.0% clipped at [0.081, 0.919] (effective n: 53.5 treated, 85 control).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Confounder balance: Max standardized difference fell from 0.465 to 0.064 (well below 0.10).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BBBB00;">!</span> High leverage: Top observation accounts for 10.9% of variance. Inspect `augment(fit) |&gt; dplyr::slice_max(.eif_leverage, n = 5)`.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Next steps: report_tmle(fit) for paper-ready prose | autoplot(fit,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">type = 'dashboard') for visual audit.</span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

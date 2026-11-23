@@ -10,7 +10,7 @@ retarget(
   estimand = NULL,
   subgroup = NULL,
   fluctuation = NULL,
-  conf.level = 0.95
+  conf.level = NULL
 )
 }
 \arguments{
@@ -24,12 +24,14 @@ retarget(
 
 \item{subgroup}{Optional unquoted filtering expression (e.g. \code{age >= 65})
 evaluated on the cached cohort data to perform instant subgroup TMLE
-re-targeting.}
+re-targeting. When \code{NULL} (default), preserves the currently active
+subgroup; pass \code{subgroup = TRUE} to reset back to the full cohort.}
 
 \item{fluctuation}{Optional updated fluctuation submodel (\code{"logistic"},
 \code{"linear"}, \code{"none"}).}
 
-\item{conf.level}{Confidence level for intervals (default \code{0.95}).}
+\item{conf.level}{Confidence level for intervals; defaults to the level stored
+in \code{object} (\code{0.95} initially).}
 }
 \value{
 An updated \code{"tmle_fit"} object.

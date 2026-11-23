@@ -111,11 +111,20 @@ normalize_estimand <- function(estimand) {
   }
 
   if (is.list(estimand) && all(vapply(estimand, inherits, logical(1L), "tmle_policy"))) {
-    labels <- vapply(estimand, function(p) p$label, character(1L))
+    if (length(estimand) == 0L) {
+      cli::cli_abort("{.arg estimand} policy list cannot be empty.")
+    }
+    if (length(estimand) > 1L) {
+      cli::cli_abort(c(
+        "A single {.fn tmle_spec} fits one continuous Modified Treatment Policy at a time (received {length(estimand)} policies).",
+        "i" = "Each continuous policy requires its own density-ratio model. Fit each policy separately and combine with {.code dplyr::bind_rows(tidy(fit1), tidy(fit2))}."
+      ))
+    }
+    p1 <- estimand[[1L]]
     return(list(
       kind = "policy",
-      policies = estimand,
-      names = labels
+      policies = list(p1),
+      names = p1$label
     ))
   }
 

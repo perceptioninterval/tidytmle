@@ -202,6 +202,7 @@ fit.tmle_spec <- function(object, data, ...) {
     a_num = roles$a_num,
     delta = roles$delta,
     weights = roles$weights,
+    weights_kind = roles$weights_kind,
     id_vec = roles$id_vec,
     outcome_col = roles$outcome_col,
     treatment_col = roles$treatment_col,
@@ -275,10 +276,12 @@ fit.tmle_spec <- function(object, data, ...) {
 #'   `"att"`, `"atc"`, `"ate"`). Defaults to the estimand in `object`.
 #' @param subgroup Optional unquoted filtering expression (e.g. `age >= 65`)
 #'   evaluated on the cached cohort data to perform instant subgroup TMLE
-#'   re-targeting.
+#'   re-targeting. When `NULL` (default), preserves the currently active
+#'   subgroup; pass `subgroup = TRUE` to reset back to the full cohort.
 #' @param fluctuation Optional updated fluctuation submodel (`"logistic"`,
 #'   `"linear"`, `"none"`).
-#' @param conf.level Confidence level for intervals (default `0.95`).
+#' @param conf.level Confidence level for intervals; defaults to the level stored
+#'   in `object` (`0.95` initially).
 #'
 #' @return An updated `"tmle_fit"` object.
 #'
@@ -297,13 +300,21 @@ retarget <- function(object,
                      estimand = NULL,
                      subgroup = NULL,
                      fluctuation = NULL,
-                     conf.level = 0.95) {
+                     conf.level = NULL) {
   if (!inherits(object, "tmle_fit")) {
     cli::cli_abort("{.arg object} must be a {.cls tmle_fit} object.")
   }
 
   cache <- object$cache
   new_spec <- object$spec
+  eff_conf <- if (is.null(conf.level)) {
+    if (!is.null(object$targeting$conf_level)) object$targeting$conf_level else 0.95
+  } else {
+    if (!is.numeric(conf.level) || length(conf.level) != 1L || conf.level <= 0 || conf.level >= 1) {
+      cli::cli_abort("{.arg conf.level} must be strictly between 0 and 1.")
+    }
+    conf.level
+  }
 
   if (!is.null(g_bounds)) {
     validate_g_bounds_arg(g_bounds)
@@ -326,19 +337,25 @@ retarget <- function(object,
 
   sub_quo <- rlang::enquo(subgroup)
   if (!rlang::quo_is_null(sub_quo)) {
-    mask <- rlang::eval_tidy(sub_quo, data = cache$data)
-    if (!is.logical(mask) || length(mask) != nrow(cache$data)) {
-      cli::cli_abort("{.arg subgroup} must evaluate to a logical vector of length {nrow(cache$data)}.")
+    sub_raw_expr <- rlang::quo_get_expr(sub_quo)
+    if (isTRUE(sub_raw_expr)) {
+      idx <- seq_len(nrow(cache$data))
+      sub_expr <- NULL
+    } else {
+      mask <- rlang::eval_tidy(sub_quo, data = cache$data)
+      if (!is.logical(mask) || length(mask) != nrow(cache$data)) {
+        cli::cli_abort("{.arg subgroup} must evaluate to a logical vector of length {nrow(cache$data)}.")
+      }
+      mask[is.na(mask)] <- FALSE
+      idx <- which(mask)
+      if (length(idx) < 10L) {
+        cli::cli_abort("Subgroup contains fewer than 10 observations ({length(idx)}).")
+      }
+      sub_expr <- rlang::quo_text(sub_quo)
     }
-    mask[is.na(mask)] <- FALSE
-    idx <- which(mask)
-    if (length(idx) < 10L) {
-      cli::cli_abort("Subgroup contains fewer than 10 observations ({length(idx)}).")
-    }
-    sub_expr <- rlang::quo_text(sub_quo)
   } else {
-    idx <- seq_len(nrow(cache$data))
-    sub_expr <- NULL
+    idx <- if (!is.null(object$subgroup_idx)) object$subgroup_idx else seq_len(nrow(cache$data))
+    sub_expr <- object$subgroup_expr
   }
 
   y_sub <- cache$y_num[idx]
@@ -373,7 +390,7 @@ retarget <- function(object,
     g_bounds_arg = new_spec$targeting$g_bounds,
     fluctuation = new_spec$targeting$fluctuation,
     cluster_id = if (!is.null(cache$id_vec)) cache$id_vec[idx] else NULL,
-    conf.level = conf.level
+    conf.level = eff_conf
   )
 
   out <- object

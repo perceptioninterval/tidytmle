@@ -12,7 +12,7 @@ report_tmle(
   treatment_label = NULL,
   units = NULL,
   style = c("paper", "plain", "markdown"),
-  conf.level = 0.95,
+  conf.level = NULL,
   simultaneous = FALSE,
   e_value = TRUE
 )
@@ -37,7 +37,8 @@ to the outcome column name).}
 \code{"plain"} (accessible blog/stakeholder prose), or \code{"markdown"} (combined
 Markdown document with results table).}
 
-\item{conf.level}{Confidence level for reported intervals (default \code{0.95}).}
+\item{conf.level}{Confidence level for reported intervals; defaults to the
+level stored on \code{x} (\code{0.95} initially unless updated via \code{\link[=retarget]{retarget()}}).}
 
 \item{simultaneous}{Logical; whether to compute simultaneous uniform
 confidence bands when multiple estimands are present.}

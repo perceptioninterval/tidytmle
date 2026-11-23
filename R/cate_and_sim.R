@@ -88,7 +88,10 @@ fit_cate <- function(fit,
   cate_df[[".phi"]] <- phi
 
   fml <- stats::reformulate(termlabels = v_cols, response = ".phi")
-  rec_cate <- recipes::recipe(fml, data = utils::head(cate_df, 20L)) |>
+  rec_cate <- recipes::recipe(fml, data = cate_df) |>
+    recipes::step_impute_median(recipes::all_numeric_predictors()) |>
+    recipes::step_impute_mode(recipes::all_nominal_predictors()) |>
+    recipes::step_novel(recipes::all_nominal_predictors()) |>
     recipes::step_dummy(recipes::all_nominal_predictors(), one_hot = FALSE) |>
     recipes::step_zv(recipes::all_predictors())
 

@@ -102,32 +102,50 @@ check_tmle <- function(x) {
   # 3. Confounder Balance (binary treatments only)
   if (is_binary_tx) {
     bal <- compute_covariate_balance(x)
-    max_raw <- if (nrow(bal) > 0L) max(bal$smd_raw, na.rm = TRUE) else 0
-    max_wt <- if (nrow(bal) > 0L) max(bal$smd_wt, na.rm = TRUE) else 0
-    bal_status <- if (max_wt <= 0.10) {
-      "pass"
-    } else if (max_wt <= 0.20) {
-      "warn"
+    if (nrow(bal) == 0L) {
+      rows[[length(rows) + 1L]] <- tibble::tibble(
+        check = "Confounder Balance",
+        status = "pass",
+        metric = "no varying covariates",
+        summary = "No varying baseline confounders remained in this sample or subgroup.",
+        why_it_matters = "Balanced covariates mean treated and control groups act like fair counterfactual twins.",
+        next_step = "None required."
+      )
     } else {
-      "fail"
-    }
-    rows[[length(rows) + 1L]] <- tibble::tibble(
-      check = "Confounder Balance",
-      status = bal_status,
-      metric = sprintf("max |SMD| %.3f -> %.3f", max_raw, max_wt),
-      summary = if (bal_status == "pass") {
-        sprintf("Weighted confounders are well balanced (max |SMD| fell from %.3f to %.3f, below 0.10).",
-                max_raw, max_wt)
+      max_raw <- max(bal$smd_raw, na.rm = TRUE)
+      max_wt <- max(bal$smd_wt, na.rm = TRUE)
+      bal_status <- if (max_wt <= 0.10) {
+        "pass"
+      } else if (max_wt <= 0.20) {
+        "warn"
       } else {
-        sprintf("Residual imbalance remains after weighting (max |SMD| = %.3f; goal <= 0.10).", max_wt)
-      },
-      why_it_matters = "Balanced covariates mean treated and control groups act like fair counterfactual twins.",
-      next_step = if (bal_status == "pass") {
-        "None required."
-      } else {
-        "Inspect autoplot(fit, type = 'balance') and add richer treatment learners/interactions."
+        "fail"
       }
-    )
+      bal_sum <- if (bal_status == "pass") {
+        if (max_wt < max_raw) {
+          sprintf("Weighted confounders are well balanced (max |SMD| fell from %.3f to %.3f, below 0.10).",
+                  max_raw, max_wt)
+        } else {
+          sprintf("Weighted confounders remain balanced (max |SMD| = %.3f vs. %.3f raw, below 0.10).",
+                  max_wt, max_raw)
+        }
+      } else {
+        sprintf("Residual imbalance remains after weighting (max |SMD| = %.3f vs. %.3f raw; goal <= 0.10).",
+                max_wt, max_raw)
+      }
+      rows[[length(rows) + 1L]] <- tibble::tibble(
+        check = "Confounder Balance",
+        status = bal_status,
+        metric = sprintf("max |SMD| %.3f -> %.3f", max_raw, max_wt),
+        summary = bal_sum,
+        why_it_matters = "Balanced covariates mean treated and control groups act like fair counterfactual twins.",
+        next_step = if (bal_status == "pass") {
+          "None required."
+        } else {
+          "Inspect autoplot(fit, type = 'balance') and add richer treatment learners/interactions."
+        }
+      )
+    }
   }
 
   # 4. Individual Influence
@@ -253,7 +271,8 @@ print.tmle_check <- function(x, ...) {
 #' @param style Output framing: `"paper"` (academic Methods + Results sections),
 #'   `"plain"` (accessible blog/stakeholder prose), or `"markdown"` (combined
 #'   Markdown document with results table).
-#' @param conf.level Confidence level for reported intervals (default `0.95`).
+#' @param conf.level Confidence level for reported intervals; defaults to the
+#'   level stored on `x` (`0.95` initially unless updated via [retarget()]).
 #' @param simultaneous Logical; whether to compute simultaneous uniform
 #'   confidence bands when multiple estimands are present.
 #' @param e_value Logical; whether to compute and report VanderWeele-Ding
@@ -276,7 +295,7 @@ report_tmle <- function(x,
                         treatment_label = NULL,
                         units = NULL,
                         style = c("paper", "plain", "markdown"),
-                        conf.level = 0.95,
+                        conf.level = NULL,
                         simultaneous = FALSE,
                         e_value = TRUE) {
   if (!inherits(x, "tmle_fit")) {
@@ -286,16 +305,39 @@ report_tmle <- function(x,
     ))
   }
   style <- match.arg(style)
+  eff_cl <- if (is.null(conf.level)) {
+    if (!is.null(x$targeting$conf_level)) x$targeting$conf_level else 0.95
+  } else {
+    conf.level
+  }
 
   out_name <- if (is.null(outcome_label)) x$cache$outcome_col else as.character(outcome_label)[1L]
   trt_name <- if (is.null(treatment_label)) x$cache$treatment_col else as.character(treatment_label)[1L]
-  unit_suffix <- if (is.null(units) || !nzchar(units)) " units" else paste0(" ", trimws(as.character(units)[1L]))
+  unit_suffix <- if (!is.null(units) && nzchar(units)) {
+    paste0(" ", trimws(as.character(units)[1L]))
+  } else if (identical(x$cache$outcome_type, "binary")) {
+    " (probability scale)"
+  } else {
+    " units"
+  }
 
   gl <- glance.tmle_fit(x)
-  td <- tidy.tmle_fit(x, conf.level = conf.level, simultaneous = simultaneous, e_value = e_value)
+  td <- tidy.tmle_fit(x, conf.level = eff_cl, simultaneous = simultaneous, e_value = e_value)
   chk <- check_tmle(x)
   sl_w <- extract_sl_weights(x)
-  pct_lbl <- sprintf("%.0f%%", 100 * conf.level)
+  pct_lbl <- sprintf("%.0f%%", 100 * eff_cl)
+
+  sub_phrase <- if (!is.null(x$subgroup_expr)) {
+    sprintf(" (within prespecified subgroup %s)", x$subgroup_expr)
+  } else {
+    ""
+  }
+  wt_phrase <- if (!is.null(x$cache$weights_kind) && x$cache$weights_kind != "none") {
+    sprintf(" Observation-level %s case weights were incorporated across nuisance training and variance estimation.",
+            x$cache$weights_kind)
+  } else {
+    ""
+  }
 
   format_learners <- function(factor_name) {
     sub <- sl_w[sl_w$nuisance == factor_name, , drop = FALSE]
@@ -365,22 +407,24 @@ report_tmle <- function(x,
 
   methods_text <- if (style == "plain") {
     paste(
-      sprintf("We analyzed %d observations (%d with observed %s) using %d-fold cross-fitted TMLE ('predict, then target').",
-              gl$n, gl$n_observed, out_name, gl$v_folds),
+      sprintf("We analyzed %d observations%s (%d with observed %s) using %d-fold cross-fitted TMLE ('predict, then target').",
+              gl$n, sub_phrase, gl$n_observed, out_name, gl$v_folds),
       sprintf("First, cross-validated ensembles estimated each unit's expected %s under alternative values of %s adjusting for %d baseline factors (%s; outcome learners: %s), alongside treatment weights (%s).",
               out_name, trt_name, n_covs, cov_preview, q_desc, g_desc),
       if (!is.null(c_desc)) sprintf("An additional model accounted for %d missing outcomes instead of dropping incomplete rows.", gl$n - gl$n_observed) else "",
+      wt_phrase,
       "Second, a targeted logistic calibration step adjusted those initial predictions so residual confounding bias on the causal estimand was removed.",
       se_phrase
     )
   } else {
     paste(
-      sprintf("We estimated the causal effect of %s on %s among n = %d observations (%d observed) adjusting for %d baseline covariates (%s) using %s.",
-              trt_name, out_name, gl$n, gl$n_observed, n_covs, cov_preview, cv_phrase),
+      sprintf("We estimated the causal effect of %s on %s among n = %d observations%s (%d observed) adjusting for %d baseline covariates (%s) using %s.",
+              trt_name, out_name, gl$n, sub_phrase, gl$n_observed, n_covs, cov_preview, cv_phrase),
       sprintf("Initial conditional expectations E[%s | %s, W] were fit with a cross-validated Super Learner ensemble combining [%s].",
               out_name, trt_name, q_desc),
       tx_model_phrase,
       miss_phrase,
+      wt_phrase,
       se_phrase,
       ev_method_phrase
     )
@@ -428,8 +472,15 @@ report_tmle <- function(x,
   bal_txt <- if (x$cache$treatment_type == "binary") {
     bal <- compute_covariate_balance(x)
     if (nrow(bal) > 0L) {
-      sprintf("Inverse-propensity weighting reduced maximum covariate standardized mean imbalance from %.3f to %.3f.",
-              max(bal$smd_raw, na.rm = TRUE), max(bal$smd_wt, na.rm = TRUE))
+      max_r <- max(bal$smd_raw, na.rm = TRUE)
+      max_w <- max(bal$smd_wt, na.rm = TRUE)
+      if (max_w < max_r) {
+        sprintf("Inverse-propensity weighting reduced maximum covariate standardized mean imbalance from %.3f to %.3f.",
+                max_r, max_w)
+      } else {
+        sprintf("Across covariates, maximum standardized mean imbalance was %.3f (unadjusted) vs. %.3f (inverse-propensity weighted).",
+                max_r, max_w)
+      }
     } else {
       ""
     }
@@ -465,7 +516,7 @@ report_tmle <- function(x,
   assumptions_text <- paste(ev_note, pos_note, sutva_note, sep = "\n")
 
   tbl_md <- c(
-    "| Estimand | Estimate | SE / log-SE | 95% CI | p-value |",
+    sprintf("| Estimand | Estimate | SE / log-SE | %s CI | p-value |", pct_lbl),
     "|---|---:|---:|---:|---:|"
   )
   for (i in seq_len(nrow(td))) {

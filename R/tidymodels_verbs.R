@@ -16,7 +16,8 @@
 #' @param x A fitted `"tmle_fit"` object.
 #' @param conf.int Logical; whether to include `conf.low` and `conf.high`
 #'   columns (default `TRUE`).
-#' @param conf.level Confidence level for intervals (default `0.95`).
+#' @param conf.level Confidence level for intervals; defaults to the level stored
+#'   on `x` (`0.95` initially unless changed via [retarget()]).
 #' @param simultaneous Logical; if `TRUE` and multiple estimands are present,
 #'   computes simultaneous uniform confidence bands via a fast Rademacher wild
 #'   multiplier bootstrap over the joint EIF matrix.
@@ -39,16 +40,18 @@
 #' @export
 tidy.tmle_fit <- function(x,
                           conf.int = TRUE,
-                          conf.level = 0.95,
+                          conf.level = NULL,
                           simultaneous = FALSE,
                           e_value = FALSE,
                           ...) {
-  if (!is.numeric(conf.level) || length(conf.level) != 1L || conf.level <= 0 || conf.level >= 1) {
+  stored_cl <- if (!is.null(x$targeting$conf_level)) x$targeting$conf_level else 0.95
+  eff_cl <- if (is.null(conf.level)) stored_cl else conf.level
+  if (!is.numeric(eff_cl) || length(eff_cl) != 1L || eff_cl <= 0 || eff_cl >= 1) {
     cli::cli_abort("{.arg conf.level} must be strictly between 0 and 1.")
   }
 
   # Recompute inference on cached targeting outputs if custom conf.level, simultaneous, or e_value requested
-  if (abs(conf.level - 0.95) > 1e-12 || isTRUE(simultaneous) || isTRUE(e_value)) {
+  if (abs(eff_cl - stored_cl) > 1e-12 || isTRUE(simultaneous) || isTRUE(e_value)) {
     idx <- x$subgroup_idx
     cache <- x$cache
     y_sub <- cache$y_num[idx]
@@ -76,7 +79,7 @@ tidy.tmle_fit <- function(x,
       g_bounds_arg = x$spec$targeting$g_bounds,
       fluctuation = x$spec$targeting$fluctuation,
       cluster_id = if (!is.null(cache$id_vec)) cache$id_vec[idx] else NULL,
-      conf.level = conf.level,
+      conf.level = eff_cl,
       simultaneous = simultaneous,
       e_value = e_value
     )
@@ -387,13 +390,14 @@ print.tmle_fit <- function(x, ...) {
     }
     cli::cli_text("{.emph {meta}}")
 
+    ci_pct <- round(100 * (if (!is.null(x$targeting$conf_level)) x$targeting$conf_level else 0.95))
     cli::cli_h3("Causal Effect Estimates")
     for (i in seq_len(nrow(td))) {
       r <- td[i, ]
       p_str <- format_p_human(r$p.value)
       se_lab <- if (r$estimand %in% c("rr", "or")) "log-SE" else "SE"
       cli::cli_text(
-        "  {sprintf('%-6s', r$term)}  est = {sprintf('%8.4f', r$estimate)}  ({se_lab} = {sprintf('%.4f', r$std.error)})  95% CI [{sprintf('%.4f', r$conf.low)}, {sprintf('%.4f', r$conf.high)}]  {p_str}"
+        "  {sprintf('%-6s', r$term)}  est = {sprintf('%8.4f', r$estimate)}  ({se_lab} = {sprintf('%.4f', r$std.error)})  {ci_pct}% CI [{sprintf('%.4f', r$conf.low)}, {sprintf('%.4f', r$conf.high)}]  {p_str}"
       )
     }
 
@@ -467,7 +471,8 @@ print.tmle_fit <- function(x, ...) {
 #' `summary(fit)` delegates directly to `explain_tmle()`.
 #'
 #' @param x,object A fitted `"tmle_fit"` object.
-#' @param conf.level Confidence level for interval statements (default `0.95`).
+#' @param conf.level Confidence level for interval statements; defaults to the
+#'   level stored on `x` (`0.95` initially).
 #' @param ... Currently unused.
 #'
 #' @return Invisibly returns a list with elements `estimates` (tibble) and
@@ -481,13 +486,18 @@ print.tmle_fit <- function(x, ...) {
 #' summary(fit)
 #'
 #' @export
-explain_tmle <- function(x, conf.level = 0.95) {
+explain_tmle <- function(x, conf.level = NULL) {
   if (!inherits(x, "tmle_fit")) {
     cli::cli_abort("{.arg x} must be a {.cls tmle_fit} object.")
   }
+  eff_cl <- if (is.null(conf.level)) {
+    if (!is.null(x$targeting$conf_level)) x$targeting$conf_level else 0.95
+  } else {
+    conf.level
+  }
   gl <- glance.tmle_fit(x)
-  td <- tidy.tmle_fit(x, conf.level = conf.level)
-  pct_lbl <- sprintf("%.0f%%", 100 * conf.level)
+  td <- tidy.tmle_fit(x, conf.level = eff_cl)
+  pct_lbl <- sprintf("%.0f%%", 100 * eff_cl)
 
   describe_row <- function(r) {
     p_txt <- format_p_human(r$p.value)
@@ -575,9 +585,12 @@ explain_tmle <- function(x, conf.level = 0.95) {
       max_raw <- max(bal_info$smd_raw, na.rm = TRUE)
       max_wt <- max(bal_info$smd_wt, na.rm = TRUE)
       if (max_wt <= 0.10) {
-        cli::cli_alert_success(
+        bal_msg <- if (max_wt < max_raw) {
           "Confounder balance: Max standardized difference fell from {sprintf('%.3f', max_raw)} to {sprintf('%.3f', max_wt)} (well below 0.10)."
-        )
+        } else {
+          "Confounder balance: Max standardized difference remained below 0.10 ({sprintf('%.3f', max_raw)} raw vs. {sprintf('%.3f', max_wt)} weighted)."
+        }
+        cli::cli_alert_success(bal_msg)
       } else {
         cli::cli_alert_warning(
           "Confounder balance: Max weighted |SMD| is {sprintf('%.3f', max_wt)} (> 0.10). Inspect {.code autoplot(fit, type = 'balance')}."
@@ -605,6 +618,6 @@ explain_tmle <- function(x, conf.level = 0.95) {
 #' @rdname explain_tmle
 #' @method summary tmle_fit
 #' @export
-summary.tmle_fit <- function(object, conf.level = 0.95, ...) {
+summary.tmle_fit <- function(object, conf.level = NULL, ...) {
   explain_tmle(object, conf.level = conf.level)
 }

@@ -98,11 +98,11 @@ check_tmle(fit)
 #> 
 #> ── TMLE Causal Health Audit (5/5 Passed) ──
 #> 
-#> ✔ Targeting Convergence (mean EIF = 3.37e-14): Bias-removal step converged cleanly (targeting shift = +0.0307, epsilon = 0.0781).
-#> ✔ Comparison Overlap (Positivity) (0.0% clipped | ESS 192 vs 135): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 192.2, control = 135.2).
-#> ✔ Confounder Balance (max |SMD| 0.331 -> 0.051): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.051, below 0.10).
-#> ✔ Individual Influence (top obs = 2.1% variance): No single row dominates uncertainty (row 180 holds 2.1% of EIF variance, <= 10%).
-#> ✔ Model Learning Quality (Q AUC = 0.723 | g AUC = 0.627): Cross-validated Super Learners captured real structure (Q AUC = 0.723, treatment AUC = 0.627).
+#> ✔ Targeting Convergence (mean EIF = 1.68e-14): Bias-removal step converged cleanly (targeting shift = +0.0302, epsilon = 0.0750).
+#> ✔ Comparison Overlap (Positivity) (0.0% clipped | ESS 192 vs 131): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 191.9, control = 130.6).
+#> ✔ Confounder Balance (max |SMD| 0.331 -> 0.037): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.037, below 0.10).
+#> ✔ Individual Influence (top obs = 5.2% variance): No single row dominates uncertainty (row 118 holds 5.2% of EIF variance, <= 10%).
+#> ✔ Model Learning Quality (Q AUC = 0.723 | g AUC = 0.631): Cross-validated Super Learners captured real structure (Q AUC = 0.723, treatment AUC = 0.631).
 #> 
 #> Verdict: Ready for interpretation. Generate paper prose with report_tmle(fit).
 
@@ -119,9 +119,9 @@ retarget(fit, g_bounds = c(0.05, 0.95)) |>
 #> # A tibble: 3 × 11
 #>   estimand term  estimate std.error statistic p.value conf.low conf.high e_value
 #>   <chr>    <chr>    <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl>   <dbl>
-#> 1 ate      ATE      0.111    0.0500      2.23  0.0261  0.00837     0.214    1.76
-#> 2 rr       RR       1.35     0.140       2.12  0.0339  1.01        1.80     2.03
-#> 3 or       OR       1.61     0.219       2.18  0.0295  1.03        2.53     2.60
+#> 1 ate      ATE      0.111    0.0516      2.16  0.0307  0.00493     0.218    1.76
+#> 2 rr       RR       1.34     0.143       2.05  0.0402  0.998       1.80     2.02
+#> 3 or       OR       1.61     0.225       2.11  0.0347  1.01        2.56     2.60
 #> # ℹ 2 more variables: e_value_ci <dbl>, crit.value <dbl>
 ```
 
@@ -143,7 +143,7 @@ report_tmle(
 #> estimated each unit's expected clinical recovery under alternative values of
 #> targeted therapy adjusting for 5 baseline factors (age, sex, lab_1, lab_2,
 #> lab_3; outcome learners: glmnet (100%), glm (0%), ranger (0%)), alongside
-#> treatment weights (glmnet (58%), ranger (41%), glm (1%)). Second, a targeted
+#> treatment weights (glm (71%), ranger (19%), glmnet (10%)). Second, a targeted
 #> logistic calibration step adjusted those initial predictions so residual
 #> confounding bias on the causal estimand was removed. Standard errors and 95%
 #> confidence intervals were derived from the sample variance of the Efficient
@@ -151,16 +151,17 @@ report_tmle(
 #> 
 #> ── Results 
 #> After confounder adjustment and targeting, targeted therapy shifted clinical
-#> recovery by +0.1114 units (across the full study population (ATE); 95% CI
-#> [0.0133, 0.2094], p = 0.0261; E-value = 1.76 (CI limit = 1.18)); and the
-#> relative risk ratio (RR) was 1.35 (34.6% higher risk; 95% CI [1.02, 1.77], p =
-#> 0.0339; E-value = 2.03 (CI limit = 1.18)); and the odds ratio (OR) was 1.61
-#> (95% CI [1.05, 2.47], p = 0.0295; E-value = 2.60 (CI limit = 1.27)). The
-#> targeting calibration step shifted the initial ML plug-in estimate by +0.0307
-#> (fluctuation epsilon = 0.0781) and satisfied the EIF score equation (mean EIF =
-#> 3.37e-14). Inverse-propensity weighting reduced maximum covariate standardized
-#> mean imbalance from 0.331 to 0.051. Positivity truncation affected 0.0% of
-#> observations, with maximum single-observation EIF variance leverage of 2.1%.
+#> recovery by +0.1115 (probability scale) (across the full study population
+#> (ATE); 95% CI [0.0104, 0.2125], p = 0.0307; E-value = 1.76 (CI limit = 1.16));
+#> and the relative risk ratio (RR) was 1.34 (34.2% higher risk; 95% CI [1.01,
+#> 1.78], p = 0.0402; E-value = 2.02 (CI limit = 1.13)); and the odds ratio (OR)
+#> was 1.61 (95% CI [1.03, 2.50], p = 0.0347; E-value = 2.60 (CI limit = 1.22)).
+#> The targeting calibration step shifted the initial ML plug-in estimate by
+#> +0.0302 (fluctuation epsilon = 0.0750) and satisfied the EIF score equation
+#> (mean EIF = 1.68e-14). Inverse-propensity weighting reduced maximum covariate
+#> standardized mean imbalance from 0.331 to 0.037. Positivity truncation affected
+#> 0.0% of observations, with maximum single-observation EIF variance leverage of
+#> 5.2%.
 #> 
 #> ── Causal Assumptions & Diagnostics 
 #> 1. **No unmeasured confounding:** Valid causal interpretation assumes all joint
@@ -169,7 +170,7 @@ report_tmle(
 #> association of at least 1.76 with both treatment and outcome (beyond measured
 #> covariates) to explain away the point estimate.
 #> 2. **Positivity (real-world overlap):** Only 0.0% of observations hit bounds
-#> [0.046, 0.954] (effective sample sizes: treated = 192.2, control = 135.2).
+#> [0.046, 0.954] (effective sample sizes: treated = 191.9, control = 130.6).
 #> 3. **Consistency & interference:** Each unit's observed outcome matches its
 #> potential outcome under the received targeted therapy level without cross-unit
 #> spillover.

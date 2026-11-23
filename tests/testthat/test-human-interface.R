@@ -108,3 +108,78 @@ test_that("Tufte plots (effect default, non-redundant balance, CATE/Qini formatt
   expect_s3_class(p_qini, "ggplot")
   expect_false(grepl("p = <", p_cate$labels$subtitle, fixed = TRUE))
 })
+
+test_that("Regression tests: NA balance alignment, 1-level subgroup factors, chained retarget, cluster subsets, fit_cate NAs, conf.level, and multi-policy guard", {
+  # 1. Exact SMD preservation with missing covariates
+  df_na <- sim_causal_cohort(n = 200, outcome_type = "binary", seed = 10)
+  df_na$lab_1[1:20] <- NA_real_
+  df_na$sex[21:35] <- NA
+  fit_na <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
+    set_resamples(v_folds = 3L) |>
+    fit(df_na)
+
+  bal_na <- tidytmle:::compute_covariate_balance(fit_na)
+  i1 <- df_na$a == 1L
+  i0 <- df_na$a == 0L
+  true_age_smd <- abs(mean(df_na$age[i1]) - mean(df_na$age[i0])) /
+    sqrt(0.5 * (stats::var(df_na$age[i1]) + stats::var(df_na$age[i0])))
+  expect_equal(bal_na$smd_raw[bal_na$covariate == "age"], true_age_smd, tolerance = 1e-6)
+
+  # 2. fit_cate handles missing covariates silently and yields zero NA predictions
+  expect_no_warning({
+    cate_na <- fit_cate(fit_na, v_folds = 3L)
+    preds_na <- predict(cate_na, new_data = df_na[1:25, ])
+    expect_equal(sum(is.na(preds_na$.pred)), 0L)
+  })
+
+  # 3. 1-level character covariate inside subgroup & chained retarget() subgroup preservation
+  df_sub <- sim_causal_cohort(n = 240, outcome_type = "binary", seed = 77)
+  df_sub$region <- as.character(df_sub$sex)
+  df_sub$wt <- hardhat::importance_weights(runif(nrow(df_sub), 0.7, 1.4))
+  fit_sub_base <- tmle_spec(y, a, c(age, region, lab_1, lab_2), weights = wt, estimand = c("ate", "rr")) |>
+    set_resamples(v_folds = 3L) |>
+    fit(df_sub)
+
+  fit_f <- retarget(fit_sub_base, subgroup = region == "F")
+  expect_s3_class(check_tmle(fit_f), "tmle_check")
+  expect_s3_class(autoplot(fit_f, type = "balance"), "ggplot")
+
+  fit_f_strict <- retarget(fit_f, g_bounds = c(0.05, 0.95), conf.level = 0.90)
+  expect_equal(glance(fit_f_strict)$n, glance(fit_f)$n)
+  expect_identical(fit_f_strict$subgroup_expr, fit_f$subgroup_expr)
+  expect_output(print(fit_f_strict), "90% CI")
+  expect_equal(tidy(fit_f_strict), tidy(fit_f_strict, conf.level = 0.90))
+
+  rep_90 <- report_tmle(fit_f_strict)
+  expect_match(rep_90$methods, "region == \"F\"", fixed = TRUE)
+  expect_match(rep_90$methods, "importance case weights")
+  expect_match(rep_90$markdown, "90% CI")
+  expect_match(rep_90$results, "probability scale")
+
+  fit_reset <- retarget(fit_f_strict, subgroup = TRUE)
+  expect_equal(glance(fit_reset)$n, nrow(df_sub))
+  expect_null(fit_reset$subgroup_expr)
+
+  # 4. Clustered subgroup missing factor levels & 1-cluster fallback warning
+  df_cl <- sim_causal_cohort(n = 240, outcome_type = "continuous", n_clusters = 12L, seed = 91)
+  fit_cl <- tmle_spec(y, a, c(age, sex, lab_1), id = clinic_id) |>
+    set_resamples(v_folds = 3L) |>
+    fit(df_cl)
+
+  keep_clinics <- levels(df_cl$clinic_id)[1:6]
+  fit_cl_6 <- retarget(fit_cl, subgroup = clinic_id %in% keep_clinics)
+  td_6 <- tidy(fit_cl_6)
+  expect_true(is.finite(td_6$std.error) && is.finite(td_6$conf.low))
+
+  expect_warning(
+    fit_cl_1 <- retarget(fit_cl, subgroup = clinic_id == "clinic_01"),
+    "only 1 cluster"
+  )
+  expect_true(is.finite(tidy(fit_cl_1)$std.error))
+
+  # 5. Multi-policy list aborts clearly instead of silently dropping policies
+  expect_error(
+    tmle_spec(y, a, c(age, sex), estimand = list(shift(1.0), scale_tx(0.9))),
+    "one continuous Modified Treatment Policy at a time"
+  )
+})
