@@ -44,7 +44,11 @@ fit
 
 ## Joint EIF Inference & Tidymodels S3 Verbs
 
-Standard `tidymodels` S3 verbs extract every layer of the fitted pipeline without digging through nested lists:
+Standard `tidymodels` S3 verbs extract every layer of the fitted pipeline without digging through nested lists.
+
+- **`tidy(fit)`**: Returns point estimates, influence-function standard errors, and 95% confidence intervals (computed on the log scale and exponentiated for ratio estimands `"rr"` and `"or"`). Setting `simultaneous = TRUE` applies a fast wild multiplier bootstrap across the joint EIF matrix so multiple estimands retain simultaneous 95% coverage; `e_value = TRUE` computes VanderWeele-Ding sensitivity bounds for unmeasured confounding.
+- **`glance(fit)`**: One-row causal health check—verify that `mean_eif` is near zero (`< 1e-4`), inspect `plugin_vs_tmle_shift` (how much the targeting step adjusted the initial ML fit), and check positivity truncation (`pct_truncated`, `ess_treated`, `ess_control`).
+- **`collect_metrics(fit)` & `extract_sl_weights(fit)`**: Inspect out-of-fold `yardstick` CV performance and simplex Super Learner metalearner weights across base learners.
 
 ```{r verbs}
 # Causal inference table with optional simultaneous uniform bands and E-values
@@ -84,7 +88,7 @@ dplyr::bind_rows(
 
 ## Visual Causal Diagnostics (`autoplot()`)
 
-Inspect propensity overlap, nuisance learner weights, EIF leverage outliers, positivity sensitivity curves, and weighted covariate balance using `autoplot()`:
+Inspect propensity overlap (checking positivity across arms), how strongly the fluctuation step shifted individual predictions (`"targeting"`), and positivity truncation stability across bounds (`"sensitivity"`):
 
 ```{r plots, fig.alt = "Propensity score overlap, targeting shift, and positivity sensitivity sweep"}
 autoplot(fit, type = "overlap")

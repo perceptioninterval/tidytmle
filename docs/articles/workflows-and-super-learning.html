@@ -159,7 +159,7 @@ predictors:</p>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (observed = 280) | 5-fold CV-TMLE | logistic fluctuation |</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">2.50s | 15 clusters</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">2.21s | 15 clusters</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Estimates </span></span>
 <span><span class="co">#&gt; ATE est = 1.7176 (SE = 0.1230) 95% CI [1.4766, 1.9586] p = &lt; 0.0001</span></span>
@@ -177,17 +177,24 @@ predictors:</p>
 <div class="section level2">
 <h2 id="automatic-informative-missingness-handling-case-weights">Automatic Informative-Missingness Handling &amp; Case Weights<a class="anchor" aria-label="anchor" href="#automatic-informative-missingness-handling-case-weights"></a>
 </h2>
-<p>When <code>outcome</code> contains missing values (<code>NA</code>)
-and <code>censoring</code> is omitted, <code>tidytmle</code>
+<p>When outcomes are missing (<code>NA</code>) selectively (for
+instance, sicker patients dropping out of follow-up), silently
+listwise-deleting incomplete rows introduces <strong>selection
+bias</strong>. When <code>censoring</code> is omitted and
+<code>outcome</code> contains <code>NA</code>s, <code>tidytmle</code>
 automatically creates an observation indicator
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mo>=</mo><mi>𝕀</mi><mo stretchy="false" form="prefix">(</mo><mo>¬</mo><mtext mathvariant="normal">is.na</mtext><mo stretchy="false" form="prefix">(</mo><mi>Y</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\Delta = \mathbb{I}(\neg\text{is.na}(Y))</annotation></semantics></math>
 and models informative missingness
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Δ</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">C(A, W) = P(\Delta = 1 \mid A, W)</annotation></semantics></math>
-rather than silently dropping incomplete rows. Native
-<code><a href="https://hardhat.tidymodels.org/reference/importance_weights.html" class="external-link">hardhat::importance_weights()</a></code> and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Δ</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">C(A, W) = P(\Delta = 1 \mid A, W)</annotation></semantics></math>,
+incorporating
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>/</mi><msub><mi>C</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">1 / C_n(A, W)</annotation></semantics></math>
+directly into the Clever Covariate.</p>
+<p>Native <code><a href="https://hardhat.tidymodels.org/reference/importance_weights.html" class="external-link">hardhat::importance_weights()</a></code> and
 <code><a href="https://hardhat.tidymodels.org/reference/frequency_weights.html" class="external-link">hardhat::frequency_weights()</a></code> are likewise propagated
 through both nuisance workflows and the cluster-robust EIF variance
-estimator:</p>
+estimator, and <code>autoplot(fit, type = "balance")</code> checks
+whether IPW/TMLE weighting brings absolute standardized mean differences
+(<code>|SMD|</code>) below the <code>0.10</code> balance guideline:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_miss</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">df</span>, <span class="op">-</span><span class="va">delta</span><span class="op">)</span></span>
 <span><span class="va">df_miss</span><span class="op">$</span><span class="va">survey_wt</span> <span class="op">&lt;-</span> <span class="fu">hardhat</span><span class="fu">::</span><span class="fu"><a href="https://hardhat.tidymodels.org/reference/importance_weights.html" class="external-link">importance_weights</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df_miss</span><span class="op">)</span>, <span class="fl">0.7</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span>

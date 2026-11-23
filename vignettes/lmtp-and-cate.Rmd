@@ -48,7 +48,11 @@ truth_cont$true_shift_1
 
 ## Heterogeneous Treatment Effects via `fit_cate()`
 
-Feed the cross-fitted Efficient Influence Function pseudo-outcomes from any binary-treatment `tmle_fit` directly into `fit_cate()` to estimate individual-level treatment effects $\hat{\tau}(V)$, evaluate Best Linear Projection heterogeneity tests via `tidy()`, predict onto new cohorts via `predict()`, and quantify uplift ranking via `qini_auc()`:
+Because we never observe both $Y_i(1)$ and $Y_i(0)$ for the same person, we cannot simply regress $Y_i(1) - Y_i(0)$ on patient covariates directly. Kennedy's (2023) **Doubly Robust (DR) Learner** solves this by constructing a cross-fitted pseudo-outcome from the TMLE fit's Efficient Influence Function:
+
+$$\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right).$$
+
+Because $\mathbb{E}[\varphi_i \mid V_i] = \tau(V_i)$ whenever *either* $\bar{Q}$ or $g$ is consistently estimated, `fit_cate()` can feed $\varphi_i$ directly into any `tidymodels` regression workflow to estimate individual treatment effects $\hat{\tau}(V)$, run Chernozhukov et al.'s (2018) Best Linear Projection (BLP) heterogeneity test via `tidy()`, predict onto new cohorts via `predict()`, and quantify treatment-prioritization performance via `qini_auc()`:
 
 ```{r cate, message = FALSE}
 df_het <- sim_causal_cohort(n = 400, outcome_type = "continuous", seed = 303)

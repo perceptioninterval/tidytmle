@@ -129,14 +129,31 @@ without parametric normality assumptions:</p>
 <div class="section level2">
 <h2 id="heterogeneous-treatment-effects-via-fit_cate">Heterogeneous Treatment Effects via <code>fit_cate()</code><a class="anchor" aria-label="anchor" href="#heterogeneous-treatment-effects-via-fit_cate"></a>
 </h2>
-<p>Feed the cross-fitted Efficient Influence Function pseudo-outcomes
-from any binary-treatment <code>tmle_fit</code> directly into
-<code><a href="../reference/fit_cate.html">fit_cate()</a></code> to estimate individual-level treatment effects
+<p>Because we never observe both
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">Y_i(1)</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">Y_i(0)</annotation></semantics></math>
+for the same person, we cannot simply regress
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msub><mi>Y</mi><mi>i</mi></msub><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">Y_i(1) - Y_i(0)</annotation></semantics></math>
+on patient covariates directly. Kennedy’s (2023) <strong>Doubly Robust
+(DR) Learner</strong> solves this by constructing a cross-fitted
+pseudo-outcome from the TMLE fit’s Efficient Influence Function:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>φ</mi><mi>i</mi></msub><mo>=</mo><msub><mi>H</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>Y</mi><mi>i</mi></msub><mo>−</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><msub><mi>A</mi><mi>i</mi></msub><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right).</annotation></semantics></math></p>
+<p>Because
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msub><mi>φ</mi><mi>i</mi></msub><mo>∣</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">]</mo><mo>=</mo><mi>τ</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>V</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[\varphi_i \mid V_i] = \tau(V_i)</annotation></semantics></math>
+whenever <em>either</em>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>Q</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar{Q}</annotation></semantics></math>
+or
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>
+is consistently estimated, <code><a href="../reference/fit_cate.html">fit_cate()</a></code> can feed
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>φ</mi><mi>i</mi></msub><annotation encoding="application/x-tex">\varphi_i</annotation></semantics></math>
+directly into any <code>tidymodels</code> regression workflow to
+estimate individual treatment effects
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>τ</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>V</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat{\tau}(V)</annotation></semantics></math>,
-evaluate Best Linear Projection heterogeneity tests via
-<code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>, predict onto new cohorts via
-<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, and quantify uplift ranking via
-<code><a href="../reference/qini_auc.html">qini_auc()</a></code>:</p>
+run Chernozhukov et al.’s (2018) Best Linear Projection (BLP)
+heterogeneity test via <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>, predict onto new cohorts via
+<code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>, and quantify treatment-prioritization
+performance via <code><a href="../reference/qini_auc.html">qini_auc()</a></code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_het</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_causal_cohort.html">sim_causal_cohort</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">400</span>, outcome_type <span class="op">=</span> <span class="st">"continuous"</span>, seed <span class="op">=</span> <span class="fl">303</span><span class="op">)</span></span>
 <span><span class="va">truth_het</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">df_het</span>, <span class="st">"truth"</span><span class="op">)</span></span>

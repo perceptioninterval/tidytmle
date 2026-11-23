@@ -188,7 +188,7 @@ ground truth so we can watch every single step inside
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">n = 400 (observed = 400) | 5-fold CV-TMLE | logistic fluctuation |</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">1.84s</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">1.90s</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Estimates </span></span>
 <span><span class="co">#&gt; ATE est = 1.6586 (SE = 0.1325) 95% CI [1.3988, 1.9184] p = &lt; 0.0001</span></span>
@@ -259,18 +259,86 @@ on the logit scale (after scaling continuous
 into
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0, 1]</annotation></semantics></math>),
 TMLE fits a simple 1-parameter logistic regression on
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>H</mi><mi>n</mi></msub><annotation encoding="application/x-tex">H_n</annotation></semantics></math>:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">logit</mtext><mspace width="0.167em"></mspace><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mtext mathvariant="normal">logit</mtext><mspace width="0.167em"></mspace><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mover><mi>ϵ</mi><mo accent="true">̂</mo></mover><mo>⋅</mo><msub><mi>H</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">\text{logit}\,\bar{Q}^*(A, W) = \text{logit}\,\bar{Q}^0(A, W) + \hat{\epsilon} \cdot H_n(A, W).</annotation></semantics></math>
-- If the initial ML model already eliminated confounding bias,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>H</mi><mi>n</mi></msub><annotation encoding="application/x-tex">H_n</annotation></semantics></math>:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">logit</mtext><mspace width="0.167em"></mspace><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mtext mathvariant="normal">logit</mtext><mspace width="0.167em"></mspace><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mover><mi>ϵ</mi><mo accent="true">̂</mo></mover><mo>⋅</mo><msub><mi>H</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">\text{logit}\,\bar{Q}^*(A, W) = \text{logit}\,\bar{Q}^0(A, W) + \hat{\epsilon} \cdot H_n(A, W).</annotation></semantics></math></p>
+<ul>
+<li>If the initial ML model already eliminated confounding bias,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>ϵ</mi><mo accent="true">̂</mo></mover><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\hat{\epsilon} \approx 0</annotation></semantics></math>
-and predictions barely move. - Otherwise,
+and predictions barely move.</li>
+<li>Otherwise,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>ϵ</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat{\epsilon}</annotation></semantics></math>
 shifts <code>.q1_init -&gt; .q1_star</code> and
 <code>.q0_init -&gt; .q0_star</code> strictly along the path that zeroes
-out the causal estimating equation.</p>
+out the causal estimating equation.</li>
+</ul>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"targeting"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="tmle-intuition_files/figure-html/targeting-plot-1.png" alt="Scatter plot comparing initial G-computation contrasts against targeted TMLE contrasts shaded by Clever Covariate magnitude" width="672"></p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>
+<code>augment(fit)</code> / <code>glance(fit)</code> Column</th>
+<th>Role in the 5-Step TMLE Recipe</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>
+<code>.q0_init</code>, <code>.q1_init</code>
+</td>
+<td>Step 1 cross-fitted G-computation predictions
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\bar{Q}^0(0, W)</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\bar{Q}^0(1, W)</annotation></semantics></math>
+</td>
+</tr>
+<tr class="even">
+<td>
+<code>.g_hat</code>, <code>.g_trunc</code>
+</td>
+<td>Step 2 raw and bounded propensity scores
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>g</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g_n(W)</annotation></semantics></math>
+</td>
+</tr>
+<tr class="odd">
+<td><code>.clever_h</code></td>
+<td>Step 3 Clever Covariate
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">H_n(A, W)</annotation></semantics></math>
+weighting observations by inverse propensity</td>
+</tr>
+<tr class="even">
+<td>
+<code>epsilon</code>, <code>plugin_vs_tmle_shift</code>
+</td>
+<td>Step 4 fluctuation step size
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>ϵ</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat{\epsilon}</annotation></semantics></math>
+and total causal bias correction</td>
+</tr>
+<tr class="odd">
+<td>
+<code>.q0_star</code>, <code>.q1_star</code>
+</td>
+<td>Step 4 targeted counterfactual predictions
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\bar{Q}^*(0, W)</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\bar{Q}^*(1, W)</annotation></semantics></math>
+</td>
+</tr>
+<tr class="even">
+<td>
+<code>.eif</code>, <code>.eif_leverage</code>,
+<code>mean_eif</code>
+</td>
+<td>Step 5 Efficient Influence Function values
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msubsup><mi>D</mi><mi>i</mi><mo>*</mo></msubsup><annotation encoding="application/x-tex">D_i^*</annotation></semantics></math>,
+variance share, and convergence check
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\approx 0</annotation></semantics></math>)</td>
+</tr>
+</tbody>
+</table>
 <p>Inspecting the decoded columns inside <code>augment(fit)</code> and
 <code>glance(fit)</code> makes all five steps concrete:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">

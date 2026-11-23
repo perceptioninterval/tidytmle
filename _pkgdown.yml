@@ -21,11 +21,12 @@ figures:
   fig.height: 5.75
 
 reference:
-  - title: Specification & Causal Roles
+  - title: Step 0 · Specification & Causal Roles
     desc: >
-      Progressive-disclosure constructors and pipeable configuration verbs
-      for causal roles, preprocessing, nuisance Super Learners, cross-fitting,
-      and targeting guardrails.
+      Declare outcome, treatment, confounders, censoring, clusters, and case
+      weights via tidyselect, and compose recipes, parsnip specs, workflows,
+      or workflow_set Super Learners with built-in CV-TMLE and positivity
+      guardrails.
     contents:
       - tmle_spec
       - set_preprocessing
@@ -36,10 +37,12 @@ reference:
       - set_targeting
       - default_nuisance_learners
 
-  - title: Estimation & Instant Retargeting
+  - title: Steps 1–5 · Estimation & Instant Retargeting
     desc: >
-      Fit cross-fitted nuisance Super Learners and iterate on positivity bounds,
-      estimands, or subgroups in milliseconds without refitting ML models.
+      Run the "Predict, Then Target" CV-TMLE pipeline (fit) and re-run
+      fluctuation, positivity bounds, estimands, or subgroups in milliseconds
+      without refitting ML nuisance models (retarget), or target continuous
+      exposures with Modified Treatment Policies (shift, scale_tx).
     contents:
       - fit.tmle_spec
       - retarget
@@ -48,8 +51,9 @@ reference:
 
   - title: Inference, Diagnostics & Tidymodels Verbs
     desc: >
-      Standard tidymodels S3 verbs and causal health checks powered by the
-      joint Efficient Influence Function (EIF).
+      Decode every stage of the TMLE estimator via standard tidymodels S3
+      verbs and visual diagnostics powered by the joint Efficient Influence
+      Function (EIF).
     contents:
       - tidy.tmle_fit
       - glance.tmle_fit

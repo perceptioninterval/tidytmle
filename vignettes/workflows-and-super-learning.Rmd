@@ -72,7 +72,9 @@ fit_l2
 
 ## Automatic Informative-Missingness Handling & Case Weights
 
-When `outcome` contains missing values (`NA`) and `censoring` is omitted, `tidytmle` automatically creates an observation indicator $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ and models informative missingness $C(A, W) = P(\Delta = 1 \mid A, W)$ rather than silently dropping incomplete rows. Native `hardhat::importance_weights()` and `hardhat::frequency_weights()` are likewise propagated through both nuisance workflows and the cluster-robust EIF variance estimator:
+When outcomes are missing (`NA`) selectively (for instance, sicker patients dropping out of follow-up), silently listwise-deleting incomplete rows introduces **selection bias**. When `censoring` is omitted and `outcome` contains `NA`s, `tidytmle` automatically creates an observation indicator $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$ and models informative missingness $C(A, W) = P(\Delta = 1 \mid A, W)$, incorporating $1 / C_n(A, W)$ directly into the Clever Covariate.
+
+Native `hardhat::importance_weights()` and `hardhat::frequency_weights()` are likewise propagated through both nuisance workflows and the cluster-robust EIF variance estimator, and `autoplot(fit, type = "balance")` checks whether IPW/TMLE weighting brings absolute standardized mean differences (`|SMD|`) below the `0.10` balance guideline:
 
 ```{r missingness, fig.alt = "Weighted covariate balance Love plot comparing unadjusted vs TMLE/IPW standardized mean differences"}
 df_miss <- dplyr::select(df, -delta)

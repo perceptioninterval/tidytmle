@@ -76,14 +76,26 @@ $$H_n(A, W) = \frac{A}{g_n(W)} - \frac{1 - A}{1 - g_n(W)}$$
 Look at the geometry: individuals in areas where their received treatment was *surprising* (small $g_n(W)$ when $A=1$, or small $1-g_n(W)$ when $A=0$) receive a larger $|H_n|$. The Clever Covariate forces the targeting step to pay extra attention to the exact regions of covariate space where confounding bias hides.
 
 ### Step 4: The Fluctuation Step ($\epsilon$)
+
 Holding the initial predictions fixed as an **offset** on the logit scale (after scaling continuous $Y$ into $[0, 1]$), TMLE fits a simple 1-parameter logistic regression on $H_n$:
+
 $$\text{logit}\,\bar{Q}^*(A, W) = \text{logit}\,\bar{Q}^0(A, W) + \hat{\epsilon} \cdot H_n(A, W).$$
+
 - If the initial ML model already eliminated confounding bias, $\hat{\epsilon} \approx 0$ and predictions barely move.
 - Otherwise, $\hat{\epsilon}$ shifts `.q1_init -> .q1_star` and `.q0_init -> .q0_star` strictly along the path that zeroes out the causal estimating equation.
 
 ```{r targeting-plot, fig.alt = "Scatter plot comparing initial G-computation contrasts against targeted TMLE contrasts shaded by Clever Covariate magnitude"}
 autoplot(fit, type = "targeting")
 ```
+
+| `augment(fit)` / `glance(fit)` Column | Role in the 5-Step TMLE Recipe |
+|---|---|
+| `.q0_init`, `.q1_init` | Step 1 cross-fitted G-computation predictions $\bar{Q}^0(0, W)$ and $\bar{Q}^0(1, W)$ |
+| `.g_hat`, `.g_trunc` | Step 2 raw and bounded propensity scores $g_n(W)$ |
+| `.clever_h` | Step 3 Clever Covariate $H_n(A, W)$ weighting observations by inverse propensity |
+| `epsilon`, `plugin_vs_tmle_shift` | Step 4 fluctuation step size $\hat{\epsilon}$ and total causal bias correction |
+| `.q0_star`, `.q1_star` | Step 4 targeted counterfactual predictions $\bar{Q}^*(0, W)$ and $\bar{Q}^*(1, W)$ |
+| `.eif`, `.eif_leverage`, `mean_eif` | Step 5 Efficient Influence Function values $D_i^*$, variance share, and convergence check ($\approx 0$) |
 
 Inspecting the decoded columns inside `augment(fit)` and `glance(fit)` makes all five steps concrete:
 
