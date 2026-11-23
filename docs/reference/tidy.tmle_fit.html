@@ -13,7 +13,7 @@ VanderWeele-Ding E-values."><meta property="og:image" content="https://perceptio
 
     <a class="navbar-brand me-2" href="../index.html">tidytmle</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Unreleased version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -124,17 +124,17 @@ exponentiated back so intervals remain strictly positive.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 8</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimand term  estimate std.error statistic p.value conf.low</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> ate      ATE      0.210    0.076<span style="text-decoration: underline;">2</span>      2.76 0.005<span style="text-decoration: underline;">81</span>   0.060<span style="text-decoration: underline;">8</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> rr       RR       1.80     0.216       2.73 0.006<span style="text-decoration: underline;">40</span>   1.18  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> or       OR       2.52     0.339       2.73 0.006<span style="text-decoration: underline;">40</span>   1.30  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> ate      ATE      0.235    0.081<span style="text-decoration: underline;">6</span>      2.87 0.004<span style="text-decoration: underline;">05</span>   0.074<span style="text-decoration: underline;">6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> rr       RR       1.94     0.238       2.78 0.005<span style="text-decoration: underline;">42</span>   1.22  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> or       OR       2.82     0.369       2.81 0.005<span style="text-decoration: underline;">00</span>   1.37  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 1 more variable: conf.high &lt;dbl&gt;</span></span>
 <span class="r-in"><span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit</span>, simultaneous <span class="op">=</span> <span class="cn">TRUE</span>, e_value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 3 × 11</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   estimand term  estimate std.error statistic p.value conf.low</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> ate      ATE      0.210    0.076<span style="text-decoration: underline;">2</span>      2.76 0.005<span style="text-decoration: underline;">81</span>   0.058<span style="text-decoration: underline;">0</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> rr       RR       1.80     0.216       2.73 0.006<span style="text-decoration: underline;">40</span>   1.17  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> or       OR       2.52     0.339       2.73 0.006<span style="text-decoration: underline;">40</span>   1.28  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> ate      ATE      0.235    0.081<span style="text-decoration: underline;">6</span>      2.87 0.004<span style="text-decoration: underline;">05</span>   0.072<span style="text-decoration: underline;">3</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> rr       RR       1.94     0.238       2.78 0.005<span style="text-decoration: underline;">42</span>   1.21  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> or       OR       2.82     0.369       2.81 0.005<span style="text-decoration: underline;">00</span>   1.35  </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 4 more variables: conf.high &lt;dbl&gt;, e_value &lt;dbl&gt;,</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   e_value_ci &lt;dbl&gt;, crit.value &lt;dbl&gt;</span></span>
 <span class="r-in"><span></span></span>

@@ -766,6 +766,19 @@ add_simultaneous_bands <- function(estimates_tbl, eif_list, cluster_id, conf.lev
   n <- length(eif_list[[1L]])
   E <- do.call(cbind, eif_list)
 
+  has_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  if (has_seed) {
+    old_seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+    on.exit(assign(".Random.seed", old_seed, envir = globalenv()), add = TRUE)
+  } else {
+    on.exit({
+      if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+        rm(".Random.seed", envir = globalenv())
+      }
+    }, add = TRUE)
+  }
+  set.seed(12345L)
+
   if (!is.null(cluster_id)) {
     # Aggregate EIFs by cluster for cluster-valid multiplier bootstrap
     E_cl <- apply(E, 2L, function(col) as.numeric(tapply(col, cluster_id, sum)))
@@ -773,13 +786,11 @@ add_simultaneous_bands <- function(estimates_tbl, eif_list, cluster_id, conf.lev
     E_centered <- sweep(E_cl, 2L, colMeans(E_cl), "-")
     ses <- sqrt(pmax((J / max(J - 1L, 1L)) * colSums(E_centered^2) / (n^2), 1e-16))
     # Wild Rademacher multipliers (+1 / -1)
-    set.seed(12345L)
     xi <- matrix(sample(c(-1, 1), size = J * n_boot, replace = TRUE), nrow = J, ncol = n_boot)
     T_boot <- abs(crossprod(E_centered, xi) / n) / ses * sqrt(J / max(J - 1L, 1L))
   } else {
     E_centered <- sweep(E, 2L, colMeans(E), "-")
     ses <- sqrt(pmax(apply(E_centered, 2L, stats::var) / n, 1e-16))
-    set.seed(12345L)
     xi <- matrix(sample(c(-1, 1), size = n * n_boot, replace = TRUE), nrow = n, ncol = n_boot)
     T_boot <- abs(crossprod(E_centered, xi) / n) / ses
   }

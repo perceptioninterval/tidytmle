@@ -6,12 +6,20 @@ test_that("Level 2 supports single parsnip spec, workflow, and workflow_set lear
     recipes::step_dummy(recipes::all_nominal_predictors()) |>
     recipes::step_zv(recipes::all_predictors())
 
+  has_glmnet <- requireNamespace("glmnet", quietly = TRUE)
+  q_models <- list(
+    lm = parsnip::linear_reg() |> parsnip::set_engine("glm")
+  )
+  if (has_glmnet) {
+    q_models$enet <- parsnip::linear_reg(penalty = 0.05, mixture = 0.5) |>
+      parsnip::set_engine("glmnet")
+  } else {
+    q_models$lm_alt <- parsnip::linear_reg() |> parsnip::set_engine("lm")
+  }
+
   q_wf_set <- workflowsets::workflow_set(
     preproc = list(base = base_rec),
-    models = list(
-      lm = parsnip::linear_reg() |> parsnip::set_engine("glm"),
-      enet = parsnip::linear_reg(penalty = 0.05, mixture = 0.5) |> parsnip::set_engine("glmnet")
-    )
+    models = q_models
   )
 
   g_single <- parsnip::logistic_reg() |> parsnip::set_engine("glm")
@@ -31,7 +39,11 @@ test_that("Level 2 supports single parsnip spec, workflow, and workflow_set lear
   expect_s3_class(fit, "tmle_fit")
   w_tbl <- extract_sl_weights(fit)
   expect_true("base_lm" %in% w_tbl$learner[w_tbl$nuisance == "Q"])
-  expect_true("base_enet" %in% w_tbl$learner[w_tbl$nuisance == "Q"])
+  if (has_glmnet) {
+    expect_true("base_enet" %in% w_tbl$learner[w_tbl$nuisance == "Q"])
+  } else {
+    expect_true("base_lm_alt" %in% w_tbl$learner[w_tbl$nuisance == "Q"])
+  }
   expect_equal(sum(w_tbl$weight[w_tbl$nuisance == "Q"]), 1, tolerance = 1e-6)
   expect_equal(sum(w_tbl$weight[w_tbl$nuisance == "g"]), 1, tolerance = 1e-6)
 })

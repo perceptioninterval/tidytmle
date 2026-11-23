@@ -93,5 +93,9 @@ dplyr::bind_rows(
 Inspect propensity overlap (checking positivity across arms), how strongly the fluctuation step shifted individual predictions (`"targeting"`), and positivity truncation stability across bounds (`"sensitivity"`). If `patchwork` is installed, `autoplot(fit, type = "dashboard")` combines all key checks into a single 2×2 visual audit:
 
 ```{r plots, fig.width = 9.2, fig.height = 6.6, fig.alt = "4-panel TMLE Causal Audit Dashboard combining propensity overlap, targeting step shifts, positivity sensitivity sweep, and covariate balance"}
-autoplot(fit, type = "dashboard", g_grid = seq(0.01, 0.12, by = 0.02))
+if (requireNamespace("patchwork", quietly = TRUE)) {
+  autoplot(fit, type = "dashboard", g_grid = seq(0.01, 0.12, by = 0.02))
+} else {
+  autoplot(fit, type = "overlap")
+}
 ```

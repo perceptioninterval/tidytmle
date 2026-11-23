@@ -46,6 +46,7 @@ test_that("DR-Learner CATE estimation (fit_cate, predict, tidy, augment, qini_au
 
   cate_fit <- fit_cate(fit, covariates = c(age, sex, lab_1, lab_2, lab_3), v_folds = 4L)
   expect_s3_class(cate_fit, "tmle_cate")
+  expect_output(print(cate_fit), "Doubly Robust CATE")
 
   preds <- predict(cate_fit, new_data = df[1:25, ])
   expect_equal(nrow(preds), 25L)

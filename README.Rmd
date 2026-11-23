@@ -1,5 +1,7 @@
 ---
-output: github_document
+output:
+  github_document:
+    html_preview: false
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -18,8 +20,8 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![CRAN status](https://www.r-pkg.org/badges/version/tidytmle)](https://CRAN.R-project.org/package=tidytmle)
 [![R-CMD-check](https://github.com/perceptioninterval/tidytmle/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/perceptioninterval/tidytmle/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://img.shields.io/badge/docs-pkgdown-CA225E.svg)](https://perceptioninterval.github.io/tidytmle/)
 <!-- badges: end -->
 
 `tidytmle` brings **Targeted Maximum Likelihood Estimation (CV-TMLE)** to the [tidymodels](https://www.tidymodels.org/) ecosystem. Rather than forcing causal estimation into a prediction-only `parsnip` model, `tidytmle` orchestrates `workflows`, `workflowsets`, `recipes`, `rsample`, `hardhat`, and `yardstick` so you can plug any machine learning pipeline into a doubly robust, locally efficient causal estimator.
@@ -66,7 +68,7 @@ For a full worked visual walkthrough—including a live demonstration of **doubl
 
 ## Installation
 
-You can install the development version of `tidytmle` from [GitHub](https://github.com/perceptioninterval/tidytmle) with:
+`tidytmle` is currently in pre-CRAN development. You can install the development version from [GitHub](https://github.com/perceptioninterval/tidytmle) with:
 
 ``` r
 # install.packages("pak")

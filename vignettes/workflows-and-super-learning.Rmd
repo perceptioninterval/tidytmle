@@ -43,12 +43,18 @@ base_rec <- recipe(y ~ ., data = df) |>
   step_dummy(all_nominal_predictors()) |>
   step_zv(all_predictors())
 
+q_models <- list(
+  glm = linear_reg() |> set_engine("glm")
+)
+if (requireNamespace("glmnet", quietly = TRUE)) {
+  q_models$enet <- linear_reg(penalty = 0.05, mixture = 0.5) |> set_engine("glmnet")
+} else {
+  q_models$lm <- linear_reg() |> set_engine("lm")
+}
+
 q_wf_set <- workflow_set(
   preproc = list(base = base_rec),
-  models = list(
-    glm = linear_reg() |> set_engine("glm"),
-    enet = linear_reg(penalty = 0.05, mixture = 0.5) |> set_engine("glmnet")
-  )
+  models = q_models
 )
 
 g_spec <- logistic_reg() |> set_engine("glm")

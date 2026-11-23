@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">tidytmle</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Unreleased version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -188,18 +188,18 @@ ground truth so we can watch every single step inside
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">n = 400 (observed = 400) | 5-fold CV-TMLE | logistic fluctuation |</span></span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">2.29s</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">2.54s</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Estimates </span></span>
-<span><span class="co">#&gt; ATE est = 1.6745 (SE = 0.1310) 95% CI [1.4177, 1.9313] p = &lt; 0.0001</span></span>
+<span><span class="co">#&gt; ATE est = 1.6731 (SE = 0.1310) 95% CI [1.4164, 1.9299] p = &lt; 0.0001</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Nuisance Super Learners </span></span>
-<span><span class="co">#&gt; Q Super Learner: R2 = 0.714 (weights: ranger 0.55, glm 0.45)</span></span>
-<span><span class="co">#&gt; g Super Learner: AUC = 0.605 (weights: glmnet 0.83, ranger 0.17)</span></span>
+<span><span class="co">#&gt; Q Super Learner: R2 = 0.708 (weights: ranger 0.53, glm 0.47)</span></span>
+<span><span class="co">#&gt; g Super Learner: AUC = 0.595 (weights: glmnet 1.00)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Diagnostics &amp; Targeting Shift </span></span>
-<span><span class="co">#&gt; Targeting shift (TMLE - plug-in): +0.1884 (epsilon = 0.0353)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All checks healthy: mean EIF = 5.75e-14, truncated = 0.0%, max EIF leverage = 5.4%.</span></span></code></pre></div>
+<span><span class="co">#&gt; Targeting shift (TMLE - plug-in): +0.1780 (epsilon = 0.0334)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All checks healthy: mean EIF = 3.27e-14, truncated = 0.0%, max EIF leverage = 4.2%.</span></span></code></pre></div>
 <p>Here is what just happened under the hood, step by step:</p>
 <div class="section level3">
 <h3 id="step-1-initial-outcome-surface-barq0">Step 1: Initial Outcome Surface
@@ -358,19 +358,19 @@ variance share, and convergence check
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 9</span></span></span>
 <span><span class="co">#&gt;       a      y .q0_init .q1_init .g_trunc .clever_h .q0_star .q1_star</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1  5.74      3.91     5.35    0.626      1.60     3.82     5.45</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     0  1.74      2.30     3.94    0.370     -<span style="color: #BB0000;">1.59</span>     2.21     4.05</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     0  3.12      4.10     5.82    0.497     -<span style="color: #BB0000;">1.99</span>     4.01     5.91</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     0  2.84      3.77     5.62    0.393     -<span style="color: #BB0000;">1.65</span>     3.67     5.71</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     0 -<span style="color: #BB0000;">0.504</span>     1.99     3.25    0.426     -<span style="color: #BB0000;">1.74</span>     1.90     3.35</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     0  3.18      3.67     5.14    0.379     -<span style="color: #BB0000;">1.61</span>     3.58     5.24</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1  5.74      3.98     5.62    0.434      2.30     3.87     5.69</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     0  1.74      2.42     3.86    0.408     -<span style="color: #BB0000;">1.69</span>     2.32     3.94</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     0  3.12      3.88     5.65    0.513     -<span style="color: #BB0000;">2.05</span>     3.77     5.72</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     0  2.84      3.78     5.62    0.371     -<span style="color: #BB0000;">1.59</span>     3.66     5.69</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     0 -<span style="color: #BB0000;">0.504</span>     1.81     3.21    0.478     -<span style="color: #BB0000;">1.92</span>     1.71     3.29</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     0  3.18      3.98     5.78    0.386     -<span style="color: #BB0000;">1.63</span>     3.87     5.84</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: .eif &lt;dbl&gt;</span></span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/glance.html" class="external-link">glance</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"epsilon"</span>, <span class="st">"mean_eif"</span>, <span class="st">"plugin_vs_tmle_shift"</span>, <span class="st">"pct_truncated"</span>, <span class="st">"ess_treated"</span>, <span class="st">"ess_control"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
 <span><span class="co">#&gt;   epsilon mean_eif plugin_vs_tmle_shift pct_truncated ess_treated</span></span>
 <span><span class="co">#&gt;     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  0.035<span style="text-decoration: underline;">3</span> 5.75<span style="color: #949494;">e</span><span style="color: #BB0000;">-14</span>                0.188             0        184.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  0.033<span style="text-decoration: underline;">4</span> 3.27<span style="color: #949494;">e</span><span style="color: #BB0000;">-14</span>                0.178             0        185.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: ess_control &lt;dbl&gt;</span></span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -463,8 +463,8 @@ outcome Super Learner preserves an accurate ATE.</li>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> True ATE (Ground Truth)             1.52 <span style="color: #BB0000;">NA</span>    </span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Both Flexible (Default CV-TMLE)     1.67  0.131</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Bad Q Only (Untargeted G-Comp)      0    <span style="color: #BB0000;">NA</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Bad Q Only -&gt; Rescued by TMLE       1.68  0.210</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Bad g Only -&gt; Rescued by TMLE       1.67  0.124</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Bad Q Only -&gt; Rescued by TMLE       1.69  0.211</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Bad g Only -&gt; Rescued by TMLE       1.68  0.126</span></span></code></pre></div>
 <p>Notice that untargeted G-computation from the constant outcome model
 is <code>0.00</code> (100% wrong!), whereas TMLE recovers the causal
 effect accurately whenever <em>either</em> nuisance model captures the

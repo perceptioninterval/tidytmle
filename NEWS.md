@@ -15,5 +15,6 @@
   and VanderWeele-Ding E-values.
 * Added instantaneous `retarget()` without ML refitting, `shift()` /
   `scale_tx()` Modified Treatment Policies, DR-Learner CATE estimation
-  (`fit_cate()`, `qini_auc()`), and `autoplot()` diagnostics (`"overlap"`,
-  `"learners"`, `"eif"`, `"sensitivity"`, `"balance"`).
+  (`fit_cate()`, `qini_auc()`), plain-English `summary()` / `explain_tmle()`,
+  and `autoplot()` diagnostics (`"overlap"`, `"targeting"`, `"learners"`,
+  `"eif"`, `"sensitivity"`, `"balance"`, `"dashboard"`).

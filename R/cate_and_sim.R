@@ -210,9 +210,12 @@ augment.tmle_cate <- function(x, ...) {
 
 #' @export
 print.tmle_cate <- function(x, ...) {
-  cli::cli_h2("Doubly Robust CATE (DR-Learner) Fit")
-  cli::cli_text("Modifiers: {.field {x$v_cols}}")
-  cli::cli_text("Out-of-fold CATE range: [{sprintf('%.3f', min(x$tau_oof))}, {sprintf('%.3f', max(x$tau_oof))}] (SD = {sprintf('%.3f', stats::sd(x$tau_oof))})")
+  lines <- cli::cli_format_method({
+    cli::cli_h2("Doubly Robust CATE (DR-Learner) Fit")
+    cli::cli_text("Modifiers: {.field {x$v_cols}}")
+    cli::cli_text("Out-of-fold CATE range: [{sprintf('%.3f', min(x$tau_oof))}, {sprintf('%.3f', max(x$tau_oof))}] (SD = {sprintf('%.3f', stats::sd(x$tau_oof))})")
+  })
+  cat(lines, sep = "\n")
   print(x$blp)
   invisible(x)
 }
@@ -413,6 +416,17 @@ sim_causal_cohort <- function(n = 500L,
   treatment_type <- match.arg(treatment_type)
 
   if (!is.null(seed)) {
+    has_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+    if (has_seed) {
+      old_seed <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
+      on.exit(assign(".Random.seed", old_seed, envir = globalenv()), add = TRUE)
+    } else {
+      on.exit({
+        if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) {
+          rm(".Random.seed", envir = globalenv())
+        }
+      }, add = TRUE)
+    }
     set.seed(seed)
   }
 

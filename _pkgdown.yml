@@ -12,9 +12,11 @@ home:
   description: >
     Cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) built natively
     on top of workflows, workflowsets, recipes, rsample, hardhat, and yardstick.
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
 
 development:
-  mode: auto
+  mode: unreleased
 
 figures:
   fig.width: 8

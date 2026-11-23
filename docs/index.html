@@ -32,7 +32,7 @@
 
     <a class="navbar-brand me-2" href="index.html">tidytmle</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Unreleased version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -230,7 +230,7 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the development version of <code>tidytmle</code> from <a href="https://github.com/perceptioninterval/tidytmle" class="external-link">GitHub</a> with:</p>
+<p><code>tidytmle</code> is currently in pre-CRAN development. You can install the development version from <a href="https://github.com/perceptioninterval/tidytmle" class="external-link">GitHub</a> with:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu">pak</span><span class="op">(</span><span class="st">"perceptioninterval/tidytmle"</span><span class="op">)</span></span></code></pre></div>
@@ -260,27 +260,27 @@
 <span><span class="co">#&gt; Sample: 350 rows (350 observed outcomes) | 5-fold CV-TMLE</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── 1. What the Causal Estimates Mean </span></span>
-<span><span class="co">#&gt; ℹ ATE (across the full population): Treatment increases the expected outcome by 0.1034 units (95% CI [0.0031, 0.2038], p = 0.0434).</span></span>
-<span><span class="co">#&gt; ℹ RR: Treatment corresponds to a 1.32x risk ratio (31.5% higher risk; 95% CI [1.00, 1.74], p = 0.0541).</span></span>
-<span><span class="co">#&gt; ℹ OR: Treatment corresponds to an odds ratio of 1.55 (95% CI [1.00, 2.41], p = 0.0480).</span></span>
+<span><span class="co">#&gt; ℹ ATE (across the full population): Treatment increases the expected outcome by 0.1072 units (95% CI [0.0072, 0.2072], p = 0.0357).</span></span>
+<span><span class="co">#&gt; ℹ RR: Treatment corresponds to a 1.33x risk ratio (32.9% higher risk; 95% CI [1.01, 1.75], p = 0.0450).</span></span>
+<span><span class="co">#&gt; ℹ OR: Treatment corresponds to an odds ratio of 1.58 (95% CI [1.02, 2.44], p = 0.0397).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── 2. What the Targeting Step Did </span></span>
 <span><span class="co">#&gt; Fluctuating along the Clever Covariate shifted the initial ML plug-in estimate</span></span>
-<span><span class="co">#&gt; by +0.0219 (epsilon = 0.0556) to remove residual confounding bias.</span></span>
+<span><span class="co">#&gt; by +0.0265 (epsilon = 0.0671) to remove residual confounding bias.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── 3. Statistical Health Check &amp; Next Steps </span></span>
-<span><span class="co">#&gt; ✔ Convergence: EIF estimating equation solved (mean EIF = 3.91e-14).</span></span>
-<span><span class="co">#&gt; ✔ Positivity: 0.0% clipped at g_bounds [0.046, 0.954] (ESS: treated = 190.8, control = 134.6).</span></span>
-<span><span class="co">#&gt; ✔ Influence: No single observation dominates variance (max EIF leverage = 4.4%).</span></span>
+<span><span class="co">#&gt; ✔ Convergence: EIF estimating equation solved (mean EIF = 6.94e-14).</span></span>
+<span><span class="co">#&gt; ✔ Positivity: 0.0% clipped at g_bounds [0.046, 0.954] (ESS: treated = 191.6, control = 132.9).</span></span>
+<span><span class="co">#&gt; ✔ Influence: No single observation dominates variance (max EIF leverage = 3.2%).</span></span>
 <span></span>
 <span><span class="co"># Simultaneous uniform confidence bands &amp; VanderWeele-Ding E-values</span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit</span>, simultaneous <span class="op">=</span> <span class="cn">TRUE</span>, e_value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # A tibble: 3 × 11</span></span>
 <span><span class="co">#&gt;   estimand term  estimate std.error statistic p.value conf.low conf.high e_value</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;    &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1 ate      ATE      0.103    0.0512      2.02  0.0434 -0.00254     0.209    1.72</span></span>
-<span><span class="co">#&gt; 2 rr       RR       1.32     0.142       1.93  0.0541  0.980       1.77     1.96</span></span>
-<span><span class="co">#&gt; 3 or       OR       1.55     0.223       1.98  0.0480  0.980       2.47     2.48</span></span>
+<span><span class="co">#&gt; 1 ate      ATE      0.107    0.0510      2.10  0.0357  0.00105     0.213    1.74</span></span>
+<span><span class="co">#&gt; 2 rr       RR       1.33     0.142       2.00  0.0450  0.989       1.78     1.99</span></span>
+<span><span class="co">#&gt; 3 or       OR       1.58     0.222       2.06  0.0397  0.995       2.51     2.54</span></span>
 <span><span class="co">#&gt; # ℹ 2 more variables: e_value_ci &lt;dbl&gt;, crit.value &lt;dbl&gt;</span></span>
 <span></span>
 <span><span class="co"># Instant retargeting without ML refitting</span></span>
@@ -289,9 +289,9 @@
 <span><span class="co">#&gt; # A tibble: 3 × 8</span></span>
 <span><span class="co">#&gt;   estimand term  estimate std.error statistic p.value conf.low conf.high</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;    &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1 ate      ATE      0.103    0.0512      2.02  0.0434  0.00307     0.204</span></span>
-<span><span class="co">#&gt; 2 rr       RR       1.32     0.142       1.93  0.0541  0.995       1.74 </span></span>
-<span><span class="co">#&gt; 3 or       OR       1.55     0.223       1.98  0.0480  1.00        2.41</span></span>
+<span><span class="co">#&gt; 1 ate      ATE      0.107    0.0510      2.10  0.0357  0.00717     0.207</span></span>
+<span><span class="co">#&gt; 2 rr       RR       1.33     0.142       2.00  0.0450  1.01        1.75 </span></span>
+<span><span class="co">#&gt; 3 or       OR       1.58     0.222       2.06  0.0397  1.02        2.44</span></span>
 <span></span>
 <span><span class="co"># Propensity overlap diagnostic: check positivity across treated &amp; control arms</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"overlap"</span><span class="op">)</span></span></code></pre></div>
@@ -352,7 +352,14 @@
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+<li><a href="https://github.com/perceptioninterval/tidytmle/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/perceptioninterval/tidytmle/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://perceptioninterval.github.io/tidytmle/"><img src="https://img.shields.io/badge/docs-pkgdown-CA225E.svg" alt="pkgdown"></a></li>
+</ul>
+</div>
 
   </aside>
 </div>

@@ -15,7 +15,7 @@ summary(fit) delegates directly to explain_tmle().'><meta property="og:image" co
 
     <a class="navbar-brand me-2" href="../index.html">tidytmle</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Unreleased version">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -100,18 +100,18 @@ with actionable next steps (<code><a href="retarget.html">retarget()</a></code>,
 <span class="r-out co"><span class="r-pr">#&gt;</span> Sample: 150 rows (150 observed outcomes) | 3-fold CV-TMLE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── 1. What the Causal Estimates Mean </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> ATE (across the full population): Treatment increases the expected outcome by 0.2102 units (95% CI [0.0608, 0.3595], p = 0.0058).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> RR: Treatment corresponds to a 1.80x risk ratio (80.0% higher risk; 95% CI [1.18, 2.75], p = 0.0064).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> ATE (across the full population): Treatment increases the expected outcome by 0.1958 units (95% CI [0.0503, 0.3413], p = 0.0083).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> RR: Treatment corresponds to a 1.75x risk ratio (74.9% higher risk; 95% CI [1.14, 2.68], p = 0.0103).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── 2. What the Targeting Step Did </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fluctuating along the Clever Covariate shifted the initial ML plug-in</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> estimate by +0.0299 (epsilon = 0.0807) to remove residual confounding</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> estimate by -0.0177 (epsilon = -0.1018) to remove residual confounding</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> bias.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── 3. Statistical Health Check &amp; Next Steps </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Convergence: EIF estimating equation solved (mean EIF = -2.07e-12).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Positivity: 0.0% clipped at g_bounds [0.081, 0.919] (ESS: treated = 54.2, control = 85.9).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Influence: No single observation dominates variance (max EIF leverage = 4.8%).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Convergence: EIF estimating equation solved (mean EIF = -6.90e-13).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Positivity: 0.0% clipped at g_bounds [0.081, 0.919] (ESS: treated = 56, control = 85.2).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Influence: No single observation dominates variance (max EIF leverage = 4.3%).</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

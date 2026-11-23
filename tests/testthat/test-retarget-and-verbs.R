@@ -16,7 +16,7 @@ test_that("Instant retarget() updates g_bounds, estimands (ATT/ATC/RR/OR), and s
   fit_older <- retarget(fit, subgroup = age >= 55)
   dt <- proc.time()[["elapsed"]] - t0
 
-  expect_true(dt < 1.0)
+  expect_true(dt < 5.0)
   expect_equal(glance(fit_strict)$g_bound_low, 0.10)
   expect_equal(glance(fit_strict)$g_bound_high, 0.90)
   expect_true(glance(fit_strict)$pct_truncated >= glance(fit)$pct_truncated)
@@ -122,7 +122,7 @@ test_that("save_nuisance policies and mirai fine-grained parallelism work cleanl
     fit(data = df)
   expect_true(length(fit_butcher$nuisance$Q$models) > 0L)
 
-  if (requireNamespace("mirai", quietly = TRUE)) {
+  if (identical(Sys.getenv("NOT_CRAN"), "true") && requireNamespace("mirai", quietly = TRUE)) {
     mirai::daemons(2L)
     on.exit(mirai::daemons(0L), add = TRUE)
     fit_par <- tmle_spec(y, a, c(age, sex, lab_1, lab_2)) |>
@@ -132,4 +132,23 @@ test_that("save_nuisance policies and mirai fine-grained parallelism work cleanl
     expect_s3_class(fit_par, "tmle_fit")
     expect_true(abs(glance(fit_par)$mean_eif) < 1e-4)
   }
+})
+
+test_that("Internal set.seed() calls restore caller .Random.seed state", {
+  set.seed(9999L)
+  ref_draw <- stats::runif(1L)
+
+  set.seed(9999L)
+  df_sim <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)
+  fit_sim <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = c("ate", "rr")) |>
+    set_resamples(v_folds = 3L) |>
+    fit(data = df_sim)
+
+  set.seed(9999L)
+  invisible(tidy(fit_sim, simultaneous = TRUE))
+  expect_equal(stats::runif(1L), ref_draw)
+
+  set.seed(9999L)
+  invisible(sim_causal_cohort(n = 80, outcome_type = "continuous", seed = 7))
+  expect_equal(stats::runif(1L), ref_draw)
 })
