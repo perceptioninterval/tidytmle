@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 
 `tidytmle` brings cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE) into the `tidymodels` ecosystem around a clear 4-step human workflow: **Question $\rightarrow$ Estimate $\rightarrow$ Audit $\rightarrow$ Paper**.
 
-If you want to understand *why* this two-step estimator outperforms regression alone or weighting alone, start with [TMLE Intuition: A Step-by-Step Visual Guide](tmle-intuition.html).
+If you want to understand *why* this two-step estimator outperforms regression alone or weighting alone, start with [TMLE Intuition: A Step-by-Step Visual Guide](tmle-intuition.html). To inspect cross-package numerical parity, Kang–Schafer double-robustness benchmarks, and real-world validations against `tmle`, `AIPW`, and `lmtp`, see [Benchmarks, Double Robustness & Validation](benchmarks-and-validation.html).
 
 ## Step 1 · Ask Your Question & Fit Safe Defaults
 

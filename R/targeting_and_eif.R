@@ -202,6 +202,38 @@ run_tmle_targeting <- function(y_num,
     q1_star_01 <- stats::plogis(stats::qlogis(q1_01) + eps1)
     q0_star_01 <- stats::plogis(stats::qlogis(q0_01) + eps0)
     eps_vec <- c(eps1 = eps1, eps0 = eps0)
+  } else if (identical(fluctuation, "logistic_covariate")) {
+    # Classical unweighted Clever-Covariate logistic submodel (matching tmle::tmle target.gwt = FALSE)
+    h1_cov <- ifelse(a_num == 1L, 1 / (g_t * c1_t), 0)
+    h0_cov <- ifelse(a_num == 0L, 1 / ((1 - g_t) * c0_t), 0)
+    qa_clamped <- clamp_prob(qa_01, eps = 1e-5)
+    off_cov <- stats::qlogis(qa_clamped)
+    valid_cov <- is.finite(y_01) & obs_mask & is.finite(off_cov) & (w > 0)
+    if (!any(valid_cov)) {
+      eps1 <- 0
+      eps0 <- 0
+    } else {
+      fit_cov <- suppressWarnings(
+        stats::glm(
+          y_sub ~ -1 + h1_sub + h0_sub + offset(off_sub),
+          data = data.frame(
+            y_sub = y_01[valid_cov],
+            h1_sub = h1_cov[valid_cov],
+            h0_sub = h0_cov[valid_cov],
+            off_sub = off_cov[valid_cov]
+          ),
+          family = stats::quasibinomial(),
+          weights = w[valid_cov],
+          control = stats::glm.control(maxit = 100L, epsilon = 1e-10)
+        )
+      )
+      coefs_cov <- stats::coef(fit_cov)
+      eps1 <- if (is.finite(coefs_cov["h1_sub"])) as.numeric(coefs_cov["h1_sub"]) else 0
+      eps0 <- if (is.finite(coefs_cov["h0_sub"])) as.numeric(coefs_cov["h0_sub"]) else 0
+    }
+    q1_star_01 <- stats::plogis(stats::qlogis(clamp_prob(q1_01, 1e-5)) + eps1 / (g_t * c1_t))
+    q0_star_01 <- stats::plogis(stats::qlogis(clamp_prob(q0_01, 1e-5)) + eps0 / ((1 - g_t) * c0_t))
+    eps_vec <- c(eps1 = eps1, eps0 = eps0)
   } else {
     # Weighted linear fluctuation
     res1 <- y_01[a_num == 1L & obs_mask] - q1_01[a_num == 1L & obs_mask]
@@ -394,7 +426,7 @@ target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0
     h1 <- ifelse(a_num == 1L & obs_mask, 1 / (p_target * c1_t), 0)
     h0 <- ifelse(a_num == 0L & obs_mask, -g_t / ((1 - g_t) * p_target * c0_t), 0)
     h_obs <- h1 + h0
-    # Fluctuate arm 1 and arm 0 separately on weighted log-likelihood to solve ATT EIF = 0
+    # Fluctuate arm 1 and arm 0 separately on log-likelihood to solve ATT EIF = 0
     if (fluctuation == "logistic") {
       eps1 <- fit_weighted_logistic_intercept(
         y_01[a_num == 1L & obs_mask], q1_01[a_num == 1L & obs_mask],
@@ -406,6 +438,23 @@ target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0
       )
       q1_s01 <- stats::plogis(stats::qlogis(q1_01) + eps1)
       q0_s01 <- stats::plogis(stats::qlogis(q0_01) + eps0)
+    } else if (fluctuation == "logistic_covariate") {
+      h1_vec <- 1 / (p_target * c1_t)
+      h0_vec <- -g_t / ((1 - g_t) * p_target * c0_t)
+      eps1 <- fit_logistic_fluctuation_1d(
+        y01 = y_01[a_num == 1L & obs_mask],
+        q01_init = q1_01[a_num == 1L & obs_mask],
+        clever_h = h1_vec[a_num == 1L & obs_mask],
+        weights = w[a_num == 1L & obs_mask]
+      )
+      eps0 <- fit_logistic_fluctuation_1d(
+        y01 = y_01[a_num == 0L & obs_mask],
+        q01_init = q0_01[a_num == 0L & obs_mask],
+        clever_h = h0_vec[a_num == 0L & obs_mask],
+        weights = w[a_num == 0L & obs_mask]
+      )
+      q1_s01 <- stats::plogis(stats::qlogis(clamp_prob(q1_01, 1e-5)) + eps1 * h1_vec)
+      q0_s01 <- stats::plogis(stats::qlogis(clamp_prob(q0_01, 1e-5)) + eps0 * h0_vec)
     } else if (fluctuation == "linear") {
       w1 <- (w / (p_target * c1_t))[a_num == 1L & obs_mask]
       eps1 <- stats::weighted.mean((y_01 - q1_01)[a_num == 1L & obs_mask], w = w1)
@@ -454,6 +503,23 @@ target_att_or_atc <- function(y_01, a_num, obs_mask, q1_01, q0_01, g_t, c1_t, c0
       )
       q1_s01 <- stats::plogis(stats::qlogis(q1_01) + eps1)
       q0_s01 <- stats::plogis(stats::qlogis(q0_01) + eps0)
+    } else if (fluctuation == "logistic_covariate") {
+      h1_vec <- (1 - g_t) / (g_t * p_target * c1_t)
+      h0_vec <- -1 / (p_target * c0_t)
+      eps1 <- fit_logistic_fluctuation_1d(
+        y01 = y_01[a_num == 1L & obs_mask],
+        q01_init = q1_01[a_num == 1L & obs_mask],
+        clever_h = h1_vec[a_num == 1L & obs_mask],
+        weights = w[a_num == 1L & obs_mask]
+      )
+      eps0 <- fit_logistic_fluctuation_1d(
+        y01 = y_01[a_num == 0L & obs_mask],
+        q01_init = q0_01[a_num == 0L & obs_mask],
+        clever_h = h0_vec[a_num == 0L & obs_mask],
+        weights = w[a_num == 0L & obs_mask]
+      )
+      q1_s01 <- stats::plogis(stats::qlogis(clamp_prob(q1_01, 1e-5)) + eps1 * h1_vec)
+      q0_s01 <- stats::plogis(stats::qlogis(clamp_prob(q0_01, 1e-5)) + eps0 * h0_vec)
     } else if (fluctuation == "linear") {
       w1 <- (w * (1 - g_t) / (g_t * p_target * c1_t))[a_num == 1L & obs_mask]
       eps1 <- stats::weighted.mean((y_01 - q1_01)[a_num == 1L & obs_mask], w = w1)
@@ -526,6 +592,16 @@ run_policy_targeting <- function(y_num, delta, qa_init, q_shift_init, p_lambda1,
     )
     qa_star_01 <- stats::plogis(stats::qlogis(qa_01) + eps)
     qs_star_01 <- stats::plogis(stats::qlogis(qs_01) + eps)
+  } else if (fluctuation == "logistic_covariate") {
+    h_full <- r_trunc / c_t
+    eps <- fit_logistic_fluctuation_1d(
+      y01 = y_01[obs_mask],
+      q01_init = qa_01[obs_mask],
+      clever_h = h_full[obs_mask],
+      weights = weights[obs_mask]
+    )
+    qa_star_01 <- stats::plogis(stats::qlogis(clamp_prob(qa_01, 1e-5)) + eps * h_full)
+    qs_star_01 <- stats::plogis(stats::qlogis(clamp_prob(qs_01, 1e-5)) + eps * h_full)
   } else if (fluctuation == "linear") {
     eps <- stats::weighted.mean((y_01 - qa_01)[obs_mask], w = (weights * clever_h)[obs_mask])
     qa_star_01 <- qa_01 + eps
@@ -543,23 +619,49 @@ run_policy_targeting <- function(y_num, delta, qa_init, q_shift_init, p_lambda1,
   y_safe <- ifelse(obs_mask, y_num, 0)
   eif_policy <- weights * (clever_h * (y_safe - qa_star) + qs_star - psi_policy)
 
-  se <- compute_eif_se(eif_policy, cluster_id = cluster_id)
+  is_obs_contrast <- identical(policy$contrast, "observed")
+  if (is_obs_contrast) {
+    if (all(obs_mask)) {
+      psi_obs <- stats::weighted.mean(y_num, w = weights)
+      eif_obs <- weights * (y_num - psi_obs)
+    } else {
+      c_inv_obs <- ifelse(obs_mask, 1 / c_t, 0)
+      aug_obs <- c_inv_obs * (y_safe - qa_star) + qa_star
+      psi_obs <- stats::weighted.mean(aug_obs, w = weights)
+      eif_obs <- weights * (aug_obs - psi_obs)
+    }
+    est_val <- psi_policy - psi_obs
+    eif_out <- eif_policy - eif_obs
+    plugin_est <- stats::weighted.mean(q_shift_init - qa_init, w = weights)
+  } else {
+    est_val <- psi_policy
+    eif_out <- eif_policy
+    plugin_est <- stats::weighted.mean(q_shift_init, w = weights)
+  }
+
+  se <- compute_eif_se(eif_out, cluster_id = cluster_id)
   z_crit <- stats::qnorm(1 - (1 - conf.level) / 2)
-  stat <- psi_policy / se
+  stat <- est_val / se
   pval <- 2 * stats::pnorm(-abs(stat))
 
+  est_label <- if (!is.null(policy$base_label)) {
+    if (is_obs_contrast) paste0(policy$base_label, " - observed") else policy$base_label
+  } else {
+    policy$label
+  }
+
   estimates_tbl <- tibble::tibble(
-    estimand = policy$label,
-    term = policy$label,
-    estimate = psi_policy,
+    estimand = est_label,
+    term = est_label,
+    estimate = est_val,
     std.error = se,
     statistic = stat,
     p.value = pval,
-    conf.low = psi_policy - z_crit * se,
-    conf.high = psi_policy + z_crit * se
+    conf.low = est_val - z_crit * se,
+    conf.high = est_val + z_crit * se
   )
 
-  eif_sq <- eif_policy^2
+  eif_sq <- eif_out^2
   eif_leverage <- if (sum(eif_sq) > 0) eif_sq / sum(eif_sq) else rep(0, n)
 
   ipw_p <- (weights * clever_h)[obs_mask]
@@ -578,15 +680,15 @@ run_policy_targeting <- function(y_num, delta, qa_init, q_shift_init, p_lambda1,
     c1_hat = c_obs_hat,
     c0_hat = c_obs_hat,
     clever_h = clever_h,
-    eif = eif_policy,
-    eif_1 = eif_policy,
+    eif = eif_out,
+    eif_1 = eif_out,
     eif_0 = rep(0, n),
-    eif_ate = eif_policy,
+    eif_ate = eif_out,
     eif_leverage = eif_leverage,
     epsilon = eps,
     epsilon_arms = c(eps = eps),
-    mean_eif = mean(eif_policy),
-    plugin_vs_tmle_shift = psi_policy - stats::weighted.mean(q_shift_init, w = weights),
+    mean_eif = mean(eif_out),
+    plugin_vs_tmle_shift = est_val - plugin_est,
     g_info = list(
       g_trunc = r_trunc,
       is_truncated = is_trunc,

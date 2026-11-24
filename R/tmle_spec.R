@@ -121,7 +121,7 @@ tmle_spec <- function(outcome,
       raw_estimand = estimand,
       preprocessing = NULL,
       learners = list(
-        Q = list(spec = "default", metalearner = "auto"),
+        Q = list(spec = "default", metalearner = "auto", stratify = FALSE),
         g = list(spec = "default", metalearner = "auto"),
         C = list(spec = "default", metalearner = "auto")
       ),
@@ -219,6 +219,10 @@ validate_learners_arg <- function(learners, call = rlang::caller_env()) {
 #'   regression, binomial log-loss minimization on simplex for classification),
 #'   `"nnls"`, `"logloss"`, or `"best"` (discrete Super Learner selecting the
 #'   single lowest CV-risk learner).
+#' @param stratify Logical (for `set_outcome_learners()` with binary treatments);
+#'   if `TRUE`, fits separate arm-stratified Super Learners \eqn{\bar{Q}(1, W)}
+#'   on treated rows and \eqn{\bar{Q}(0, W)} on control rows (T-learner mode)
+#'   instead of pooling treatment as a covariate. Defaults to `FALSE`.
 #'
 #' @return An updated `"tmle_spec"` object.
 #'
@@ -231,12 +235,14 @@ validate_learners_arg <- function(learners, call = rlang::caller_env()) {
 #' @export
 set_outcome_learners <- function(spec,
                                  learners,
-                                 metalearner = c("auto", "nnls", "logloss", "best")) {
+                                 metalearner = c("auto", "nnls", "logloss", "best"),
+                                 stratify = FALSE) {
   check_is_tmle_spec(spec)
   metalearner <- match.arg(metalearner)
   spec$learners$Q <- list(
     spec = validate_learners_arg(learners),
-    metalearner = metalearner
+    metalearner = metalearner,
+    stratify = isTRUE(stratify)
   )
   spec
 }
@@ -342,10 +348,12 @@ set_resamples <- function(spec, resamples = NULL, v_folds = 10L, strata = TRUE) 
 #'   (Gruber & van der Laan \eqn{5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})}
 #'   bounded to `[0.01, 0.15]`), a single numeric threshold `b` giving `[b, 1 - b]`,
 #'   or a length-2 numeric vector `c(low, high)` in `(0, 1)`.
-#' @param fluctuation Fluctuation submodel: `"logistic"` (bounded canonical
-#'   logistic fluctuation on scaled `[0, 1]` outcomes — default), `"linear"`
-#'   (weighted linear fluctuation), or `"none"` (one-step / plug-in without
-#'   targeting step).
+#' @param fluctuation Fluctuation submodel: `"logistic"` (weighted-intercept
+#'   bounded canonical logistic fluctuation on scaled `[0, 1]` outcomes,
+#'   equivalent to `target.gwt = TRUE` -- default), `"logistic_covariate"`
+#'   (classical unweighted Clever-Covariate logistic submodel matching
+#'   `tmle::tmle(..., target.gwt = FALSE)`), `"linear"` (weighted linear
+#'   fluctuation), or `"none"` (one-step / plug-in without targeting step).
 #' @param max_iter Maximum iterative TMLE steps (reserved for iterative updates).
 #' @param tol Convergence tolerance on mean EIF.
 #' @param save_nuisance Memory policy for nuisance models after fitting:
@@ -368,7 +376,7 @@ set_resamples <- function(spec, resamples = NULL, v_folds = 10L, strata = TRUE) 
 set_targeting <- function(spec,
                           cv_tmle = TRUE,
                           g_bounds = "adaptive",
-                          fluctuation = c("logistic", "linear", "none"),
+                          fluctuation = c("logistic", "logistic_covariate", "linear", "none"),
                           max_iter = 100L,
                           tol = 1e-6,
                           save_nuisance = c("predictions", "butcher", "full"),

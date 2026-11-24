@@ -286,17 +286,29 @@ autoplot_effect <- function(object, compact = FALSE) {
   is_ratio <- td$estimand %in% c("rr", "or")
   df_e <- td |>
     dplyr::mutate(
+      is_obs_contrast = grepl(" - observed$", estimand),
       scale_group = ifelse(
         estimand %in% c("rr", "or"),
         "Ratio Scale (1 = no difference)",
-        ifelse(estimand %in% c("ey1", "ey0"), "Counterfactual Arm Means", "Difference Scale (0 = no difference)")
+        ifelse(
+          estimand %in% c("ey1", "ey0") | (startsWith(estimand, "shift(") & !is_obs_contrast) | (startsWith(estimand, "scale_tx(") & !is_obs_contrast),
+          "Counterfactual Means",
+          "Difference Scale (0 = no difference)"
+        )
       ),
-      null_ref = ifelse(estimand %in% c("rr", "or"), 1, ifelse(estimand %in% c("ey1", "ey0"), NA_real_, 0)),
+      null_ref = ifelse(
+        estimand %in% c("rr", "or"), 1,
+        ifelse(scale_group == "Difference Scale (0 = no difference)", 0, NA_real_)
+      ),
       label_human = vapply(seq_len(dplyr::n()), function(i) human_term(estimand[i], term[i]), character(1L)),
       direct_lbl = ifelse(
         estimand %in% c("rr", "or"),
         sprintf("%.2fx [%.2f, %.2f]", estimate, conf.low, conf.high),
-        sprintf("%+.3f [%.3f, %.3f]", estimate, conf.low, conf.high)
+        ifelse(
+          scale_group == "Difference Scale (0 = no difference)",
+          sprintf("%+.3f [%.3f, %.3f]", estimate, conf.low, conf.high),
+          sprintf("%.3f [%.3f, %.3f]", estimate, conf.low, conf.high)
+        )
       )
     )
   df_e$label_human <- factor(df_e$label_human, levels = rev(unique(df_e$label_human)))

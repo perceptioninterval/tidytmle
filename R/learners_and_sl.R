@@ -2,6 +2,18 @@
 #'
 #' Creates a fast, diverse default `parsnip` learner library (`glm`, `glmnet`,
 #' and tree/random forest) for regression or binary classification nuisances.
+#' When used inside [fit.tmle_spec()], `tidytmle` automatically pairs this
+#' base library with treatment-interaction workflows (`glmnet_interact` /
+#' `glm_interact` for `Q` and `C`), natural cubic spline workflows
+#' (`glmnet_spline` / `glm_spline` for continuous regression `Q` and `Q_strat`),
+#' and polynomial density-ratio workflows (`glm_poly` / `glmnet_poly` for `g_dr`),
+#' while keeping propensity models (`g`) parsimonious to avoid positivity-amplifying
+#' overfitting, following practical Super Learner guidelines (Phillips et al., 2023).
+#'
+#' @references
+#' Phillips, R. V., van der Laan, M. J., Lee, H., & Gruber, S. (2023).
+#' Practical considerations for specifying a super learner. *International
+#' Journal of Epidemiology*, 52(4), 1276-1285.
 #'
 #' @param mode `"regression"` or `"classification"`.
 #'
@@ -25,7 +37,7 @@ default_nuisance_learners <- function(mode = c("regression", "classification")) 
         parsnip::set_engine("glmnet")
     }
     if (requireNamespace("ranger", quietly = TRUE)) {
-      learners$ranger <- parsnip::rand_forest(trees = 150L, min_n = 10L) |>
+      learners$ranger <- parsnip::rand_forest(trees = 250L, min_n = 5L) |>
         parsnip::set_engine("ranger", num.threads = 1L, seed = 1L) |>
         parsnip::set_mode("regression")
     } else if (requireNamespace("rpart", quietly = TRUE)) {
@@ -45,7 +57,7 @@ default_nuisance_learners <- function(mode = c("regression", "classification")) 
       parsnip::set_engine("glmnet")
   }
   if (requireNamespace("ranger", quietly = TRUE)) {
-    learners$ranger <- parsnip::rand_forest(trees = 150L, min_n = 10L) |>
+    learners$ranger <- parsnip::rand_forest(trees = 250L, min_n = 10L) |>
       parsnip::set_engine("ranger", num.threads = 1L, seed = 1L) |>
       parsnip::set_mode("classification")
   } else if (requireNamespace("rpart", quietly = TRUE)) {
@@ -56,6 +68,37 @@ default_nuisance_learners <- function(mode = c("regression", "classification")) 
   learners
 }
 
+#' Identify Smooth Continuous Predictor Columns Suitable for Spline Basis
+#' @noRd
+detect_smooth_covariates <- function(data, cols) {
+  cols[vapply(cols, function(col) {
+    x <- data[[col]]
+    if (!is.numeric(x)) {
+      return(FALSE)
+    }
+    xf <- x[is.finite(x)]
+    if (length(unique(xf)) < 10L) {
+      return(FALSE)
+    }
+    qs <- stats::quantile(xf, probs = c(0.1, 0.35, 0.65, 0.9), names = FALSE)
+    length(unique(qs)) >= 3L
+  }, logical(1L))]
+}
+
+#' Ensure Ranger Considers Treatment Column at Every Split (Preserving eng_args)
+#' @noRd
+add_ranger_always_split <- function(ms, treat_col) {
+  if (!inherits(ms, "rand_forest") || !identical(ms$engine, "ranger")) {
+    return(ms)
+  }
+  if ("always.split.variables" %in% names(ms$eng_args)) {
+    return(ms)
+  }
+  eng_vals <- lapply(ms$eng_args, rlang::quo_get_expr)
+  eng_vals$always.split.variables <- treat_col
+  do.call(parsnip::set_engine, c(list(object = ms, engine = "ranger"), eng_vals))
+}
+
 #' Normalize Polymorphic Learner Inputs into Role-Safe Workflows
 #' @noRd
 normalize_learner_library <- function(learners_cfg,
@@ -63,9 +106,11 @@ normalize_learner_library <- function(learners_cfg,
                                       role_type,
                                       roles,
                                       template_data,
-                                      default_recipe) {
+                                      default_recipe,
+                                      has_custom_recipe = FALSE) {
   spec_input <- learners_cfg$spec
-  if (identical(spec_input, "default") || is.null(spec_input)) {
+  is_default_lib <- identical(spec_input, "default") || is.null(spec_input)
+  if (is_default_lib) {
     spec_list <- default_nuisance_learners(mode = mode)
   } else if (inherits(spec_input, "model_spec")) {
     nm <- paste0(class(spec_input)[1L], "_", spec_input$engine)
@@ -88,14 +133,147 @@ normalize_learner_library <- function(learners_cfg,
     cli::cli_abort("Unsupported learner specification of class {.cls {class(spec_input)}}.")
   }
 
+  # Inject always.split.variables = treatment_col into ranger specs for Q, C, and g_dr
+  if (!isTRUE(has_custom_recipe) && role_type %in% c("Q", "C", "g_dr")) {
+    spec_list <- lapply(spec_list, function(item) {
+      if (inherits(item, "model_spec")) {
+        add_ranger_always_split(item, roles$treatment_col)
+      } else {
+        item
+      }
+    })
+  }
+
+  # Build candidate recipes map (per-learner override allowed for default Q, C, g, and g_dr enrichments)
+  learner_recipes <- stats::setNames(
+    replicate(length(spec_list), default_recipe, simplify = FALSE),
+    names(spec_list)
+  )
+
+  if (is_default_lib && !isTRUE(has_custom_recipe)) {
+    a_col <- roles$treatment_col
+    n_cov <- length(roles$covariate_cols)
+    n_rows <- nrow(template_data)
+    cont_w <- detect_smooth_covariates(roles$data, roles$covariate_cols)
+    has_sp <- length(cont_w) > 0L && n_rows >= 60L
+    has_glmnet <- requireNamespace("glmnet", quietly = TRUE)
+
+    mk_enet <- function(pen = 0.02) {
+      if (identical(mode, "classification")) {
+        parsnip::logistic_reg(penalty = pen, mixture = 0.5) |>
+          parsnip::set_engine("glmnet")
+      } else {
+        parsnip::linear_reg(penalty = pen, mixture = 0.5) |>
+          parsnip::set_engine("glmnet")
+      }
+    }
+    mk_glm <- function() {
+      if (identical(mode, "classification")) {
+        parsnip::logistic_reg() |> parsnip::set_engine("glm")
+      } else {
+        parsnip::linear_reg() |> parsnip::set_engine("glm")
+      }
+    }
+
+    if (role_type %in% c("Q", "C")) {
+      int_fml <- stats::as.formula(
+        paste0("~ `", a_col, "`:(recipes::all_numeric_predictors() - `", a_col, "`)"),
+        env = baseenv()
+      )
+      sq_quo <- rlang::new_quosure(rlang::call2("^", rlang::sym(a_col), 2), env = baseenv())
+
+      rec_int <- default_recipe |>
+        recipes::step_interact(terms = int_fml)
+      if (role_type == "Q" && identical(roles$treatment_type, "continuous")) {
+        rec_int <- rec_int |>
+          recipes::step_mutate(.tmle_a_sq = !!sq_quo)
+      }
+      rec_int <- rec_int |>
+        recipes::step_zv(recipes::all_predictors())
+
+      if (has_glmnet) {
+        spec_list$glmnet_interact <- mk_enet(pen = 0.02)
+        learner_recipes$glmnet_interact <- rec_int
+      } else if (n_cov <= 15L && n_rows >= 4L * (n_cov + 2L)) {
+        spec_list$glm_interact <- mk_glm()
+        learner_recipes$glm_interact <- rec_int
+      }
+
+      if (has_sp && role_type == "Q" && identical(mode, "regression")) {
+        rec_sp <- default_recipe |>
+          recipes::step_ns(!!!rlang::syms(cont_w), deg_free = 3L) |>
+          recipes::step_interact(terms = int_fml)
+        if (identical(roles$treatment_type, "continuous")) {
+          rec_sp <- rec_sp |>
+            recipes::step_mutate(.tmle_a_sq = !!sq_quo)
+        }
+        rec_sp <- rec_sp |>
+          recipes::step_zv(recipes::all_predictors())
+
+        if (has_glmnet) {
+          spec_list$glmnet_spline <- mk_enet(pen = 0.02)
+          learner_recipes$glmnet_spline <- rec_sp
+        } else if ((3L * length(cont_w) + n_cov) <= 16L && n_rows >= 120L) {
+          spec_list$glm_spline <- mk_glm()
+          learner_recipes$glm_spline <- rec_sp
+        }
+      }
+    } else if (role_type == "Q_strat") {
+      if (has_sp && identical(mode, "regression")) {
+        rec_sp_w <- default_recipe |>
+          recipes::step_ns(!!!rlang::syms(cont_w), deg_free = 3L) |>
+          recipes::step_zv(recipes::all_predictors())
+        if (has_glmnet) {
+          spec_list$glmnet_spline <- mk_enet(pen = 0.02)
+          learner_recipes$glmnet_spline <- rec_sp_w
+        } else if ((3L * length(cont_w) + n_cov) <= 16L && n_rows >= 120L) {
+          spec_list$glm_spline <- mk_glm()
+          learner_recipes$glm_spline <- rec_sp_w
+        }
+      }
+    } else if (role_type == "g_dr") {
+      int_fml <- stats::as.formula(
+        paste0("~ `", a_col, "`:(recipes::all_numeric_predictors() - `", a_col, "`)"),
+        env = baseenv()
+      )
+      sq_quo <- rlang::new_quosure(rlang::call2("^", rlang::sym(a_col), 2), env = baseenv())
+
+      rec_dr_poly <- default_recipe |>
+        recipes::step_interact(terms = int_fml) |>
+        recipes::step_mutate(.tmle_a_sq = !!sq_quo) |>
+        recipes::step_zv(recipes::all_predictors())
+
+      if (n_cov <= 15L && n_rows >= 60L) {
+        spec_list$glm_poly <- parsnip::logistic_reg() |>
+          parsnip::set_engine("glm")
+        learner_recipes$glm_poly <- rec_dr_poly
+      }
+      if (has_glmnet) {
+        rec_dr_sp <- if (has_sp) {
+          default_recipe |>
+            recipes::step_ns(!!!rlang::syms(cont_w), deg_free = 3L) |>
+            recipes::step_interact(terms = int_fml) |>
+            recipes::step_mutate(.tmle_a_sq = !!sq_quo) |>
+            recipes::step_zv(recipes::all_predictors())
+        } else {
+          rec_dr_poly
+        }
+        spec_list$glmnet_poly <- parsnip::logistic_reg(penalty = 0.005, mixture = 0.5) |>
+          parsnip::set_engine("glmnet")
+        learner_recipes$glmnet_poly <- rec_dr_sp
+      }
+    }
+  }
+
   # Ensure mode compatibility and role-safe preprocessor for every workflow
   wf_list <- lapply(names(spec_list), function(nm) {
     item <- spec_list[[nm]]
+    rec_use <- if (is.null(learner_recipes[[nm]])) default_recipe else learner_recipes[[nm]]
     if (inherits(item, "model_spec")) {
       ms <- parsnip::set_mode(item, mode)
       wf <- workflows::workflow() |>
         workflows::add_model(ms) |>
-        workflows::add_recipe(default_recipe)
+        workflows::add_recipe(rec_use)
     } else if (inherits(item, "workflow")) {
       wf <- item
       ms <- workflows::extract_spec_parsnip(wf)
@@ -113,10 +291,10 @@ normalize_learner_library <- function(learners_cfg,
         } else {
           # Formula or variables preprocessor: bind role-safe default_recipe instead if mismatched
           wf <- workflows::remove_formula(wf) |>
-            workflows::add_recipe(default_recipe)
+            workflows::add_recipe(rec_use)
         }
       } else {
-        wf <- workflows::add_recipe(wf, default_recipe)
+        wf <- workflows::add_recipe(wf, rec_use)
       }
     } else {
       cli::cli_abort("All elements of learner list must be {.cls model_spec} or {.cls workflow} objects.")
@@ -178,29 +356,55 @@ fit_single_workflow_safe <- function(wf, train_df) {
 #' Predict Numeric or Probability-of-1 Vector from Fitted Workflow
 #' @noRd
 predict_workflow_safe <- function(fitted_wf, new_df, mode) {
+  n_out <- nrow(new_df)
   if (is.null(fitted_wf)) {
-    return(rep(NA_real_, nrow(new_df)))
+    return(rep(NA_real_, n_out))
   }
   if (mode == "regression") {
-    preds <- tryCatch(
-      stats::predict(fitted_wf, new_data = new_df, type = "numeric")$.pred,
-      error = function(e) rep(NA_real_, nrow(new_df))
+    preds_tbl <- tryCatch(
+      withCallingHandlers(
+        stats::predict(fitted_wf, new_data = new_df, type = "numeric"),
+        warning = function(w) {
+          if (grepl("rank-deficient fit", conditionMessage(w), fixed = TRUE)) {
+            invokeRestart("muffleWarning")
+          }
+        }
+      ),
+      error = function(e) NULL
     )
-    return(as.numeric(preds))
+    if (is.null(preds_tbl) || !is.data.frame(preds_tbl) || ncol(preds_tbl) == 0L) {
+      return(rep(NA_real_, n_out))
+    }
+    p <- if (".pred" %in% names(preds_tbl)) preds_tbl[[".pred"]] else preds_tbl[[1L]]
+    p <- as.numeric(p)
+    if (length(p) != n_out) {
+      return(rep(NA_real_, n_out))
+    }
+    return(p)
   }
   preds_tbl <- tryCatch(
-    stats::predict(fitted_wf, new_data = new_df, type = "prob"),
+    withCallingHandlers(
+      stats::predict(fitted_wf, new_data = new_df, type = "prob"),
+      warning = function(w) {
+        if (grepl("rank-deficient fit", conditionMessage(w), fixed = TRUE)) {
+          invokeRestart("muffleWarning")
+        }
+      }
+    ),
     error = function(e) NULL
   )
-  if (is.null(preds_tbl)) {
-    return(rep(NA_real_, nrow(new_df)))
+  if (is.null(preds_tbl) || !is.data.frame(preds_tbl) || ncol(preds_tbl) == 0L) {
+    return(rep(NA_real_, n_out))
   }
   if (".pred_1" %in% names(preds_tbl)) {
-    p <- as.numeric(preds_tbl$.pred_1)
+    p <- as.numeric(preds_tbl[[".pred_1"]])
   } else if (ncol(preds_tbl) >= 2L) {
     p <- as.numeric(preds_tbl[[2L]])
   } else {
     p <- as.numeric(preds_tbl[[1L]])
+  }
+  if (length(p) != n_out) {
+    return(rep(NA_real_, n_out))
   }
   pmin(pmax(p, 1e-6), 1 - 1e-6)
 }

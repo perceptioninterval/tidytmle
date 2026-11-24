@@ -28,7 +28,7 @@ re-targeting. When \code{NULL} (default), preserves the currently active
 subgroup; pass \code{subgroup = TRUE} to reset back to the full cohort.}
 
 \item{fluctuation}{Optional updated fluctuation submodel (\code{"logistic"},
-\code{"linear"}, \code{"none"}).}
+\code{"logistic_covariate"}, \code{"linear"}, \code{"none"}).}
 
 \item{conf.level}{Confidence level for intervals; defaults to the level stored
 in \code{object} (\code{0.95} initially).}

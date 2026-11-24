@@ -12,9 +12,9 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.5.0/font.css" rel="stylesheet">
+<link href="../deps/Source_Code_Pro-0.5.0/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="TMLE Intuition: A Step-by-Step Visual Guide">
@@ -46,6 +46,7 @@
     <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
+    <li><a class="dropdown-item" href="../articles/benchmarks-and-validation.html">Benchmarks, Double Robustness &amp; Validation Against Existing TMLE Packages</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -166,7 +167,7 @@ way:</p>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
-<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  estimand   <span class="op">=</span> <span class="st">"ate"</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -290,19 +291,19 @@ no single row &gt; <code>10%</code> leverage</td>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 9</span></span></span>
 <span><span class="co">#&gt;       a      y .q0_init .q1_init .g_trunc .clever_h .q0_star .q1_star</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1  5.74      3.98     5.62    0.434      2.30     3.87     5.69</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     0  1.74      2.42     3.86    0.408     -<span style="color: #BB0000;">1.69</span>     2.32     3.94</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     0  3.12      3.88     5.65    0.513     -<span style="color: #BB0000;">2.05</span>     3.77     5.72</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     0  2.84      3.78     5.62    0.371     -<span style="color: #BB0000;">1.59</span>     3.66     5.69</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     0 -<span style="color: #BB0000;">0.504</span>     1.81     3.21    0.478     -<span style="color: #BB0000;">1.92</span>     1.71     3.29</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     0  3.18      3.98     5.78    0.386     -<span style="color: #BB0000;">1.63</span>     3.87     5.84</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1  5.74      4.30     7.61    0.434      2.30     4.27     7.59</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     0  1.74      2.25     3.26    0.408     -<span style="color: #BB0000;">1.69</span>     2.22     3.22</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     0  3.12      3.79     6.64    0.513     -<span style="color: #BB0000;">2.05</span>     3.76     6.61</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>     0  2.84      3.50     5.83    0.371     -<span style="color: #BB0000;">1.59</span>     3.47     5.80</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>     0 -<span style="color: #BB0000;">0.504</span>     1.73     3.21    0.478     -<span style="color: #BB0000;">1.92</span>     1.70     3.17</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span>     0  3.18      3.55     5.61    0.386     -<span style="color: #BB0000;">1.63</span>     3.52     5.57</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: .eif &lt;dbl&gt;</span></span></span>
 <span></span>
 <span><span class="fu"><a href="https://generics.r-lib.org/reference/glance.html" class="external-link">glance</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"epsilon"</span>, <span class="st">"mean_eif"</span>, <span class="st">"plugin_vs_tmle_shift"</span>, <span class="st">"pct_truncated"</span>, <span class="st">"ess_treated"</span>, <span class="st">"ess_control"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
-<span><span class="co">#&gt;   epsilon mean_eif plugin_vs_tmle_shift pct_truncated ess_treated</span></span>
-<span><span class="co">#&gt;     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  0.033<span style="text-decoration: underline;">4</span> 3.27<span style="color: #949494;">e</span><span style="color: #BB0000;">-14</span>                0.178             0        185.</span></span>
+<span><span class="co">#&gt;   epsilon  mean_eif plugin_vs_tmle_shift pct_truncated ess_treated</span></span>
+<span><span class="co">#&gt;     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> -<span style="color: #BB0000;">0.012</span><span style="color: #BB0000; text-decoration: underline;">4</span> -<span style="color: #BB0000;">2.20</span><span style="color: #949494;">e</span><span style="color: #BB0000;">-16</span>             -<span style="color: #BB0000;">0.007</span><span style="color: #BB0000; text-decoration: underline;">67</span>             0        185.</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: ess_control &lt;dbl&gt;</span></span></span></code></pre></div>
 <hr>
 </div>
@@ -320,7 +321,7 @@ blind intercept-only model that ignores every confounder!):</p>
 <span><span class="va">fit_bad_q</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
-<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_outcome_learners.html">set_outcome_learners</a></span><span class="op">(</span><span class="fu"><a href="https://parsnip.tidymodels.org/reference/null_model.html" class="external-link">null_model</a></span><span class="op">(</span>mode <span class="op">=</span> <span class="st">"regression"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://parsnip.tidymodels.org/reference/set_engine.html" class="external-link">set_engine</a></span><span class="op">(</span><span class="st">"parsnip"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -330,7 +331,7 @@ blind intercept-only model that ignores every confounder!):</p>
 <span><span class="va">fit_bad_g</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
-<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_outcome_learners.html">set_treatment_learners</a></span><span class="op">(</span><span class="fu"><a href="https://parsnip.tidymodels.org/reference/null_model.html" class="external-link">null_model</a></span><span class="op">(</span>mode <span class="op">=</span> <span class="st">"classification"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://parsnip.tidymodels.org/reference/set_engine.html" class="external-link">set_engine</a></span><span class="op">(</span><span class="st">"parsnip"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -357,10 +358,10 @@ blind intercept-only model that ignores every confounder!):</p>
 <span><span class="co">#&gt;   Scenario                                         Estimate     SE</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                                               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> True ATE (Ground Truth)                              1.52 <span style="color: #BB0000;">NA</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Both Safety Nets Active (Default CV-TMLE)            1.67  0.131</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Both Safety Nets Active (Default CV-TMLE)            1.59  0.118</span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Blind Q Only (Untargeted ML Plug-In)                 0    <span style="color: #BB0000;">NA</span>    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Blind Q Only -&gt; Rescued by TMLE Targeting            1.69  0.211</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Blind g Only -&gt; Rescued by Outcome Super Learner     1.68  0.126</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Blind Q Only -&gt; Rescued by TMLE Targeting            1.71  0.209</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Blind g Only -&gt; Rescued by Outcome Super Learner     1.61  0.111</span></span></code></pre></div>
 <p>Notice how untargeted regression on the blind outcome model collapses
 to <strong><code>0.00</code></strong>, yet TMLE’s targeting step uses
 propensity weights to rescue the causal estimate back toward ground

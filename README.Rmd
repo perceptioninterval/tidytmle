@@ -112,9 +112,21 @@ report_tmle(
 
 For a full worked visual walkthrough—including a live test of **both safety nets (double robustness)**—read [TMLE Intuition: A Step-by-Step Visual Guide](articles/tmle-intuition.html) (`vignette("tmle-intuition", package = "tidytmle")`).
 
+## Validated Against Reference Causal Inference Packages
+
+`tidytmle` has been benchmarked head-to-head against CRAN's **`tmle`** (`v2.1.1`), **`AIPW`** (`v0.6.9.3`), and **`lmtp`** (`v1.5.4`) across eight synthetic and canonical real-world studies:
+
+* **Machine-Precision Fixed-Nuisance Parity:** Matches `tmle::tmle(..., target.gwt = TRUE)` to `0`–`1.15e-14` (`fluctuation = "logistic"`) and `target.gwt = FALSE` to `3.3e-16`–`3.5e-9` (`fluctuation = "logistic_covariate"`) with identical standard errors.
+* **Kang & Schafer (2007) Double Robustness:** Weighted logistic fluctuation achieves **8.1× lower RMSE** (`0.140` vs. `1.143`) than default covariate fluctuation when the outcome model is misspecified, and outer-fold Super Learning cuts runtime **2.9×–5.5×**.
+* **Heterogeneity, Missingness & Continuous Policies:** Beats `tmle` and `AIPW` on $p = 20$ heterogeneous confounding (`RMSE 0.259` vs. `0.561` / `0.377` plus `fit_cate()`), informative MAR dropout (`bias -0.049` vs. `-0.211`), and continuous `shift()` / `scale_tx()` policies vs. `lmtp`—with **2.2×–12.4× faster** single-core runtimes on most benchmarks (MAR censoring was the exception at 1.3× slower than `tmle`).
+* **Real-World Audits (`NHEFS` & `LaLonde`):** Automatically recovers `+3.41 kg` on `NHEFS` (`10.6 s` vs. `44.5 s` `tmle` / `79.0 s` `AIPW`). On the non-experimental `LaLonde NSW+CPS` cohort, where black-box ATE estimators explode to `+$12,352` (`tmle`) or `-$6,722` (`AIPW`), `check_tmle()` flags severe non-overlap (`fail`) and `retarget(fit, estimand = "att")` recovers **`+$1,323`** in `55 ms` (vs. `+$1,794` experimental RCT benchmark).
+
+Read the full quantitative breakdown in [Benchmarks, Double Robustness & Validation](articles/benchmarks-and-validation.html).
+
 ## Foundational Literature
 
 * van der Laan, M. J., & Rubin, D. (2006). Targeted maximum likelihood learning. *Int. J. Biostat.*, 2(1).
+* Kang, J. D. Y., & Schafer, J. L. (2007). Demystifying double robustness: A comparison of alternative strategies for estimating a population mean from incomplete data. *Stat. Sci.*, 22(4), 523–539.
 * Gruber, S., & van der Laan, M. J. (2010). A targeted maximum likelihood estimator of a causal effect on a bounded continuous outcome. *Int. J. Biostat.*, 6(1).
 * Zheng, W., & van der Laan, M. J. (2011). Cross-validated targeted minimum-loss-based estimation. *Targeted Learning*, Springer.
 * Petersen, M. L., et al. (2012). Diagnosing and responding to violations in the positivity assumption. *Stat. Methods Med. Res.*, 21(1), 31–54.
@@ -123,6 +135,7 @@ For a full worked visual walkthrough—including a live test of **both safety ne
 * Luque-Fernandez, M. A., et al. (2018). Targeted maximum likelihood estimation for a binary treatment: A tutorial. *Stat. Med.*, 37(16), 2530–2546.
 * Díaz, I., Williams, N., Hoffman, K. L., & Schenck, E. J. (2021). Nonparametric causal effects based on longitudinal modified treatment policies. *JASA*, 118(542), 846–857.
 * Kennedy, E. H. (2023). Towards optimal doubly robust estimation of heterogeneous causal effects. *Electron. J. Stat.*, 17(2), 3008–3049.
+* Phillips, R. V., et al. (2023). Practical considerations for specifying a super learner. *Int. J. Epidemiol.*, 52(4), 1276–1285.
 
 ## Code of Conduct
 

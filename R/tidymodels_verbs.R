@@ -24,6 +24,10 @@
 #' @param e_value Logical; if `TRUE`, appends `e_value` and `e_value_ci`
 #'   sensitivity columns (VanderWeele & Ding, 2017) quantifying robustness to
 #'   unmeasured confounding.
+#' @param contrast Optional causal contrast override for continuous Modified
+#'   Treatment Policies: `NULL` (default; uses the contrast declared inside
+#'   [shift()] / [scale_tx()]), `"none"` (counterfactual policy mean), or
+#'   `"observed"` (policy contrast minus observed outcome mean).
 #' @param ... Currently unused.
 #'
 #' @return A [tibble::tibble()].
@@ -43,6 +47,7 @@ tidy.tmle_fit <- function(x,
                           conf.level = NULL,
                           simultaneous = FALSE,
                           e_value = FALSE,
+                          contrast = NULL,
                           ...) {
   stored_cl <- if (!is.null(x$targeting$conf_level)) x$targeting$conf_level else 0.95
   eff_cl <- if (is.null(conf.level)) stored_cl else conf.level
@@ -50,8 +55,24 @@ tidy.tmle_fit <- function(x,
     cli::cli_abort("{.arg conf.level} must be strictly between 0 and 1.")
   }
 
-  # Recompute inference on cached targeting outputs if custom conf.level, simultaneous, or e_value requested
-  if (abs(eff_cl - stored_cl) > 1e-12 || isTRUE(simultaneous) || isTRUE(e_value)) {
+  est_spec <- x$spec$estimand
+  contrast_override <- FALSE
+  if (!is.null(contrast)) {
+    contrast <- match.arg(contrast, c("none", "observed"))
+    if (!identical(est_spec$kind, "policy")) {
+      cli::cli_abort("{.arg contrast} in {.fn tidy} only applies to continuous Modified Treatment Policy fits.")
+    }
+    p_mod <- est_spec$policies[[1L]]
+    p_mod$contrast <- contrast
+    base_lbl <- if (!is.null(p_mod$base_label)) p_mod$base_label else p_mod$label
+    p_mod$label <- if (identical(contrast, "observed")) paste0(base_lbl, " - observed") else base_lbl
+    est_spec$policies[[1L]] <- p_mod
+    est_spec$names <- p_mod$label
+    contrast_override <- TRUE
+  }
+
+  # Recompute inference on cached targeting outputs if custom conf.level, simultaneous, e_value, or contrast requested
+  if (abs(eff_cl - stored_cl) > 1e-12 || isTRUE(simultaneous) || isTRUE(e_value) || isTRUE(contrast_override)) {
     idx <- x$subgroup_idx
     cache <- x$cache
     y_sub <- cache$y_num[idx]
@@ -73,7 +94,7 @@ tidy.tmle_fit <- function(x,
       c1_hat = cache$c1_hat[idx],
       c0_hat = cache$c0_hat[idx],
       weights = cache$weights[idx],
-      estimand = x$spec$estimand,
+      estimand = est_spec,
       outcome_type = cache$outcome_type,
       y_bounds = y_bounds_sub,
       g_bounds_arg = x$spec$targeting$g_bounds,
@@ -530,6 +551,11 @@ explain_tmle <- function(x, conf.level = NULL) {
       sprintf(
         "%s: Counterfactual average if %s is %.4f (%s CI [%.4f, %.4f]).",
         r$term, arm_txt, r$estimate, pct_lbl, r$conf.low, r$conf.high
+      )
+    } else if (grepl(" - observed$", r$estimand)) {
+      sprintf(
+        "%s: Modified Treatment Policy shifted expected outcome relative to observed exposure by %.4f units (%s CI [%.4f, %.4f], %s).",
+        r$term, r$estimate, pct_lbl, r$conf.low, r$conf.high, p_txt
       )
     } else {
       sprintf(

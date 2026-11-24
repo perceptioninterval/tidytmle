@@ -313,13 +313,23 @@ build_nuisance_data <- function(roles) {
   y_col <- roles$outcome_col
   a_col <- roles$treatment_col
 
-  # Replace outcome with clean binary factor or numeric
+  # Convert character baseline covariates to full-cohort factors before splitting
+  # so every fold recipe retains the complete set of factor levels.
+  for (cc in roles$covariate_cols) {
+    if (is.character(d[[cc]])) {
+      d[[cc]] <- factor(d[[cc]])
+    }
+  }
+
+  # Replace outcome with clean binary factor or numeric, and represent treatment
+  # numerically in Q and C so step_dummy() never renames treatment_col.
   d_Q <- d
   if (roles$outcome_type == "binary") {
     d_Q[[y_col]] <- roles$y_factor
   } else {
     d_Q[[y_col]] <- roles$y_num
   }
+  d_Q[[a_col]] <- roles$a_num
 
   d_g <- d
   if (roles$treatment_type == "binary") {
@@ -330,6 +340,7 @@ build_nuisance_data <- function(roles) {
 
   d_C <- d
   d_C[[".delta"]] <- factor(roles$delta, levels = c("0", "1"))
+  d_C[[a_col]] <- roles$a_num
 
   # Attach hardhat importance weights column if weights are present
   if (roles$weights_kind != "none") {
@@ -377,6 +388,7 @@ adapt_recipe_for_role <- function(base_recipe, role_type, roles, template_data) 
   target_outcome <- switch(
     role_type,
     Q = y_col,
+    Q_strat = y_col,
     g = a_col,
     C = ".delta",
     g_dr = ".lambda"
@@ -385,6 +397,7 @@ adapt_recipe_for_role <- function(base_recipe, role_type, roles, template_data) 
   target_predictors <- switch(
     role_type,
     Q = c(a_col, w_cols),
+    Q_strat = w_cols,
     g = w_cols,
     C = c(a_col, w_cols),
     g_dr = c(a_col, w_cols)
@@ -393,11 +406,11 @@ adapt_recipe_for_role <- function(base_recipe, role_type, roles, template_data) 
   has_tmle_wt <- ".tmle_wt" %in% names(template_data)
 
   if (is.null(base_recipe)) {
-    # Construct clean formula recipe using only target outcome and target predictors
+    # Construct clean formula recipe on zero-row full-levels prototype
     # Include .tmle_wt if present (hardhat weights are auto-assigned role = "case_weights")
     terms_rhs <- if (has_tmle_wt) c(target_predictors, ".tmle_wt") else target_predictors
     fml <- stats::reformulate(termlabels = terms_rhs, response = target_outcome)
-    rec <- recipes::recipe(fml, data = utils::head(template_data, 20L))
+    rec <- recipes::recipe(fml, data = template_data[0L, , drop = FALSE])
 
     # Auto-impute covariates if NAs exist in baseline predictors
     has_cov_na <- any(vapply(roles$data[w_cols], anyNA, logical(1L)))
@@ -407,6 +420,7 @@ adapt_recipe_for_role <- function(base_recipe, role_type, roles, template_data) 
         recipes::step_impute_mode(recipes::all_nominal_predictors())
     }
     rec <- rec |>
+      recipes::step_novel(recipes::all_nominal_predictors()) |>
       recipes::step_dummy(recipes::all_nominal_predictors(), one_hot = FALSE) |>
       recipes::step_zv(recipes::all_predictors())
     return(rec)
@@ -414,8 +428,11 @@ adapt_recipe_for_role <- function(base_recipe, role_type, roles, template_data) 
 
   # Clone and retarget user-supplied recipe while preserving feature engineering steps
   rec <- base_recipe
-  # Reset template slice with clean target types from template_data
-  templ_slice <- utils::head(template_data, min(nrow(template_data), 20L))
+  # Reset template slice with clean target types and full factor levels
+  templ_slice <- template_data[0L, , drop = FALSE]
+  if (nrow(template_data) > 0L) {
+    templ_slice <- utils::head(template_data, min(nrow(template_data), 20L))
+  }
   # Ensure all columns originally in rec$var_info exist in templ_slice
   missing_in_templ <- setdiff(rec$var_info$variable, names(templ_slice))
   if (length(missing_in_templ) > 0L && length(setdiff(missing_in_templ, c(".delta", ".lambda"))) > 0L) {

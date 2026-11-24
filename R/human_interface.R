@@ -462,6 +462,9 @@ report_tmle <- function(x,
       cf_lbl <- if (r$estimand == "ey1") paste("everyone received", trt_name) else paste("no one received", trt_name)
       sprintf("the counterfactual mean %s if %s was %.4f (%s CI [%.4f, %.4f])",
               out_name, cf_lbl, r$estimate, pct_lbl, r$conf.low, r$conf.high)
+    } else if (grepl(" - observed$", r$estimand)) {
+      sprintf("under policy %s, expected %s shifted relative to observed %s by %+.4f%s (%s CI [%.4f, %.4f], %s%s)",
+              r$term, out_name, trt_name, r$estimate, unit_suffix, pct_lbl, r$conf.low, r$conf.high, p_str, ev_str)
     } else {
       sprintf("under policy %s, expected %s was %.4f (%s CI [%.4f, %.4f], %s%s)",
               r$term, out_name, r$estimate, pct_lbl, r$conf.low, r$conf.high, p_str, ev_str)

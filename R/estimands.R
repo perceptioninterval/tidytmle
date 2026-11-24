@@ -28,6 +28,10 @@
 #'   treatment values.
 #' @param factor Strictly positive numeric scalar specifying the multiplicative
 #'   scaling factor applied to observed treatment values.
+#' @param contrast Optional causal contrast mode: `"none"` (default; estimates the
+#'   expected counterfactual outcome \eqn{E[Y(d(A, W))]} under the policy) or
+#'   `"observed"` (estimates the policy contrast relative to status quo
+#'   \eqn{E[Y(d(A, W)) - Y]} using the joint Efficient Influence Function).
 #'
 #' @return An S3 policy object inheriting from `"tmle_policy"` (`"tmle_shift"`
 #'   or `"tmle_scale"`).
@@ -48,15 +52,20 @@
 #' )
 #'
 #' @export
-shift <- function(delta) {
+shift <- function(delta, contrast = c("none", "observed")) {
   if (!is.numeric(delta) || length(delta) != 1L || is.na(delta) || !is.finite(delta)) {
     cli::cli_abort("{.arg delta} must be a single finite numeric value.")
   }
+  contrast <- match.arg(contrast)
+  base_lbl <- sprintf("shift(%s)", format(delta, trim = TRUE))
+  lbl <- if (identical(contrast, "observed")) paste0(base_lbl, " - observed") else base_lbl
   structure(
     list(
       type = "shift",
       delta = as.numeric(delta),
-      label = sprintf("shift(%s)", format(delta, trim = TRUE))
+      contrast = contrast,
+      base_label = base_lbl,
+      label = lbl
     ),
     class = c("tmle_shift", "tmle_policy")
   )
@@ -64,16 +73,21 @@ shift <- function(delta) {
 
 #' @rdname shift
 #' @export
-scale_tx <- function(factor) {
+scale_tx <- function(factor, contrast = c("none", "observed")) {
   if (!is.numeric(factor) || length(factor) != 1L || is.na(factor) ||
       !is.finite(factor) || factor <= 0) {
     cli::cli_abort("{.arg factor} must be a single finite positive numeric value.")
   }
+  contrast <- match.arg(contrast)
+  base_lbl <- sprintf("scale_tx(%s)", format(factor, trim = TRUE))
+  lbl <- if (identical(contrast, "observed")) paste0(base_lbl, " - observed") else base_lbl
   structure(
     list(
       type = "scale",
       factor = as.numeric(factor),
-      label = sprintf("scale_tx(%s)", format(factor, trim = TRUE))
+      contrast = contrast,
+      base_label = base_lbl,
+      label = lbl
     ),
     class = c("tmle_scale", "tmle_policy")
   )

@@ -12,9 +12,9 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.5.0/font.css" rel="stylesheet">
+<link href="../deps/Source_Code_Pro-0.5.0/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Modified Treatment Policies &amp; DR-Learner CATE">
@@ -46,6 +46,7 @@
     <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
+    <li><a class="dropdown-item" href="../articles/benchmarks-and-validation.html">Benchmarks, Double Robustness &amp; Validation Against Existing TMLE Packages</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -118,7 +119,7 @@ cross-validated classification without assuming normality:</p>
 <span><span class="va">fit_shift</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
-<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  estimand   <span class="op">=</span> <span class="fu"><a href="../reference/shift.html">shift</a></span><span class="op">(</span><span class="fl">1.0</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -128,7 +129,7 @@ cross-validated classification without assuming normality:</p>
 <span><span class="va">fit_scale</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
-<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  estimand   <span class="op">=</span> <span class="fu"><a href="../reference/shift.html">scale_tx</a></span><span class="op">(</span><span class="fl">0.9</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -139,20 +140,20 @@ cross-validated classification without assuming normality:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 9</span></span></span>
 <span><span class="co">#&gt;   estimand      term    estimate std.error statistic   p.value conf.low</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shift(1)      shift(…     4.83     0.214      22.6 5.10<span style="color: #949494;">e</span><span style="color: #BB0000;">-113</span>     4.41</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> scale_tx(0.9) scale_…     3.67     0.125      29.3 7.78<span style="color: #949494;">e</span><span style="color: #BB0000;">-189</span>     3.43</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shift(1)      shift(…     4.81     0.175      27.6 3.31<span style="color: #949494;">e</span><span style="color: #BB0000;">-167</span>     4.47</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> scale_tx(0.9) scale_…     3.66     0.124      29.6 2.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-192</span>     3.42</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: conf.high &lt;dbl&gt;, true_value &lt;dbl&gt;</span></span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/check_tmle.html">check_tmle</a></span><span class="op">(</span><span class="va">fit_shift</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Causal Health Audit (3/4 Passed)</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = -9.51e-14): Bias-removal step converged cleanly (targeting shift = +0.2184, epsilon = 0.0653).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = -3.54e-15): Bias-removal step converged cleanly (targeting shift = +0.0433, epsilon = 0.0172).</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Comparison Overlap (Positivity)</span> (0.0% capped (max r = 21.9)): 0.0% of density ratios were capped at upper bound 21.92.</span></span>
-<span><span class="co">#&gt; <span style="color: #BB0000;">✖</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 37.2% variance): Row 33 alone drives 37.2% of total EIF variance (&gt; 10% caution threshold).</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 19.4% variance): Row 33 alone drives 19.4% of total EIF variance (&gt; 10% caution threshold).</span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Suggested next step:</span> Inspect outlier row via autoplot(fit, type =</span></span>
 <span><span class="co">#&gt; 'eif') or dplyr::slice_max(augment(fit), .eif_leverage, n = 5).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q R2 = 0.755): Cross-validated outcome Super Learner captured real structure (Q R2 = 0.755).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q R2 = 0.805): Cross-validated outcome Super Learner captured real structure (Q R2 = 0.805).</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">fit_shift</span>, type <span class="op">=</span> <span class="st">"overlap"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="lmtp-and-cate_files/figure-html/lmtp-1.png" alt="Distribution of Modified Treatment Policy density-ratio weights centered near 1x" width="710.4"></p>
 <hr>
@@ -182,7 +183,7 @@ uplift via Qini curves (<code><a href="../reference/qini_auc.html">qini_auc()</a
 <span><span class="va">fit_ate</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
-<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">4L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://generics.r-lib.org/reference/fit.html" class="external-link">fit</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">df_het</span><span class="op">)</span></span>
@@ -192,30 +193,30 @@ uplift via Qini curves (<code><a href="../reference/qini_auc.html">qini_auc()</a
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 7</span></span></span>
 <span><span class="co">#&gt;   term         estimate std.error statistic  p.value conf.low conf.high</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ATE (BLP In…    1.68      0.125     13.5  2.18<span style="color: #949494;">e</span><span style="color: #BB0000;">-34</span>    1.44       1.93</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Heterogenei…    0.980     0.134      7.33 1.32<span style="color: #949494;">e</span><span style="color: #BB0000;">-12</span>    0.717      1.24</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ATE (BLP In…     1.48     0.107     13.8  1.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-35</span>    1.27       1.69</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Heterogenei…     1.01     0.110      9.19 2.24<span style="color: #949494;">e</span><span style="color: #BB0000;">-18</span>    0.796      1.23</span></span>
 <span><span class="fu"><a href="../reference/qini_auc.html">qini_auc</a></span><span class="op">(</span><span class="va">cate</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   .metric  .estimator .estimate</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> qini_auc standard       0.250</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> auuc     standard       1.09</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> qini_auc standard       0.270</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> auuc     standard       1.01</span></span>
 <span></span>
 <span><span class="co"># Out-of-fold accuracy vs true individual treatment effects</span></span>
 <span><span class="va">aug_cate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/augment.html" class="external-link">augment</a></span><span class="op">(</span><span class="va">cate</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">aug_cate</span><span class="op">$</span><span class="va">.cate</span>, <span class="va">truth_het</span><span class="op">$</span><span class="va">true_cate</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.7648441</span></span>
+<span><span class="co">#&gt; [1] 0.9329841</span></span>
 <span></span>
 <span><span class="co"># Score individualized benefit for new patients</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">cate</span>, new_data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df_het</span>, <span class="fl">5L</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 1</span></span></span>
-<span><span class="co">#&gt;    .pred</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>  0.344</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>  1.77 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>  3.19 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>  3.79 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> -<span style="color: #BB0000;">0.623</span></span></span>
+<span><span class="co">#&gt;   .pred</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> 0.659</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> 1.73 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> 2.22 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> 2.45 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> 0.131</span></span>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/autoplot.html" class="external-link">autoplot</a></span><span class="op">(</span><span class="va">cate</span>, type <span class="op">=</span> <span class="st">"cate"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="lmtp-and-cate_files/figure-html/cate-1.png" alt="Histogram of predicted individualized treatment effects split at zero with dashed population mean" width="710.4"></p>

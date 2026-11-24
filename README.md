@@ -98,11 +98,11 @@ check_tmle(fit)
 #> 
 #> ── TMLE Causal Health Audit (5/5 Passed) ──
 #> 
-#> ✔ Targeting Convergence (mean EIF = 1.68e-14): Bias-removal step converged cleanly (targeting shift = +0.0302, epsilon = 0.0750).
-#> ✔ Comparison Overlap (Positivity) (0.0% clipped | ESS 192 vs 131): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 191.9, control = 130.6).
-#> ✔ Confounder Balance (max |SMD| 0.331 -> 0.037): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.037, below 0.10).
-#> ✔ Individual Influence (top obs = 5.2% variance): No single row dominates uncertainty (row 118 holds 5.2% of EIF variance, <= 10%).
-#> ✔ Model Learning Quality (Q AUC = 0.723 | g AUC = 0.631): Cross-validated Super Learners captured real structure (Q AUC = 0.723, treatment AUC = 0.631).
+#> ✔ Targeting Convergence (mean EIF = 2.68e-14): Bias-removal step converged cleanly (targeting shift = +0.0277, epsilon = 0.0700).
+#> ✔ Comparison Overlap (Positivity) (0.0% clipped | ESS 190 vs 134): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 189.7, control = 133.6).
+#> ✔ Confounder Balance (max |SMD| 0.331 -> 0.025): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.025, below 0.10).
+#> ✔ Individual Influence (top obs = 2.3% variance): No single row dominates uncertainty (row 118 holds 2.3% of EIF variance, <= 10%).
+#> ✔ Model Learning Quality (Q AUC = 0.715 | g AUC = 0.617): Cross-validated Super Learners captured real structure (Q AUC = 0.715, treatment AUC = 0.617).
 #> 
 #> Verdict: Ready for interpretation. Generate paper prose with report_tmle(fit).
 
@@ -119,9 +119,9 @@ retarget(fit, g_bounds = c(0.05, 0.95)) |>
 #> # A tibble: 3 × 11
 #>   estimand term  estimate std.error statistic p.value conf.low conf.high e_value
 #>   <chr>    <chr>    <dbl>     <dbl>     <dbl>   <dbl>    <dbl>     <dbl>   <dbl>
-#> 1 ate      ATE      0.111    0.0516      2.16  0.0307  0.00493     0.218    1.76
-#> 2 rr       RR       1.34     0.143       2.05  0.0402  0.998       1.80     2.02
-#> 3 or       OR       1.61     0.225       2.11  0.0347  1.01        2.56     2.60
+#> 1 ate      ATE      0.108    0.0513      2.11  0.0350 0.000321     0.216    1.75
+#> 2 rr       RR       1.33     0.142       2.02  0.0438 0.988        1.80     2.00
+#> 3 or       OR       1.59     0.224       2.07  0.0388 0.992        2.54     2.55
 #> # ℹ 2 more variables: e_value_ci <dbl>, crit.value <dbl>
 ```
 
@@ -142,35 +142,35 @@ report_tmle(
 #> cross-fitted TMLE ('predict, then target'). First, cross-validated ensembles
 #> estimated each unit's expected clinical recovery under alternative values of
 #> targeted therapy adjusting for 5 baseline factors (age, sex, lab_1, lab_2,
-#> lab_3; outcome learners: glmnet (100%), glm (0%), ranger (0%)), alongside
-#> treatment weights (glm (71%), ranger (19%), glmnet (10%)). Second, a targeted
-#> logistic calibration step adjusted those initial predictions so residual
-#> confounding bias on the causal estimand was removed. Standard errors and 95%
-#> confidence intervals were derived from the sample variance of the Efficient
-#> Influence Function (EIF).
+#> lab_3; outcome learners: glmnet (100%), glm (0%), ranger (0%), glmnet_interact
+#> (0%)), alongside treatment weights (glm (61%), ranger (39%), glmnet (0%)).
+#> Second, a targeted logistic calibration step adjusted those initial predictions
+#> so residual confounding bias on the causal estimand was removed. Standard
+#> errors and 95% confidence intervals were derived from the sample variance of
+#> the Efficient Influence Function (EIF).
 #> 
 #> ── Results 
 #> After confounder adjustment and targeting, targeted therapy shifted clinical
-#> recovery by +0.1115 (probability scale) (across the full study population
-#> (ATE); 95% CI [0.0104, 0.2125], p = 0.0307; E-value = 1.76 (CI limit = 1.16));
-#> and the relative risk ratio (RR) was 1.34 (34.2% higher risk; 95% CI [1.01,
-#> 1.78], p = 0.0402; E-value = 2.02 (CI limit = 1.13)); and the odds ratio (OR)
-#> was 1.61 (95% CI [1.03, 2.50], p = 0.0347; E-value = 2.60 (CI limit = 1.22)).
+#> recovery by +0.1082 (probability scale) (across the full study population
+#> (ATE); 95% CI [0.0076, 0.2089], p = 0.0350; E-value = 1.75 (CI limit = 1.13));
+#> and the relative risk ratio (RR) was 1.33 (33.3% higher risk; 95% CI [1.01,
+#> 1.76], p = 0.0438; E-value = 2.00 (CI limit = 1.10)); and the odds ratio (OR)
+#> was 1.59 (95% CI [1.02, 2.46], p = 0.0388; E-value = 2.55 (CI limit = 1.18)).
 #> The targeting calibration step shifted the initial ML plug-in estimate by
-#> +0.0302 (fluctuation epsilon = 0.0750) and satisfied the EIF score equation
-#> (mean EIF = 1.68e-14). Inverse-propensity weighting reduced maximum covariate
-#> standardized mean imbalance from 0.331 to 0.037. Positivity truncation affected
+#> +0.0277 (fluctuation epsilon = 0.0700) and satisfied the EIF score equation
+#> (mean EIF = 2.68e-14). Inverse-propensity weighting reduced maximum covariate
+#> standardized mean imbalance from 0.331 to 0.025. Positivity truncation affected
 #> 0.0% of observations, with maximum single-observation EIF variance leverage of
-#> 5.2%.
+#> 2.3%.
 #> 
 #> ── Causal Assumptions & Diagnostics 
 #> 1. **No unmeasured confounding:** Valid causal interpretation assumes all joint
 #> causes of targeted therapy and clinical recovery are captured in W. For the
 #> primary estimand (ATE), an unmeasured confounder would need a risk-ratio
-#> association of at least 1.76 with both treatment and outcome (beyond measured
+#> association of at least 1.75 with both treatment and outcome (beyond measured
 #> covariates) to explain away the point estimate.
 #> 2. **Positivity (real-world overlap):** Only 0.0% of observations hit bounds
-#> [0.046, 0.954] (effective sample sizes: treated = 191.9, control = 130.6).
+#> [0.046, 0.954] (effective sample sizes: treated = 189.7, control = 133.6).
 #> 3. **Consistency & interference:** Each unit's observed outcome matches its
 #> potential outcome under the received targeted therapy level without cross-unit
 #> spillover.
@@ -194,10 +194,46 @@ safety nets (double robustness)**—read [TMLE Intuition: A Step-by-Step
 Visual Guide](articles/tmle-intuition.html)
 (`vignette("tmle-intuition", package = "tidytmle")`).
 
+## Validated Against Reference Causal Inference Packages
+
+`tidytmle` has been benchmarked head-to-head against CRAN’s **`tmle`**
+(`v2.1.1`), **`AIPW`** (`v0.6.9.3`), and **`lmtp`** (`v1.5.4`) across
+eight synthetic and canonical real-world studies:
+
+- **Machine-Precision Fixed-Nuisance Parity:** Matches
+  `tmle::tmle(..., target.gwt = TRUE)` to `0`–`1.15e-14`
+  (`fluctuation = "logistic"`) and `target.gwt = FALSE` to
+  `3.3e-16`–`3.5e-9` (`fluctuation = "logistic_covariate"`) with
+  identical standard errors.
+- **Kang & Schafer (2007) Double Robustness:** Weighted logistic
+  fluctuation achieves **8.1× lower RMSE** (`0.140` vs. `1.143`) than
+  default covariate fluctuation when the outcome model is misspecified,
+  and outer-fold Super Learning cuts runtime **2.9×–5.5×**.
+- **Heterogeneity, Missingness & Continuous Policies:** Beats `tmle` and
+  `AIPW` on $p = 20$ heterogeneous confounding (`RMSE 0.259` vs. `0.561`
+  / `0.377` plus `fit_cate()`), informative MAR dropout (`bias -0.049`
+  vs. `-0.211`), and continuous `shift()` / `scale_tx()` policies
+  vs. `lmtp`—with **2.2×–12.4× faster** single-core runtimes on most
+  benchmarks (MAR censoring was the exception at 1.3× slower than
+  `tmle`).
+- **Real-World Audits (`NHEFS` & `LaLonde`):** Automatically recovers
+  `+3.41 kg` on `NHEFS` (`10.6 s` vs. `44.5 s` `tmle` / `79.0 s`
+  `AIPW`). On the non-experimental `LaLonde NSW+CPS` cohort, where
+  black-box ATE estimators explode to `+$12,352` (`tmle`) or `-$6,722`
+  (`AIPW`), `check_tmle()` flags severe non-overlap (`fail`) and
+  `retarget(fit, estimand = "att")` recovers **`+$1,323`** in `55 ms`
+  (vs. `+$1,794` experimental RCT benchmark).
+
+Read the full quantitative breakdown in [Benchmarks, Double Robustness &
+Validation](articles/benchmarks-and-validation.html).
+
 ## Foundational Literature
 
 - van der Laan, M. J., & Rubin, D. (2006). Targeted maximum likelihood
   learning. *Int. J. Biostat.*, 2(1).
+- Kang, J. D. Y., & Schafer, J. L. (2007). Demystifying double
+  robustness: A comparison of alternative strategies for estimating a
+  population mean from incomplete data. *Stat. Sci.*, 22(4), 523–539.
 - Gruber, S., & van der Laan, M. J. (2010). A targeted maximum
   likelihood estimator of a causal effect on a bounded continuous
   outcome. *Int. J. Biostat.*, 6(1).
@@ -220,6 +256,8 @@ Visual Guide](articles/tmle-intuition.html)
   policies. *JASA*, 118(542), 846–857.
 - Kennedy, E. H. (2023). Towards optimal doubly robust estimation of
   heterogeneous causal effects. *Electron. J. Stat.*, 17(2), 3008–3049.
+- Phillips, R. V., et al. (2023). Practical considerations for
+  specifying a super learner. *Int. J. Epidemiol.*, 52(4), 1276–1285.
 
 ## Code of Conduct
 

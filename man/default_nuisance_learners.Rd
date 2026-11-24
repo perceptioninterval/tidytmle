@@ -15,9 +15,21 @@ A named list of \code{parsnip} \code{model_spec} objects.
 \description{
 Creates a fast, diverse default \code{parsnip} learner library (\code{glm}, \code{glmnet},
 and tree/random forest) for regression or binary classification nuisances.
+When used inside \code{\link[=fit.tmle_spec]{fit.tmle_spec()}}, \code{tidytmle} automatically pairs this
+base library with treatment-interaction workflows (\code{glmnet_interact} /
+\code{glm_interact} for \code{Q} and \code{C}), natural cubic spline workflows
+(\code{glmnet_spline} / \code{glm_spline} for continuous regression \code{Q} and \code{Q_strat}),
+and polynomial density-ratio workflows (\code{glm_poly} / \code{glmnet_poly} for \code{g_dr}),
+while keeping propensity models (\code{g}) parsimonious to avoid positivity-amplifying
+overfitting, following practical Super Learner guidelines (Phillips et al., 2023).
 }
 \examples{
 default_nuisance_learners("regression")
 default_nuisance_learners("classification")
 
+}
+\references{
+Phillips, R. V., van der Laan, M. J., Lee, H., & Gruber, S. (2023).
+Practical considerations for specifying a super learner. \emph{International
+Journal of Epidemiology}, 52(4), 1276-1285.
 }

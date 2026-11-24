@@ -8,7 +8,7 @@ set_targeting(
   spec,
   cv_tmle = TRUE,
   g_bounds = "adaptive",
-  fluctuation = c("logistic", "linear", "none"),
+  fluctuation = c("logistic", "logistic_covariate", "linear", "none"),
   max_iter = 100L,
   tol = 1e-06,
   save_nuisance = c("predictions", "butcher", "full"),
@@ -27,10 +27,12 @@ valid influence-function standard errors without Donsker assumptions.}
 bounded to \verb{[0.01, 0.15]}), a single numeric threshold \code{b} giving \verb{[b, 1 - b]},
 or a length-2 numeric vector \code{c(low, high)} in \verb{(0, 1)}.}
 
-\item{fluctuation}{Fluctuation submodel: \code{"logistic"} (bounded canonical
-logistic fluctuation on scaled \verb{[0, 1]} outcomes — default), \code{"linear"}
-(weighted linear fluctuation), or \code{"none"} (one-step / plug-in without
-targeting step).}
+\item{fluctuation}{Fluctuation submodel: \code{"logistic"} (weighted-intercept
+bounded canonical logistic fluctuation on scaled \verb{[0, 1]} outcomes,
+equivalent to \code{target.gwt = TRUE} -- default), \code{"logistic_covariate"}
+(classical unweighted Clever-Covariate logistic submodel matching
+\code{tmle::tmle(..., target.gwt = FALSE)}), \code{"linear"} (weighted linear
+fluctuation), or \code{"none"} (one-step / plug-in without targeting step).}
 
 \item{max_iter}{Maximum iterative TMLE steps (reserved for iterative updates).}
 

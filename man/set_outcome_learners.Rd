@@ -9,7 +9,8 @@
 set_outcome_learners(
   spec,
   learners,
-  metalearner = c("auto", "nnls", "logloss", "best")
+  metalearner = c("auto", "nnls", "logloss", "best"),
+  stratify = FALSE
 )
 
 set_treatment_learners(
@@ -34,6 +35,11 @@ a \code{workflowsets::workflow_set}, or a list of \code{model_spec}/\code{workfl
 regression, binomial log-loss minimization on simplex for classification),
 \code{"nnls"}, \code{"logloss"}, or \code{"best"} (discrete Super Learner selecting the
 single lowest CV-risk learner).}
+
+\item{stratify}{Logical (for \code{set_outcome_learners()} with binary treatments);
+if \code{TRUE}, fits separate arm-stratified Super Learners \eqn{\bar{Q}(1, W)}
+on treated rows and \eqn{\bar{Q}(0, W)} on control rows (T-learner mode)
+instead of pooling treatment as a covariate. Defaults to \code{FALSE}.}
 }
 \value{
 An updated \code{"tmle_spec"} object.

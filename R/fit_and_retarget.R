@@ -42,49 +42,126 @@ fit.tmle_spec <- function(object, data, ...) {
   # 3. Build nuisance data and role-safe recipes (zero leakage)
   nuisance_data <- build_nuisance_data(roles)
   recipes_split <- split_causal_recipes(object$preprocessing, roles, nuisance_data)
+  has_custom_rec <- !is.null(object$preprocessing)
 
   q_mode <- if (roles$outcome_type == "binary") "classification" else "regression"
+  is_q_strat <- isTRUE(object$learners$Q$stratify) && identical(roles$treatment_type, "binary")
+  q_role <- if (is_q_strat) "Q_strat" else "Q"
+  q_default_rec <- if (is_q_strat) {
+    adapt_recipe_for_role(object$preprocessing, role_type = "Q_strat", roles = roles, template_data = nuisance_data$Q)
+  } else {
+    recipes_split$Q
+  }
+
   q_wfs <- normalize_learner_library(
     learners_cfg = object$learners$Q,
     mode = q_mode,
-    role_type = "Q",
+    role_type = q_role,
     roles = roles,
     template_data = nuisance_data$Q,
-    default_recipe = recipes_split$Q
+    default_recipe = q_default_rec,
+    has_custom_recipe = has_custom_rec
   )
-
-  # Build counterfactual evaluation datasets for Q
-  if (roles$treatment_type == "binary") {
-    df_a1 <- nuisance_data$Q
-    df_a1[[roles$treatment_col]] <- encode_treatment_column(roles$a_raw_template, 1L)
-    df_a0 <- nuisance_data$Q
-    df_a0[[roles$treatment_col]] <- encode_treatment_column(roles$a_raw_template, 0L)
-    eval_Q <- list(q1 = df_a1, q0 = df_a0)
-  } else {
-    policy <- object$estimand$policies[[1L]]
-    df_shift <- nuisance_data$Q
-    df_shift[[roles$treatment_col]] <- apply_policy(policy, roles$a_num)
-    eval_Q <- list(qa = nuisance_data$Q, q_shift = df_shift)
-  }
 
   obs_idx <- which(roles$delta == 1L)
 
-  # 4. Cross-fitted Super Learning for Q
-  sl_Q <- fit_cv_super_learner(
-    workflows_list = q_wfs,
-    splits = splits,
-    data = nuisance_data$Q,
-    y_target = roles$y_num,
-    mode = q_mode,
-    eval_datasets = eval_Q,
-    train_subset_idx = obs_idx,
-    weights = roles$weights,
-    metalearner = object$learners$Q$metalearner,
-    cv_tmle = object$targeting$cv_tmle,
-    save_nuisance = object$targeting$save_nuisance,
-    parallel = object$targeting$parallel,
-    nuisance_name = "Q"
-  )
+  # 4. Cross-fitted Super Learning for Q (pooled S-learner or arm-stratified T-learner)
+  if (is_q_strat) {
+    obs_idx_1 <- intersect(obs_idx, which(roles$a_num == 1L))
+    obs_idx_0 <- intersect(obs_idx, which(roles$a_num == 0L))
+    sl_Q1 <- fit_cv_super_learner(
+      workflows_list = q_wfs,
+      splits = splits,
+      data = nuisance_data$Q,
+      y_target = roles$y_num,
+      mode = q_mode,
+      eval_datasets = list(all = nuisance_data$Q),
+      train_subset_idx = obs_idx_1,
+      weights = roles$weights,
+      metalearner = object$learners$Q$metalearner,
+      cv_tmle = object$targeting$cv_tmle,
+      save_nuisance = object$targeting$save_nuisance,
+      parallel = object$targeting$parallel,
+      nuisance_name = "Q"
+    )
+    sl_Q0 <- fit_cv_super_learner(
+      workflows_list = q_wfs,
+      splits = splits,
+      data = nuisance_data$Q,
+      y_target = roles$y_num,
+      mode = q_mode,
+      eval_datasets = list(all = nuisance_data$Q),
+      train_subset_idx = obs_idx_0,
+      weights = roles$weights,
+      metalearner = object$learners$Q$metalearner,
+      cv_tmle = object$targeting$cv_tmle,
+      save_nuisance = object$targeting$save_nuisance,
+      parallel = object$targeting$parallel,
+      nuisance_name = "Q"
+    )
+    q1_s <- sl_Q1$sl_eval_preds$all
+    q0_s <- sl_Q0$sl_eval_preds$all
+    qa_s <- ifelse(roles$a_num == 1L, q1_s, q0_s)
+    oof_comb <- sl_Q0$oof_matrix
+    i1_rows <- which(roles$a_num == 1L)
+    oof_comb[i1_rows, ] <- sl_Q1$oof_matrix[i1_rows, , drop = FALSE]
+    wt_comb <- 0.5 * (sl_Q1$sl_weights + sl_Q0$sl_weights)
+    wt_comb <- wt_comb / sum(wt_comb)
+    fw_comb <- dplyr::bind_rows(sl_Q1$fold_weights, sl_Q0$fold_weights) |>
+      dplyr::group_by(nuisance, fold, learner) |>
+      dplyr::summarise(weight = mean(weight), .groups = "drop")
+    mets_comb <- compute_nuisance_metrics(
+      oof_obs = oof_comb,
+      sl_obs = qa_s,
+      y_target = roles$y_num,
+      fit_idx = obs_idx,
+      fold_id_vec = sl_Q1$fold_id,
+      mode = q_mode,
+      nuisance_name = "Q"
+    )
+    sl_Q <- list(
+      nuisance = "Q",
+      mode = q_mode,
+      sl_preds = qa_s,
+      sl_eval_preds = list(q1 = q1_s, q0 = q0_s),
+      oof_matrix = oof_comb,
+      sl_weights = wt_comb,
+      fold_weights = fw_comb,
+      metrics = mets_comb,
+      fold_id = sl_Q1$fold_id,
+      models = c(sl_Q1$models, sl_Q0$models)
+    )
+  } else {
+    # Build counterfactual evaluation datasets for Q (numeric treatment_col)
+    if (roles$treatment_type == "binary") {
+      df_a1 <- nuisance_data$Q
+      df_a1[[roles$treatment_col]] <- 1
+      df_a0 <- nuisance_data$Q
+      df_a0[[roles$treatment_col]] <- 0
+      eval_Q <- list(q1 = df_a1, q0 = df_a0)
+    } else {
+      policy <- object$estimand$policies[[1L]]
+      df_shift <- nuisance_data$Q
+      df_shift[[roles$treatment_col]] <- apply_policy(policy, roles$a_num)
+      eval_Q <- list(qa = nuisance_data$Q, q_shift = df_shift)
+    }
+
+    sl_Q <- fit_cv_super_learner(
+      workflows_list = q_wfs,
+      splits = splits,
+      data = nuisance_data$Q,
+      y_target = roles$y_num,
+      mode = q_mode,
+      eval_datasets = eval_Q,
+      train_subset_idx = obs_idx,
+      weights = roles$weights,
+      metalearner = object$learners$Q$metalearner,
+      cv_tmle = object$targeting$cv_tmle,
+      save_nuisance = object$targeting$save_nuisance,
+      parallel = object$targeting$parallel,
+      nuisance_name = "Q"
+    )
+  }
 
   # 5. Cross-fitted Super Learning for g (propensity or stacked density-ratio)
   if (roles$treatment_type == "binary") {
@@ -94,7 +171,8 @@ fit.tmle_spec <- function(object, data, ...) {
       role_type = "g",
       roles = roles,
       template_data = nuisance_data$g,
-      default_recipe = recipes_split$g
+      default_recipe = recipes_split$g,
+      has_custom_recipe = has_custom_rec
     )
     sl_g <- fit_cv_super_learner(
       workflows_list = g_wfs,
@@ -127,7 +205,8 @@ fit.tmle_spec <- function(object, data, ...) {
       role_type = "g_dr",
       roles = roles,
       template_data = dr_template,
-      default_recipe = rec_g_dr
+      default_recipe = rec_g_dr,
+      has_custom_recipe = has_custom_rec
     )
     sl_g <- fit_cv_density_ratio_sl(
       workflows_list = g_wfs,
@@ -152,13 +231,14 @@ fit.tmle_spec <- function(object, data, ...) {
       role_type = "C",
       roles = roles,
       template_data = nuisance_data$C,
-      default_recipe = recipes_split$C
+      default_recipe = recipes_split$C,
+      has_custom_recipe = has_custom_rec
     )
     if (roles$treatment_type == "binary") {
       df_c1 <- nuisance_data$C
-      df_c1[[roles$treatment_col]] <- encode_treatment_column(roles$a_raw_template, 1L)
+      df_c1[[roles$treatment_col]] <- 1
       df_c0 <- nuisance_data$C
-      df_c0[[roles$treatment_col]] <- encode_treatment_column(roles$a_raw_template, 0L)
+      df_c0[[roles$treatment_col]] <- 0
       eval_C <- list(c1 = df_c1, c0 = df_c0)
     } else {
       eval_C <- list(c_obs = nuisance_data$C)
@@ -279,7 +359,7 @@ fit.tmle_spec <- function(object, data, ...) {
 #'   re-targeting. When `NULL` (default), preserves the currently active
 #'   subgroup; pass `subgroup = TRUE` to reset back to the full cohort.
 #' @param fluctuation Optional updated fluctuation submodel (`"logistic"`,
-#'   `"linear"`, `"none"`).
+#'   `"logistic_covariate"`, `"linear"`, `"none"`).
 #' @param conf.level Confidence level for intervals; defaults to the level stored
 #'   in `object` (`0.95` initially).
 #'
@@ -321,7 +401,7 @@ retarget <- function(object,
     new_spec$targeting$g_bounds <- g_bounds
   }
   if (!is.null(fluctuation)) {
-    fluctuation <- match.arg(fluctuation, c("logistic", "linear", "none"))
+    fluctuation <- match.arg(fluctuation, c("logistic", "logistic_covariate", "linear", "none"))
     new_spec$targeting$fluctuation <- fluctuation
   }
   if (!is.null(estimand)) {

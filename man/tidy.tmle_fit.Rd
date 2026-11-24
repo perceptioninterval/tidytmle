@@ -10,6 +10,7 @@
   conf.level = NULL,
   simultaneous = FALSE,
   e_value = FALSE,
+  contrast = NULL,
   ...
 )
 }
@@ -29,6 +30,11 @@ multiplier bootstrap over the joint EIF matrix.}
 \item{e_value}{Logical; if \code{TRUE}, appends \code{e_value} and \code{e_value_ci}
 sensitivity columns (VanderWeele & Ding, 2017) quantifying robustness to
 unmeasured confounding.}
+
+\item{contrast}{Optional causal contrast override for continuous Modified
+Treatment Policies: \code{NULL} (default; uses the contrast declared inside
+\code{\link[=shift]{shift()}} / \code{\link[=scale_tx]{scale_tx()}}), \code{"none"} (counterfactual policy mean), or
+\code{"observed"} (policy contrast minus observed outcome mean).}
 
 \item{...}{Currently unused.}
 }

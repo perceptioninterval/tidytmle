@@ -12,9 +12,9 @@
 <link rel="icon" sizes="any" href="favicon.ico">
 <link rel="manifest" href="site.webmanifest">
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/Source_Sans_Pro-0.5.0/font.css" rel="stylesheet">
+<link href="deps/Source_Code_Pro-0.5.0/font.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Targeted Maximum Likelihood Estimation for Tidymodels • tidytmle">
@@ -51,6 +51,7 @@
     <li><a class="dropdown-item" href="articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
+    <li><a class="dropdown-item" href="articles/benchmarks-and-validation.html">Benchmarks, Double Robustness &amp; Validation Against Existing TMLE Packages</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -173,11 +174,11 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── TMLE Causal Health Audit (5/5 Passed) ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ✔ Targeting Convergence (mean EIF = 1.68e-14): Bias-removal step converged cleanly (targeting shift = +0.0302, epsilon = 0.0750).</span></span>
-<span><span class="co">#&gt; ✔ Comparison Overlap (Positivity) (0.0% clipped | ESS 192 vs 131): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 191.9, control = 130.6).</span></span>
-<span><span class="co">#&gt; ✔ Confounder Balance (max |SMD| 0.331 -&gt; 0.037): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.037, below 0.10).</span></span>
-<span><span class="co">#&gt; ✔ Individual Influence (top obs = 5.2% variance): No single row dominates uncertainty (row 118 holds 5.2% of EIF variance, &lt;= 10%).</span></span>
-<span><span class="co">#&gt; ✔ Model Learning Quality (Q AUC = 0.723 | g AUC = 0.631): Cross-validated Super Learners captured real structure (Q AUC = 0.723, treatment AUC = 0.631).</span></span>
+<span><span class="co">#&gt; ✔ Targeting Convergence (mean EIF = 2.68e-14): Bias-removal step converged cleanly (targeting shift = +0.0277, epsilon = 0.0700).</span></span>
+<span><span class="co">#&gt; ✔ Comparison Overlap (Positivity) (0.0% clipped | ESS 190 vs 134): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 189.7, control = 133.6).</span></span>
+<span><span class="co">#&gt; ✔ Confounder Balance (max |SMD| 0.331 -&gt; 0.025): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.025, below 0.10).</span></span>
+<span><span class="co">#&gt; ✔ Individual Influence (top obs = 2.3% variance): No single row dominates uncertainty (row 118 holds 2.3% of EIF variance, &lt;= 10%).</span></span>
+<span><span class="co">#&gt; ✔ Model Learning Quality (Q AUC = 0.715 | g AUC = 0.617): Cross-validated Super Learners captured real structure (Q AUC = 0.715, treatment AUC = 0.617).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Verdict: Ready for interpretation. Generate paper prose with report_tmle(fit).</span></span>
 <span></span>
@@ -191,9 +192,9 @@
 <span><span class="co">#&gt; # A tibble: 3 × 11</span></span>
 <span><span class="co">#&gt;   estimand term  estimate std.error statistic p.value conf.low conf.high e_value</span></span>
 <span><span class="co">#&gt;   &lt;chr&gt;    &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1 ate      ATE      0.111    0.0516      2.16  0.0307  0.00493     0.218    1.76</span></span>
-<span><span class="co">#&gt; 2 rr       RR       1.34     0.143       2.05  0.0402  0.998       1.80     2.02</span></span>
-<span><span class="co">#&gt; 3 or       OR       1.61     0.225       2.11  0.0347  1.01        2.56     2.60</span></span>
+<span><span class="co">#&gt; 1 ate      ATE      0.108    0.0513      2.11  0.0350 0.000321     0.216    1.75</span></span>
+<span><span class="co">#&gt; 2 rr       RR       1.33     0.142       2.02  0.0438 0.988        1.80     2.00</span></span>
+<span><span class="co">#&gt; 3 or       OR       1.59     0.224       2.07  0.0388 0.992        2.54     2.55</span></span>
 <span><span class="co">#&gt; # ℹ 2 more variables: e_value_ci &lt;dbl&gt;, crit.value &lt;dbl&gt;</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -214,35 +215,35 @@
 <span><span class="co">#&gt; cross-fitted TMLE ('predict, then target'). First, cross-validated ensembles</span></span>
 <span><span class="co">#&gt; estimated each unit's expected clinical recovery under alternative values of</span></span>
 <span><span class="co">#&gt; targeted therapy adjusting for 5 baseline factors (age, sex, lab_1, lab_2,</span></span>
-<span><span class="co">#&gt; lab_3; outcome learners: glmnet (100%), glm (0%), ranger (0%)), alongside</span></span>
-<span><span class="co">#&gt; treatment weights (glm (71%), ranger (19%), glmnet (10%)). Second, a targeted</span></span>
-<span><span class="co">#&gt; logistic calibration step adjusted those initial predictions so residual</span></span>
-<span><span class="co">#&gt; confounding bias on the causal estimand was removed. Standard errors and 95%</span></span>
-<span><span class="co">#&gt; confidence intervals were derived from the sample variance of the Efficient</span></span>
-<span><span class="co">#&gt; Influence Function (EIF).</span></span>
+<span><span class="co">#&gt; lab_3; outcome learners: glmnet (100%), glm (0%), ranger (0%), glmnet_interact</span></span>
+<span><span class="co">#&gt; (0%)), alongside treatment weights (glm (61%), ranger (39%), glmnet (0%)).</span></span>
+<span><span class="co">#&gt; Second, a targeted logistic calibration step adjusted those initial predictions</span></span>
+<span><span class="co">#&gt; so residual confounding bias on the causal estimand was removed. Standard</span></span>
+<span><span class="co">#&gt; errors and 95% confidence intervals were derived from the sample variance of</span></span>
+<span><span class="co">#&gt; the Efficient Influence Function (EIF).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Results </span></span>
 <span><span class="co">#&gt; After confounder adjustment and targeting, targeted therapy shifted clinical</span></span>
-<span><span class="co">#&gt; recovery by +0.1115 (probability scale) (across the full study population</span></span>
-<span><span class="co">#&gt; (ATE); 95% CI [0.0104, 0.2125], p = 0.0307; E-value = 1.76 (CI limit = 1.16));</span></span>
-<span><span class="co">#&gt; and the relative risk ratio (RR) was 1.34 (34.2% higher risk; 95% CI [1.01,</span></span>
-<span><span class="co">#&gt; 1.78], p = 0.0402; E-value = 2.02 (CI limit = 1.13)); and the odds ratio (OR)</span></span>
-<span><span class="co">#&gt; was 1.61 (95% CI [1.03, 2.50], p = 0.0347; E-value = 2.60 (CI limit = 1.22)).</span></span>
+<span><span class="co">#&gt; recovery by +0.1082 (probability scale) (across the full study population</span></span>
+<span><span class="co">#&gt; (ATE); 95% CI [0.0076, 0.2089], p = 0.0350; E-value = 1.75 (CI limit = 1.13));</span></span>
+<span><span class="co">#&gt; and the relative risk ratio (RR) was 1.33 (33.3% higher risk; 95% CI [1.01,</span></span>
+<span><span class="co">#&gt; 1.76], p = 0.0438; E-value = 2.00 (CI limit = 1.10)); and the odds ratio (OR)</span></span>
+<span><span class="co">#&gt; was 1.59 (95% CI [1.02, 2.46], p = 0.0388; E-value = 2.55 (CI limit = 1.18)).</span></span>
 <span><span class="co">#&gt; The targeting calibration step shifted the initial ML plug-in estimate by</span></span>
-<span><span class="co">#&gt; +0.0302 (fluctuation epsilon = 0.0750) and satisfied the EIF score equation</span></span>
-<span><span class="co">#&gt; (mean EIF = 1.68e-14). Inverse-propensity weighting reduced maximum covariate</span></span>
-<span><span class="co">#&gt; standardized mean imbalance from 0.331 to 0.037. Positivity truncation affected</span></span>
+<span><span class="co">#&gt; +0.0277 (fluctuation epsilon = 0.0700) and satisfied the EIF score equation</span></span>
+<span><span class="co">#&gt; (mean EIF = 2.68e-14). Inverse-propensity weighting reduced maximum covariate</span></span>
+<span><span class="co">#&gt; standardized mean imbalance from 0.331 to 0.025. Positivity truncation affected</span></span>
 <span><span class="co">#&gt; 0.0% of observations, with maximum single-observation EIF variance leverage of</span></span>
-<span><span class="co">#&gt; 5.2%.</span></span>
+<span><span class="co">#&gt; 2.3%.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Assumptions &amp; Diagnostics </span></span>
 <span><span class="co">#&gt; 1. **No unmeasured confounding:** Valid causal interpretation assumes all joint</span></span>
 <span><span class="co">#&gt; causes of targeted therapy and clinical recovery are captured in W. For the</span></span>
 <span><span class="co">#&gt; primary estimand (ATE), an unmeasured confounder would need a risk-ratio</span></span>
-<span><span class="co">#&gt; association of at least 1.76 with both treatment and outcome (beyond measured</span></span>
+<span><span class="co">#&gt; association of at least 1.75 with both treatment and outcome (beyond measured</span></span>
 <span><span class="co">#&gt; covariates) to explain away the point estimate.</span></span>
 <span><span class="co">#&gt; 2. **Positivity (real-world overlap):** Only 0.0% of observations hit bounds</span></span>
-<span><span class="co">#&gt; [0.046, 0.954] (effective sample sizes: treated = 191.9, control = 130.6).</span></span>
+<span><span class="co">#&gt; [0.046, 0.954] (effective sample sizes: treated = 189.7, control = 133.6).</span></span>
 <span><span class="co">#&gt; 3. **Consistency &amp; interference:** Each unit's observed outcome matches its</span></span>
 <span><span class="co">#&gt; potential outcome under the received targeted therapy level without cross-unit</span></span>
 <span><span class="co">#&gt; spillover.</span></span>
@@ -312,10 +313,27 @@
 <p>For a full worked visual walkthrough—including a live test of <strong>both safety nets (double robustness)</strong>—read <a href="articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a> (<code><a href="articles/tmle-intuition.html">vignette("tmle-intuition", package = "tidytmle")</a></code>).</p>
 </div>
 <div class="section level2">
+<h2 id="validated-against-reference-causal-inference-packages">Validated Against Reference Causal Inference Packages<a class="anchor" aria-label="anchor" href="#validated-against-reference-causal-inference-packages"></a>
+</h2>
+<p><code>tidytmle</code> has been benchmarked head-to-head against CRAN’s <strong><code>tmle</code></strong> (<code>v2.1.1</code>), <strong><code>AIPW</code></strong> (<code>v0.6.9.3</code>), and <strong><code>lmtp</code></strong> (<code>v1.5.4</code>) across eight synthetic and canonical real-world studies:</p>
+<ul>
+<li>
+<strong>Machine-Precision Fixed-Nuisance Parity:</strong> Matches <code>tmle::tmle(..., target.gwt = TRUE)</code> to <code>0</code>–<code>1.15e-14</code> (<code>fluctuation = "logistic"</code>) and <code>target.gwt = FALSE</code> to <code>3.3e-16</code>–<code>3.5e-9</code> (<code>fluctuation = "logistic_covariate"</code>) with identical standard errors.</li>
+<li>
+<strong>Kang &amp; Schafer (2007) Double Robustness:</strong> Weighted logistic fluctuation achieves <strong>8.1× lower RMSE</strong> (<code>0.140</code> vs. <code>1.143</code>) than default covariate fluctuation when the outcome model is misspecified, and outer-fold Super Learning cuts runtime <strong>2.9×–5.5×</strong>.</li>
+<li>
+<strong>Heterogeneity, Missingness &amp; Continuous Policies:</strong> Beats <code>tmle</code> and <code>AIPW</code> on <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>=</mo><mn>20</mn></mrow><annotation encoding="application/x-tex">p = 20</annotation></semantics></math> heterogeneous confounding (<code>RMSE 0.259</code> vs. <code>0.561</code> / <code>0.377</code> plus <code><a href="reference/fit_cate.html">fit_cate()</a></code>), informative MAR dropout (<code>bias -0.049</code> vs. <code>-0.211</code>), and continuous <code><a href="reference/shift.html">shift()</a></code> / <code><a href="reference/shift.html">scale_tx()</a></code> policies vs. <code>lmtp</code>—with <strong>2.2×–12.4× faster</strong> single-core runtimes on most benchmarks (MAR censoring was the exception at 1.3× slower than <code>tmle</code>).</li>
+<li>
+<strong>Real-World Audits (<code>NHEFS</code> &amp; <code>LaLonde</code>):</strong> Automatically recovers <code>+3.41 kg</code> on <code>NHEFS</code> (<code>10.6 s</code> vs. <code>44.5 s</code> <code>tmle</code> / <code>79.0 s</code> <code>AIPW</code>). On the non-experimental <code>LaLonde NSW+CPS</code> cohort, where black-box ATE estimators explode to <code>+$12,352</code> (<code>tmle</code>) or <code>-$6,722</code> (<code>AIPW</code>), <code><a href="reference/check_tmle.html">check_tmle()</a></code> flags severe non-overlap (<code>fail</code>) and <code>retarget(fit, estimand = "att")</code> recovers <strong><code>+$1,323</code></strong> in <code>55 ms</code> (vs. <code>+$1,794</code> experimental RCT benchmark).</li>
+</ul>
+<p>Read the full quantitative breakdown in <a href="articles/benchmarks-and-validation.html">Benchmarks, Double Robustness &amp; Validation</a>.</p>
+</div>
+<div class="section level2">
 <h2 id="foundational-literature">Foundational Literature<a class="anchor" aria-label="anchor" href="#foundational-literature"></a>
 </h2>
 <ul>
 <li>van der Laan, M. J., &amp; Rubin, D. (2006). Targeted maximum likelihood learning. <em>Int. J. Biostat.</em>, 2(1).</li>
+<li>Kang, J. D. Y., &amp; Schafer, J. L. (2007). Demystifying double robustness: A comparison of alternative strategies for estimating a population mean from incomplete data. <em>Stat. Sci.</em>, 22(4), 523–539.</li>
 <li>Gruber, S., &amp; van der Laan, M. J. (2010). A targeted maximum likelihood estimator of a causal effect on a bounded continuous outcome. <em>Int. J. Biostat.</em>, 6(1).</li>
 <li>Zheng, W., &amp; van der Laan, M. J. (2011). Cross-validated targeted minimum-loss-based estimation. <em>Targeted Learning</em>, Springer.</li>
 <li>Petersen, M. L., et al. (2012). Diagnosing and responding to violations in the positivity assumption. <em>Stat. Methods Med. Res.</em>, 21(1), 31–54.</li>
@@ -324,6 +342,7 @@
 <li>Luque-Fernandez, M. A., et al. (2018). Targeted maximum likelihood estimation for a binary treatment: A tutorial. <em>Stat. Med.</em>, 37(16), 2530–2546.</li>
 <li>Díaz, I., Williams, N., Hoffman, K. L., &amp; Schenck, E. J. (2021). Nonparametric causal effects based on longitudinal modified treatment policies. <em>JASA</em>, 118(542), 846–857.</li>
 <li>Kennedy, E. H. (2023). Towards optimal doubly robust estimation of heterogeneous causal effects. <em>Electron. J. Stat.</em>, 17(2), 3008–3049.</li>
+<li>Phillips, R. V., et al. (2023). Practical considerations for specifying a super learner. <em>Int. J. Epidemiol.</em>, 52(4), 1276–1285.</li>
 </ul>
 </div>
 <div class="section level2">

@@ -124,6 +124,23 @@ fit_cate <- function(fit,
     }
   })
 
+  if ((identical(learners, "default") || is.null(learners)) &&
+      nrow(cate_df) >= 60L &&
+      requireNamespace("glmnet", quietly = TRUE)) {
+    cont_v <- detect_smooth_covariates(cate_df, v_cols)
+    if (length(cont_v) > 0L) {
+      rec_cate_sp <- rec_cate |>
+        recipes::step_ns(!!!rlang::syms(cont_v), deg_free = 3L) |>
+        recipes::step_zv(recipes::all_predictors())
+      wfs$glmnet_spline <- workflows::workflow() |>
+        workflows::add_model(
+          parsnip::linear_reg(penalty = 0.02, mixture = 0.5) |>
+            parsnip::set_engine("glmnet")
+        ) |>
+        workflows::add_recipe(rec_cate_sp)
+    }
+  }
+
   splits <- rsample::vfold_cv(cate_df, v = min(as.integer(v_folds), nrow(cate_df)))$splits
   sl_cate <- fit_cv_super_learner(
     workflows_list = wfs,

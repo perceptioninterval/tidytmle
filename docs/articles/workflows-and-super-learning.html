@@ -12,9 +12,9 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.5.0/font.css" rel="stylesheet">
+<link href="../deps/Source_Code_Pro-0.5.0/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Composing Workflows, Recipes, and Guardrails">
@@ -46,6 +46,7 @@
     <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
+    <li><a class="dropdown-item" href="../articles/benchmarks-and-validation.html">Benchmarks, Double Robustness &amp; Validation Against Existing TMLE Packages</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -155,7 +156,7 @@ predictors:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (280 observed) | 5-fold CV-TMLE | logistic calibration | 2.33s</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (280 observed) | 5-fold CV-TMLE | logistic calibration | 3.33s</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">| 15 clusters</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Effect Estimates </span></span>
@@ -210,11 +211,11 @@ through both nuisance workflows and cluster-robust standard errors:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Causal Health Audit (5/5 Passed)</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = -2.54e-16): Bias-removal step converged cleanly (targeting shift = +0.1437, epsilon = 0.0215).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Comparison Overlap (Positivity)</span> (0.0% clipped | ESS 123 vs 127): 0.0% of propensity scores hit bounds [0.150, 0.850] (ESS: treated = 122.6, control = 126.9).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Confounder Balance</span> (max |SMD| 0.421 -&gt; 0.069): Weighted confounders are well balanced (max |SMD| fell from 0.421 to 0.069, below 0.10).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 4.1% variance): No single row dominates uncertainty (row 235 holds 4.1% of EIF variance, &lt;= 10%).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q R2 = 0.700 | g AUC = 0.614): Cross-validated Super Learners captured real structure (Q R2 = 0.700, treatment AUC = 0.614).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = -2.20e-16): Bias-removal step converged cleanly (targeting shift = -0.0368, epsilon = -0.0094).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Comparison Overlap (Positivity)</span> (0.0% clipped | ESS 123 vs 128): 0.0% of propensity scores hit bounds [0.150, 0.850] (ESS: treated = 122.7, control = 128.0).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Confounder Balance</span> (max |SMD| 0.421 -&gt; 0.067): Weighted confounders are well balanced (max |SMD| fell from 0.421 to 0.067, below 0.10).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 6.7% variance): No single row dominates uncertainty (row 235 holds 6.7% of EIF variance, &lt;= 10%).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q R2 = 0.753 | g AUC = 0.611): Cross-validated Super Learners captured real structure (Q R2 = 0.753, treatment AUC = 0.611).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Verdict: Ready for interpretation. Generate paper prose with</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">report_tmle(fit).</span></span></span>

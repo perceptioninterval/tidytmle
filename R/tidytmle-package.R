@@ -29,7 +29,7 @@ utils::globalVariables(c(
   ".estimate", ".estimator", ".metric", ".pred", "arm", "benefit_group",
   "cate_val", "conf.high", "conf.low", "covariate", "cum_gain", "curve",
   "density", "direct_lbl", "eif", "estimand", "estimate", "flag", "fold",
-  "frac", "g", "gain", "group", "h_mag", "is_outlier", "label_human",
+  "frac", "g", "gain", "group", "h_mag", "is_obs_contrast", "is_outlier", "label_human",
   "learner", "leverage", "mean", "metric_type", "null_ref", "nuisance",
   "nuisance_order", "obs_id", "pct_truncated", "plugin_est", "random_gain",
   "role_fill", "row_panel", "scale_group", "smd", "smd_raw", "smd_wt",

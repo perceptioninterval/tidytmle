@@ -12,9 +12,9 @@
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.5.0/font.css" rel="stylesheet">
+<link href="../deps/Source_Code_Pro-0.5.0/font.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Get started with tidytmle">
@@ -46,6 +46,7 @@
     <li><a class="dropdown-item" href="../articles/tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual Guide</a></li>
     <li><a class="dropdown-item" href="../articles/workflows-and-super-learning.html">Composing Workflows, Recipes, and Guardrails</a></li>
     <li><a class="dropdown-item" href="../articles/lmtp-and-cate.html">Modified Treatment Policies &amp; DR-Learner CATE</a></li>
+    <li><a class="dropdown-item" href="../articles/benchmarks-and-validation.html">Benchmarks, Double Robustness &amp; Validation Against Existing TMLE Packages</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -87,7 +88,10 @@ Audit
 Paper</strong>.</p>
 <p>If you want to understand <em>why</em> this two-step estimator
 outperforms regression alone or weighting alone, start with <a href="tmle-intuition.html">TMLE Intuition: A Step-by-Step Visual
-Guide</a>.</p>
+Guide</a>. To inspect cross-package numerical parity, Kang–Schafer
+double-robustness benchmarks, and real-world validations against
+<code>tmle</code>, <code>AIPW</code>, and <code>lmtp</code>, see <a href="benchmarks-and-validation.html">Benchmarks, Double Robustness
+&amp; Validation</a>.</p>
 <div class="section level2">
 <h2 id="step-1-ask-your-question-fit-safe-defaults">Step 1 · Ask Your Question &amp; Fit Safe Defaults<a class="anchor" aria-label="anchor" href="#step-1-ask-your-question-fit-safe-defaults"></a>
 </h2>
@@ -104,7 +108,7 @@ bounds, and bounded logistic calibration turn on automatically:</p>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tmle_spec.html">tmle_spec</a></span><span class="op">(</span></span>
 <span>  outcome    <span class="op">=</span> <span class="va">y</span>,</span>
 <span>  treatment  <span class="op">=</span> <span class="va">a</span>,</span>
-<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu">starts_with</span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="va">sex</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">starts_with</a></span><span class="op">(</span><span class="st">"lab_"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  estimand   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ate"</span>, <span class="st">"rr"</span>, <span class="st">"or"</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/set_resamples.html">set_resamples</a></span><span class="op">(</span>v_folds <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -114,20 +118,20 @@ bounds, and bounded logistic calibration turn on automatically:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (350 observed) | 5-fold CV-TMLE | logistic calibration | 2.08s</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (350 observed) | 5-fold CV-TMLE | logistic calibration | 3.25s</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Effect Estimates </span></span>
-<span><span class="co">#&gt; ATE est = 0.0985 (SE = 0.0515) 95% CI [-0.0024, 0.1993] p = 0.0558</span></span>
-<span><span class="co">#&gt; RR est = 1.2946 (log-SE = 0.1407) 95% CI [0.9826, 1.7057] p = 0.0665</span></span>
-<span><span class="co">#&gt; OR est = 1.5192 (log-SE = 0.2227) 95% CI [0.9820, 2.3505] p = 0.0603</span></span>
+<span><span class="co">#&gt; ATE est = 0.0974 (SE = 0.0514) 95% CI [-0.0035, 0.1982] p = 0.0584</span></span>
+<span><span class="co">#&gt; RR est = 1.2908 (log-SE = 0.1404) 95% CI [0.9802, 1.6997] p = 0.0691</span></span>
+<span><span class="co">#&gt; OR est = 1.5121 (log-SE = 0.2224) 95% CI [0.9779, 2.3380] p = 0.0630</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Nuisance Models (Cross-Validated Super Learner) </span></span>
-<span><span class="co">#&gt; Outcome (Q): AUC = 0.714 (weights: glmnet 99%, ranger 1%)</span></span>
-<span><span class="co">#&gt; Treatment (g): AUC = 0.627 (weights: glm 80%, ranger 15%, glmnet 5%)</span></span>
+<span><span class="co">#&gt; Outcome (Q): AUC = 0.714 (weights: glmnet 100%)</span></span>
+<span><span class="co">#&gt; Treatment (g): AUC = 0.626 (weights: glm 82%, ranger 18%)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Health &amp; Bias Adjustment </span></span>
-<span><span class="co">#&gt; Bias calibration (TMLE - initial ML): +0.0171 (epsilon = 0.0435)</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All core checks healthy: mean EIF = 5.03e-14, clipped = 0.0%, top leverage = 4.3%.</span></span>
+<span><span class="co">#&gt; Bias calibration (TMLE - initial ML): +0.0157 (epsilon = 0.0401)</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> All core checks healthy: mean EIF = 5.08e-14, clipped = 0.0%, top leverage = 4.0%.</span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Next: summary(fit) | check_tmle(fit) | report_tmle(fit) |</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">autoplot(fit)</span></span></span></code></pre></div>
 <p>Visualize the causal conclusions right away with
@@ -153,19 +157,19 @@ sensitivity E-values:</p>
 <span><span class="co">#&gt; TMLE</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── 1. What the Causal Estimates Mean </span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> ATE (across the full study population): Treatment increases the expected outcome by 0.0985 units (95% CI [-0.0024, 0.1993], p = 0.0558).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> RR: Treatment corresponds to a 1.29x risk ratio (29.5% higher risk; 95% CI [0.98, 1.71], p = 0.0665).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> OR: Treatment corresponds to an odds ratio of 1.52 (95% CI [0.98, 2.35], p = 0.0603).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> ATE (across the full study population): Treatment increases the expected outcome by 0.0974 units (95% CI [-0.0035, 0.1982], p = 0.0584).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> RR: Treatment corresponds to a 1.29x risk ratio (29.1% higher risk; 95% CI [0.98, 1.70], p = 0.0691).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BBBB;">ℹ</span> OR: Treatment corresponds to an odds ratio of 1.51 (95% CI [0.98, 2.34], p = 0.0630).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── 2. What the Targeting Step Did ("Predict, Then Target") </span></span>
-<span><span class="co">#&gt; Targeting nudged the initial ML plug-in predictions by +0.0171</span></span>
-<span><span class="co">#&gt; (epsilon = 0.0435) to zero out residual confounding bias.</span></span>
+<span><span class="co">#&gt; Targeting nudged the initial ML plug-in predictions by +0.0157</span></span>
+<span><span class="co">#&gt; (epsilon = 0.0401) to zero out residual confounding bias.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── 3. Can I Trust These Numbers? (Health Check &amp; Next Steps) </span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Convergence: Bias-removal score equation solved (mean EIF = 5.03e-14).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Comparison overlap: 0.0% clipped at [0.046, 0.954] (effective n: 191.4 treated, 135.4 control).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Confounder balance: Max standardized difference fell from 0.331 to 0.017 (well below 0.10).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Uncertainty stability: No single person dominates SEs (top observation share = 4.3%).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Convergence: Bias-removal score equation solved (mean EIF = 5.08e-14).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Comparison overlap: 0.0% clipped at [0.046, 0.954] (effective n: 191.2 treated, 135.8 control).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Confounder balance: Max standardized difference fell from 0.331 to 0.015 (well below 0.10).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> Uncertainty stability: No single person dominates SEs (top observation share = 4.0%).</span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Next steps: report_tmle(fit) for paper-ready prose | autoplot(fit,</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">type = 'dashboard') for visual audit.</span></span></span>
 <span></span>
@@ -174,38 +178,39 @@ sensitivity E-values:</p>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 11</span></span></span>
 <span><span class="co">#&gt;   estimand term  estimate std.error statistic p.value conf.low</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ate      ATE     0.098<span style="text-decoration: underline;">5</span>    0.051<span style="text-decoration: underline;">5</span>      1.91  0.055<span style="text-decoration: underline;">8</span> -<span style="color: #BB0000;">0.008</span><span style="color: #BB0000; text-decoration: underline;">89</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rr       RR      1.29      0.141       1.84  0.066<span style="text-decoration: underline;">5</span>  0.965  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> or       OR      1.52      0.223       1.88  0.060<span style="text-decoration: underline;">3</span>  0.955  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ate      ATE     0.097<span style="text-decoration: underline;">4</span>    0.051<span style="text-decoration: underline;">4</span>      1.89  0.058<span style="text-decoration: underline;">4</span> -<span style="color: #BB0000;">0.009</span><span style="color: #BB0000; text-decoration: underline;">86</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> rr       RR      1.29      0.140       1.82  0.069<span style="text-decoration: underline;">1</span>  0.963  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> or       OR      1.51      0.222       1.86  0.063<span style="text-decoration: underline;">0</span>  0.951  </span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4 more variables: conf.high &lt;dbl&gt;, e_value &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   e_value_ci &lt;dbl&gt;, crit.value &lt;dbl&gt;</span></span></span>
 <span></span>
 <span><span class="co"># Cross-validated nuisance performance &amp; Super Learner ensemble weights</span></span>
 <span><span class="fu"><a href="https://tune.tidymodels.org/reference/collect_predictions.html" class="external-link">collect_metrics</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 24 × 7</span></span></span>
-<span><span class="co">#&gt;    nuisance learner      .metric     .estimator  mean     n std_err</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Q        SuperLearner brier_class binary     0.208     5  0.010<span style="text-decoration: underline;">7</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Q        SuperLearner mn_log_loss binary     0.603     5  0.025<span style="text-decoration: underline;">4</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Q        SuperLearner roc_auc     binary     0.714     5  0.034<span style="text-decoration: underline;">1</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Q        glm          brier_class binary     0.209     5  0.011<span style="text-decoration: underline;">8</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Q        glm          mn_log_loss binary     0.606     5  0.028<span style="text-decoration: underline;">9</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Q        glm          roc_auc     binary     0.713     5  0.033<span style="text-decoration: underline;">5</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Q        glmnet       brier_class binary     0.208     5  0.010<span style="text-decoration: underline;">7</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Q        glmnet       mn_log_loss binary     0.603     5  0.025<span style="text-decoration: underline;">4</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Q        glmnet       roc_auc     binary     0.714     5  0.034<span style="text-decoration: underline;">7</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Q        ranger       brier_class binary     0.218     5  0.011<span style="text-decoration: underline;">3</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 14 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 27 × 7</span></span></span>
+<span><span class="co">#&gt;    nuisance learner         .metric     .estimator  mean     n std_err</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Q        SuperLearner    brier_class binary     0.208     5  0.010<span style="text-decoration: underline;">7</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Q        SuperLearner    mn_log_loss binary     0.603     5  0.025<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Q        SuperLearner    roc_auc     binary     0.714     5  0.034<span style="text-decoration: underline;">7</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Q        glm             brier_class binary     0.209     5  0.011<span style="text-decoration: underline;">8</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Q        glm             mn_log_loss binary     0.606     5  0.028<span style="text-decoration: underline;">9</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Q        glm             roc_auc     binary     0.713     5  0.033<span style="text-decoration: underline;">5</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Q        glmnet          brier_class binary     0.208     5  0.010<span style="text-decoration: underline;">7</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Q        glmnet          mn_log_loss binary     0.603     5  0.025<span style="text-decoration: underline;">4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Q        glmnet          roc_auc     binary     0.714     5  0.034<span style="text-decoration: underline;">7</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Q        glmnet_interact brier_class binary     0.209     5  0.010<span style="text-decoration: underline;">0</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 17 more rows</span></span></span>
 <span><span class="fu"><a href="../reference/extract_sl_weights.html">extract_sl_weights</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 3</span></span></span>
-<span><span class="co">#&gt;   nuisance learner  weight</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Q        glm     0      </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Q        glmnet  0.991  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Q        ranger  0.009<span style="text-decoration: underline;">28</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> g        glm     0.800  </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> g        glmnet  0.045<span style="text-decoration: underline;">4</span> </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> g        ranger  0.154</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 7 × 3</span></span></span>
+<span><span class="co">#&gt;   nuisance learner         weight</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> Q        glm              0    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Q        glmnet           1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> Q        ranger           0    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> Q        glmnet_interact  0    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> g        glm              0.821</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> g        glmnet           0    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> g        ranger           0.179</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-3-audit-causal-health-stress-test-instantly">Step 3 · Audit Causal Health &amp; Stress-Test Instantly<a class="anchor" aria-label="anchor" href="#step-3-audit-causal-health-stress-test-instantly"></a>
@@ -221,11 +226,11 @@ Influence</em>, and <em>Model Learning Quality</em>), inspect the
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Causal Health Audit (5/5 Passed)</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = 5.03e-14): Bias-removal step converged cleanly (targeting shift = +0.0171, epsilon = 0.0435).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Comparison Overlap (Positivity)</span> (0.0% clipped | ESS 191 vs 135): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 191.4, control = 135.4).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Confounder Balance</span> (max |SMD| 0.331 -&gt; 0.017): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.017, below 0.10).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 4.3% variance): No single row dominates uncertainty (row 118 holds 4.3% of EIF variance, &lt;= 10%).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q AUC = 0.714 | g AUC = 0.627): Cross-validated Super Learners captured real structure (Q AUC = 0.714, treatment AUC = 0.627).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = 5.08e-14): Bias-removal step converged cleanly (targeting shift = +0.0157, epsilon = 0.0401).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Comparison Overlap (Positivity)</span> (0.0% clipped | ESS 191 vs 136): 0.0% of propensity scores hit bounds [0.046, 0.954] (ESS: treated = 191.2, control = 135.8).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Confounder Balance</span> (max |SMD| 0.331 -&gt; 0.015): Weighted confounders are well balanced (max |SMD| fell from 0.331 to 0.015, below 0.10).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 4.0% variance): No single row dominates uncertainty (row 118 holds 4.0% of EIF variance, &lt;= 10%).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q AUC = 0.714 | g AUC = 0.626): Cross-validated Super Learners captured real structure (Q AUC = 0.714, treatment AUC = 0.626).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">Verdict: Ready for interpretation. Generate paper prose with</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">report_tmle(fit).</span></span></span>
@@ -253,16 +258,16 @@ Influence</em>, and <em>Model Learning Quality</em>), inspect the
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 10 × 6</span></span></span>
 <span><span class="co">#&gt;    scenario              estimand estimate std.error conf.low conf.high</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Adaptive bounds (All) ate        0.098<span style="text-decoration: underline;">5</span>    0.051<span style="text-decoration: underline;">5</span> -<span style="color: #BB0000;">0.002</span><span style="color: #BB0000; text-decoration: underline;">44</span>     0.199</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Adaptive bounds (All) rr         1.29      0.141   0.983       1.71 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Adaptive bounds (All) or         1.52      0.223   0.982       2.35 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Strict bounds [5%, 9… ate        0.098<span style="text-decoration: underline;">5</span>    0.051<span style="text-decoration: underline;">5</span> -<span style="color: #BB0000;">0.002</span><span style="color: #BB0000; text-decoration: underline;">44</span>     0.199</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Strict bounds [5%, 9… rr         1.29      0.141   0.983       1.71 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Strict bounds [5%, 9… or         1.52      0.223   0.982       2.35 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Among treated (ATT)   att        0.104     0.054<span style="text-decoration: underline;">2</span> -<span style="color: #BB0000;">0.001</span><span style="color: #BB0000; text-decoration: underline;">80</span>     0.211</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Subgroup age &gt;= 55    ate        0.188     0.080<span style="text-decoration: underline;">4</span>  0.030<span style="text-decoration: underline;">2</span>      0.345</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Subgroup age &gt;= 55    rr         1.48      0.185   1.03        2.13 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Subgroup age &gt;= 55    or         2.14      0.335   1.11        4.13</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Adaptive bounds (All) ate        0.097<span style="text-decoration: underline;">4</span>    0.051<span style="text-decoration: underline;">4</span> -<span style="color: #BB0000;">0.003</span><span style="color: #BB0000; text-decoration: underline;">46</span>     0.198</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Adaptive bounds (All) rr         1.29      0.140   0.980       1.70 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Adaptive bounds (All) or         1.51      0.222   0.978       2.34 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Strict bounds [5%, 9… ate        0.097<span style="text-decoration: underline;">4</span>    0.051<span style="text-decoration: underline;">4</span> -<span style="color: #BB0000;">0.003</span><span style="color: #BB0000; text-decoration: underline;">46</span>     0.198</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Strict bounds [5%, 9… rr         1.29      0.140   0.980       1.70 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Strict bounds [5%, 9… or         1.51      0.222   0.978       2.34 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Among treated (ATT)   att        0.103     0.054<span style="text-decoration: underline;">1</span> -<span style="color: #BB0000;">0.002</span><span style="color: #BB0000; text-decoration: underline;">56</span>     0.209</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Subgroup age &gt;= 55    ate        0.188     0.080<span style="text-decoration: underline;">2</span>  0.030<span style="text-decoration: underline;">6</span>      0.345</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Subgroup age &gt;= 55    rr         1.48      0.185   1.03        2.12 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Subgroup age &gt;= 55    or         2.14      0.334   1.11        4.12</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-4-generate-paper--blog-ready-prose">Step 4 · Generate Paper- &amp; Blog-Ready Prose<a class="anchor" aria-label="anchor" href="#step-4-generate-paper--blog-ready-prose"></a>
@@ -290,31 +295,32 @@ models, bounds, and diagnostics in your fit
 <span><span class="co">#&gt; cross-fitted Targeted Maximum Likelihood Estimation (CV-TMLE; van der</span></span>
 <span><span class="co">#&gt; Laan &amp; Rubin, 2006; Zheng &amp; van der Laan, 2011). Initial conditional</span></span>
 <span><span class="co">#&gt; expectations E[clinical recovery | targeted therapy, W] were fit with</span></span>
-<span><span class="co">#&gt; a cross-validated Super Learner ensemble combining [glmnet (99%),</span></span>
-<span><span class="co">#&gt; ranger (1%), glm (0%)]. The treatment propensity mechanism g(W) =</span></span>
-<span><span class="co">#&gt; P(targeted therapy = 1 | W) was estimated with [glm (80%), ranger</span></span>
-<span><span class="co">#&gt; (15%), glmnet (5%)] and bounded using adaptive sample-size-aware</span></span>
-<span><span class="co">#&gt; positivity bounds [0.046, 0.954] (Petersen et al., 2012). Outcome</span></span>
-<span><span class="co">#&gt; measurements were complete across all analyzed observations. Standard</span></span>
-<span><span class="co">#&gt; errors and 95% confidence intervals were derived from the sample</span></span>
-<span><span class="co">#&gt; variance of the Efficient Influence Function (EIF). Sensitivity to</span></span>
-<span><span class="co">#&gt; potential unmeasured confounding was quantified on the risk-ratio</span></span>
-<span><span class="co">#&gt; scale using VanderWeele-Ding E-values (VanderWeele &amp; Ding, 2017).</span></span>
+<span><span class="co">#&gt; a cross-validated Super Learner ensemble combining [glmnet (100%), glm</span></span>
+<span><span class="co">#&gt; (0%), ranger (0%), glmnet_interact (0%)]. The treatment propensity</span></span>
+<span><span class="co">#&gt; mechanism g(W) = P(targeted therapy = 1 | W) was estimated with [glm</span></span>
+<span><span class="co">#&gt; (82%), ranger (18%), glmnet (0%)] and bounded using adaptive</span></span>
+<span><span class="co">#&gt; sample-size-aware positivity bounds [0.046, 0.954] (Petersen et al.,</span></span>
+<span><span class="co">#&gt; 2012). Outcome measurements were complete across all analyzed</span></span>
+<span><span class="co">#&gt; observations. Standard errors and 95% confidence intervals were</span></span>
+<span><span class="co">#&gt; derived from the sample variance of the Efficient Influence Function</span></span>
+<span><span class="co">#&gt; (EIF). Sensitivity to potential unmeasured confounding was quantified</span></span>
+<span><span class="co">#&gt; on the risk-ratio scale using VanderWeele-Ding E-values (VanderWeele &amp;</span></span>
+<span><span class="co">#&gt; Ding, 2017).</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Results </span></span>
 <span><span class="co">#&gt; After confounder adjustment and targeting, targeted therapy shifted</span></span>
-<span><span class="co">#&gt; clinical recovery by +0.0985 (probability scale) (across the full</span></span>
-<span><span class="co">#&gt; study population (ATE); 95% CI [-0.0024, 0.1993], p = 0.0558; E-value</span></span>
+<span><span class="co">#&gt; clinical recovery by +0.0974 (probability scale) (across the full</span></span>
+<span><span class="co">#&gt; study population (ATE); 95% CI [-0.0035, 0.1982], p = 0.0584; E-value</span></span>
 <span><span class="co">#&gt; = 1.69 (CI limit = 1.00)); and the relative risk ratio (RR) was 1.29</span></span>
-<span><span class="co">#&gt; (29.5% higher risk; 95% CI [0.98, 1.71], p = 0.0665; E-value = 1.91</span></span>
-<span><span class="co">#&gt; (CI limit = 1.00)); and the odds ratio (OR) was 1.52 (95% CI [0.98,</span></span>
-<span><span class="co">#&gt; 2.35], p = 0.0603; E-value = 2.41 (CI limit = 1.00)). The targeting</span></span>
-<span><span class="co">#&gt; calibration step shifted the initial ML plug-in estimate by +0.0171</span></span>
-<span><span class="co">#&gt; (fluctuation epsilon = 0.0435) and satisfied the EIF score equation</span></span>
-<span><span class="co">#&gt; (mean EIF = 5.03e-14). Inverse-propensity weighting reduced maximum</span></span>
-<span><span class="co">#&gt; covariate standardized mean imbalance from 0.331 to 0.017. Positivity</span></span>
+<span><span class="co">#&gt; (29.1% higher risk; 95% CI [0.98, 1.70], p = 0.0691; E-value = 1.90</span></span>
+<span><span class="co">#&gt; (CI limit = 1.00)); and the odds ratio (OR) was 1.51 (95% CI [0.98,</span></span>
+<span><span class="co">#&gt; 2.34], p = 0.0630; E-value = 2.39 (CI limit = 1.00)). The targeting</span></span>
+<span><span class="co">#&gt; calibration step shifted the initial ML plug-in estimate by +0.0157</span></span>
+<span><span class="co">#&gt; (fluctuation epsilon = 0.0401) and satisfied the EIF score equation</span></span>
+<span><span class="co">#&gt; (mean EIF = 5.08e-14). Inverse-propensity weighting reduced maximum</span></span>
+<span><span class="co">#&gt; covariate standardized mean imbalance from 0.331 to 0.015. Positivity</span></span>
 <span><span class="co">#&gt; truncation affected 0.0% of observations, with maximum</span></span>
-<span><span class="co">#&gt; single-observation EIF variance leverage of 4.3%.</span></span>
+<span><span class="co">#&gt; single-observation EIF variance leverage of 4.0%.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Assumptions &amp; Diagnostics </span></span>
 <span><span class="co">#&gt; 1. **No unmeasured confounding:** Valid causal interpretation assumes</span></span>
@@ -324,8 +330,8 @@ models, bounds, and diagnostics in your fit
 <span><span class="co">#&gt; both treatment and outcome (beyond measured covariates) to explain</span></span>
 <span><span class="co">#&gt; away the point estimate.</span></span>
 <span><span class="co">#&gt; 2. **Positivity (real-world overlap):** Only 0.0% of observations hit</span></span>
-<span><span class="co">#&gt; bounds [0.046, 0.954] (effective sample sizes: treated = 191.4,</span></span>
-<span><span class="co">#&gt; control = 135.4).</span></span>
+<span><span class="co">#&gt; bounds [0.046, 0.954] (effective sample sizes: treated = 191.2,</span></span>
+<span><span class="co">#&gt; control = 135.8).</span></span>
 <span><span class="co">#&gt; 3. **Consistency &amp; interference:** Each unit's observed outcome</span></span>
 <span><span class="co">#&gt; matches its potential outcome under the received targeted therapy</span></span>
 <span><span class="co">#&gt; level without cross-unit spillover.</span></span>

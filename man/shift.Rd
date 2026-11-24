@@ -5,13 +5,18 @@
 \alias{scale_tx}
 \title{Modified Treatment Policy Constructors for Continuous Exposures}
 \usage{
-shift(delta)
+shift(delta, contrast = c("none", "observed"))
 
-scale_tx(factor)
+scale_tx(factor, contrast = c("none", "observed"))
 }
 \arguments{
 \item{delta}{Numeric scalar specifying the additive shift applied to observed
 treatment values.}
+
+\item{contrast}{Optional causal contrast mode: \code{"none"} (default; estimates the
+expected counterfactual outcome \eqn{E[Y(d(A, W))]} under the policy) or
+\code{"observed"} (estimates the policy contrast relative to status quo
+\eqn{E[Y(d(A, W)) - Y]} using the joint Efficient Influence Function).}
 
 \item{factor}{Strictly positive numeric scalar specifying the multiplicative
 scaling factor applied to observed treatment values.}
