@@ -102,8 +102,25 @@ individual shifts: additive policies
 (<code><a href="../reference/shift.html">shift()</a></code>) or multiplicative reductions
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>a</mi><mo>⋅</mo><mtext mathvariant="normal">factor</mtext></mrow><annotation encoding="application/x-tex">d(a, w) = a \cdot \text{factor}</annotation></semantics></math>
 (<code><a href="../reference/shift.html">scale_tx()</a></code>). Internally, <code>tidytmle</code> estimates
-the induced density ratio nonparametrically using stacked
-cross-validated classification without assuming normality:</p>
+the induced density ratio
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>r</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mi>g</mi><mi>d</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>∣</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>∣</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">r(a, w) = g_d(a \mid w) / g(a \mid w)</annotation></semantics></math>
+nonparametrically via stacked cross-validated classification without
+assuming normality.</p>
+<blockquote>
+<p><strong>Policy Positivity (Common Support):</strong> Valid estimation
+requires that shifted exposure levels remain observable under real-world
+practice—formally,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>∣</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">g(a \mid w) &gt; 0</annotation></semantics></math>
+whenever
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>g</mi><mi>d</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>∣</mo><mi>w</mi><mo stretchy="false" form="postfix">)</mo><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">g_d(a \mid w) &gt; 0</annotation></semantics></math>
+so the density ratio stays bounded (checkable via
+<code><a href="../reference/check_tmle.html">check_tmle()</a></code> and
+<code>autoplot(fit, type = "overlap")</code>). Use
+<code>contrast = "observed"</code> (either inside
+<code><a href="../reference/shift.html">shift()</a></code>/<code><a href="../reference/shift.html">scale_tx()</a></code> or in <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>)
+to evaluate the exact policy gain relative to status quo
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><mi>Y</mi><mo stretchy="false" form="prefix">(</mo><mi>d</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mi>Y</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[Y(d(A, W)) - Y]</annotation></semantics></math>.</p>
+</blockquote>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://perceptioninterval.github.io/tidytmle/">tidytmle</a></span><span class="op">)</span></span>
 <span></span>
@@ -144,6 +161,14 @@ cross-validated classification without assuming normality:</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> scale_tx(0.9) scale_…     3.66     0.124      29.6 2.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-192</span>     3.42</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2 more variables: conf.high &lt;dbl&gt;, true_value &lt;dbl&gt;</span></span></span>
 <span></span>
+<span><span class="co"># Exact policy gain relative to current observed dose (E[Y(A + 1) - Y])</span></span>
+<span><span class="fu"><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy</a></span><span class="op">(</span><span class="va">fit_shift</span>, contrast <span class="op">=</span> <span class="st">"observed"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 8</span></span></span>
+<span><span class="co">#&gt;   estimand         term  estimate std.error statistic  p.value conf.low</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> shift(1) - obse… shif…    0.980    0.094<span style="text-decoration: underline;">0</span>      10.4 2.05<span style="color: #949494;">e</span><span style="color: #BB0000;">-25</span>    0.795</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1 more variable: conf.high &lt;dbl&gt;</span></span></span>
+<span></span>
 <span><span class="fu"><a href="../reference/check_tmle.html">check_tmle</a></span><span class="op">(</span><span class="va">fit_shift</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Causal Health Audit (3/4 Passed)</span> ──</span></span>
@@ -170,11 +195,16 @@ into a cross-fitted target for any <code>tidymodels</code> regression
 workflow:
 <math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>φ</mi><mi>i</mi></msub><mo>=</mo><msub><mi>H</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>Y</mi><mi>i</mi></msub><mo>−</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><msub><mi>A</mi><mi>i</mi></msub><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mn>0</mn><mo>,</mo><msub><mi>W</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo stretchy="true" form="postfix">)</mo></mrow><mi>.</mi></mrow><annotation encoding="application/x-tex">\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right).</annotation></semantics></math></p>
 <p><code><a href="../reference/fit_cate.html">fit_cate()</a></code> learns individualized effects
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>τ</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>V</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat{\tau}(V)</annotation></semantics></math>,
-tests formally whether heterogeneity is real via Chernozhukov et al.’s
-(2018) Best Linear Projection (<code>tidy(cate)</code>), predicts on new
-patients (<code>predict(cate, new_data)</code>), and measures targeting
-uplift via Qini curves (<code><a href="../reference/qini_auc.html">qini_auc()</a></code>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>τ</mi><mo accent="true">̂</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>V</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\hat{\tau}(V)</annotation></semantics></math>
+out-of-fold, tests formally whether heterogeneity is real via
+Chernozhukov et al.’s (2018) Best Linear Projection with <strong>HC1
+heteroscedasticity-robust standard errors</strong>
+(<code>tidy(cate)</code>, where a slope near <code>1</code> indicates
+well-calibrated heterogeneity and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>0.05</mn></mrow><annotation encoding="application/x-tex">p &lt; 0.05</annotation></semantics></math>
+rejects a constant effect), predicts on new patients
+(<code>predict(cate, new_data)</code>), and measures targeting uplift
+via Qini curves (<code><a href="../reference/qini_auc.html">qini_auc()</a></code>,
 <code>autoplot(cate, type = "qini")</code>):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df_het</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_causal_cohort.html">sim_causal_cohort</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">400</span>, outcome_type <span class="op">=</span> <span class="st">"continuous"</span>, seed <span class="op">=</span> <span class="fl">303</span><span class="op">)</span></span>
@@ -194,7 +224,7 @@ uplift via Qini curves (<code><a href="../reference/qini_auc.html">qini_auc()</a
 <span><span class="co">#&gt;   term         estimate std.error statistic  p.value conf.low conf.high</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> ATE (BLP In…     1.48     0.107     13.8  1.25<span style="color: #949494;">e</span><span style="color: #BB0000;">-35</span>    1.27       1.69</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Heterogenei…     1.01     0.110      9.19 2.24<span style="color: #949494;">e</span><span style="color: #BB0000;">-18</span>    0.796      1.23</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> Heterogenei…     1.01     0.126      8.06 9.15<span style="color: #949494;">e</span><span style="color: #BB0000;">-15</span>    0.766      1.26</span></span>
 <span><span class="fu"><a href="../reference/qini_auc.html">qini_auc</a></span><span class="op">(</span><span class="va">cate</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2 × 3</span></span></span>
 <span><span class="co">#&gt;   .metric  .estimator .estimate</span></span>

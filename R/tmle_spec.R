@@ -23,17 +23,26 @@
 #'    and treatment propensity \eqn{g(W)} (plus missingness/censoring
 #'    \eqn{C(A, W)} when outcomes are missing) using cross-validated Super
 #'    Learning.
-#' 2. **Target (Fluctuate)**: Construct the *Clever Covariate* \eqn{H(A, W)}
-#'    derived from the parameter's Efficient Influence Function (EIF) and fit a
-#'    1-parameter fluctuation submodel \eqn{\text{logit}\,\bar{Q}^*(A, W) =
-#'    \text{logit}\,\bar{Q}^0(A, W) + \epsilon H(A, W)}. This nudges the
-#'    initial predictions strictly along the direction needed to remove residual
-#'    confounding bias until the sample mean of the EIF equals zero.
+#' 2. **Target (Fluctuate)**: Construct arm-specific Clever Covariates
+#'    \eqn{H_1(A, W) = \mathbb{I}(A = 1) / g(W)} and
+#'    \eqn{H_0(A, W) = \mathbb{I}(A = 0) / (1 - g(W))} (including censoring
+#'    weights when outcomes are missing) derived from the Efficient Influence
+#'    Function (EIF). By default (`fluctuation = "logistic"`), outcomes are
+#'    mapped to `(0, 1)` and fluctuated via arm-specific weighted-intercept
+#'    canonical logistic models \eqn{\text{logit}\,\bar{Q}^*(a, W) =
+#'    \text{logit}\,\bar{Q}^0(a, W) + \epsilon_a} using weights \eqn{H_a}
+#'    (matching `target.gwt = TRUE`). Classical unweighted Clever-Covariate
+#'    fluctuation (\eqn{\text{logit}\,\bar{Q}^0 + \epsilon_1 H_1 + \epsilon_0 H_0},
+#'    matching `target.gwt = FALSE`) is available via `fluctuation =
+#'    "logistic_covariate"`. Both nudge initial predictions until the sample mean
+#'    of each component EIF solves the zero score equation.
 #'
 #' This makes TMLE a **doubly robust**, **locally efficient substitution
-#' estimator**: it remains consistent if *either* \eqn{\bar{Q}} *or* \eqn{g} is
-#' consistently estimated, attains the semiparametric efficiency lower bound
-#' when both are consistent, and respects natural outcome bounds.
+#' estimator**: point estimation remains consistent if *either* \eqn{\bar{Q}}
+#' *or* \eqn{g} (and \eqn{C} under missingness) is consistently estimated, while
+#' EIF-based Wald confidence intervals and semiparametric efficiency hold when
+#' *both* nuisance models converge fast enough that their second-order product
+#' remainder is \eqn{o_p(n^{-1/2})}.
 #'
 #' @references
 #' van der Laan, M. J., & Rubin, D. (2006). Targeted maximum likelihood learning.
@@ -321,7 +330,7 @@ set_resamples <- function(spec, resamples = NULL, v_folds = 10L, strata = TRUE) 
 #' - **Adaptive Positivity Truncation (`g_bounds = "adaptive"`)**: Prevents a
 #'   handful of near-0 or near-1 propensity scores from inflating inverse weights
 #'   and EIF variance, following the sample-size-aware \eqn{5 / (\sqrt{n}\ln n)}
-#'   diagnostic rule (Petersen et al., 2012; Gruber & van der Laan, 2010).
+#'   truncation rule (Petersen et al., 2012; Gruber et al., 2022).
 #' - **Bounded Logistic Fluctuation (`fluctuation = "logistic"`)**: Scales
 #'   continuous outcomes into `[0, 1]` and performs canonical logistic
 #'   fluctuation so targeted counterfactual predictions stay strictly inside the
@@ -336,6 +345,11 @@ set_resamples <- function(spec, resamples = NULL, v_folds = 10L, strata = TRUE) 
 #' estimator of a causal effect on a bounded continuous outcome. *The
 #' International Journal of Biostatistics*, 6(1), Article 26.
 #'
+#' Gruber, S., Phillips, R. V., Lee, H., & van der Laan, M. J. (2022). Data-adaptive
+#' selection of the propensity score truncation level for inverse-probability-weighted
+#' and targeted maximum likelihood estimators of marginal point treatment effects.
+#' *American Journal of Epidemiology*, 191(9), 1640–1651.
+#'
 #' Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., & van der Laan, M. J.
 #' (2012). Diagnosing and responding to violations in the positivity assumption.
 #' *Statistical Methods in Medical Research*, 21(1), 31–54.
@@ -345,17 +359,22 @@ set_resamples <- function(spec, resamples = NULL, v_folds = 10L, strata = TRUE) 
 #'   nuisance predictions). Strongly recommended (`TRUE` by default) to preserve
 #'   valid influence-function standard errors without Donsker assumptions.
 #' @param g_bounds Positivity truncation rule for propensity scores: `"adaptive"`
-#'   (Gruber & van der Laan \eqn{5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})}
-#'   bounded to `[0.01, 0.15]`), a single numeric threshold `b` giving `[b, 1 - b]`,
-#'   or a length-2 numeric vector `c(low, high)` in `(0, 1)`.
-#' @param fluctuation Fluctuation submodel: `"logistic"` (weighted-intercept
-#'   bounded canonical logistic fluctuation on scaled `[0, 1]` outcomes,
-#'   equivalent to `target.gwt = TRUE` -- default), `"logistic_covariate"`
-#'   (classical unweighted Clever-Covariate logistic submodel matching
-#'   `tmle::tmle(..., target.gwt = FALSE)`), `"linear"` (weighted linear
-#'   fluctuation), or `"none"` (one-step / plug-in without targeting step).
+#'   (sample-size-aware \eqn{5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})} rule
+#'   clamped to `[0.01, 0.15]`; Gruber et al., 2022), a single numeric threshold
+#'   `b` giving `[b, 1 - b]`, or a length-2 numeric vector `c(low, high)` in
+#'   `(0, 1)`.
+#' @param fluctuation Fluctuation submodel: `"logistic"` (arm-specific
+#'   weighted-intercept bounded canonical logistic fluctuation on scaled `[0, 1]`
+#'   outcomes, equivalent to `target.gwt = TRUE` -- default),
+#'   `"logistic_covariate"` (classical unweighted two-parameter Clever-Covariate
+#'   logistic submodel matching `tmle::tmle(..., target.gwt = FALSE)`),
+#'   `"linear"` (weighted linear fluctuation), or `"none"` (untargeted
+#'   G-computation plug-in using initial ML predictions without a targeting
+#'   fluctuation step; EIF score is not solved).
 #' @param max_iter Maximum iterative TMLE steps (reserved for iterative updates).
-#' @param tol Convergence tolerance on mean EIF.
+#' @param tol Convergence tolerance reserved for iterative longitudinal updates
+#'   (point-treatment canonical logistic updates converge in one closed-form GLM
+#'   iteration using internal tolerance `1e-10`).
 #' @param save_nuisance Memory policy for nuisance models after fitting:
 #'   `"predictions"` (default; keeps only out-of-fold predictions, CV risk, and
 #'   Super Learner weights for instant `retarget()` with minimal RAM), `"butcher"`

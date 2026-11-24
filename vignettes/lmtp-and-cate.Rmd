@@ -25,7 +25,9 @@ Not every real-world decision is binary *"treat everyone vs. treat no one."* Oft
 
 ## 1. Realistic Continuous Policies (`shift()` & `scale_tx()`)
 
-Following Díaz et al. (2021), Modified Treatment Policies replace hypothetical "set everyone to max dose" questions with realistic individual shifts: additive policies $d(a, w) = a + \delta$ (`shift()`) or multiplicative reductions $d(a, w) = a \cdot \text{factor}$ (`scale_tx()`). Internally, `tidytmle` estimates the induced density ratio nonparametrically using stacked cross-validated classification without assuming normality:
+Following Díaz et al. (2021), Modified Treatment Policies replace hypothetical "set everyone to max dose" questions with realistic individual shifts: additive policies $d(a, w) = a + \delta$ (`shift()`) or multiplicative reductions $d(a, w) = a \cdot \text{factor}$ (`scale_tx()`). Internally, `tidytmle` estimates the induced density ratio $r(a, w) = g_d(a \mid w) / g(a \mid w)$ nonparametrically via stacked cross-validated classification without assuming normality.
+
+> **Policy Positivity (Common Support):** Valid estimation requires that shifted exposure levels remain observable under real-world practice—formally, $g(a \mid w) > 0$ whenever $g_d(a \mid w) > 0$ so the density ratio stays bounded (checkable via `check_tmle()` and `autoplot(fit, type = "overlap")`). Use `contrast = "observed"` (either inside `shift()`/`scale_tx()` or in `tidy()`) to evaluate the exact policy gain relative to status quo $\mathbb{E}[Y(d(A, W)) - Y]$.
 
 ```{r lmtp, message = FALSE, fig.alt = "Distribution of Modified Treatment Policy density-ratio weights centered near 1x"}
 library(tidytmle)
@@ -61,6 +63,9 @@ fit_scale <- tmle_spec(
 dplyr::bind_rows(tidy(fit_shift), tidy(fit_scale)) |>
   dplyr::mutate(true_value = c(truth_cont$true_shift_1, truth_cont$true_scale_09))
 
+# Exact policy gain relative to current observed dose (E[Y(A + 1) - Y])
+tidy(fit_shift, contrast = "observed")
+
 check_tmle(fit_shift)
 autoplot(fit_shift, type = "overlap")
 ```
@@ -72,7 +77,7 @@ autoplot(fit_shift, type = "overlap")
 Even when an average effect looks modest, treatment often helps some individuals substantially while doing little for others. Kennedy's (2023) **Doubly Robust (DR) Learner** turns each individual's Efficient Influence Function signal $\varphi_i$ into a cross-fitted target for any `tidymodels` regression workflow:
 $$\varphi_i = H_i \left(Y_i - \bar{Q}^*(A_i, W_i)\right) + \left(\bar{Q}^*(1, W_i) - \bar{Q}^*(0, W_i)\right).$$
 
-`fit_cate()` learns individualized effects $\hat{\tau}(V)$, tests formally whether heterogeneity is real via Chernozhukov et al.'s (2018) Best Linear Projection (`tidy(cate)`), predicts on new patients (`predict(cate, new_data)`), and measures targeting uplift via Qini curves (`qini_auc()`, `autoplot(cate, type = "qini")`):
+`fit_cate()` learns individualized effects $\hat{\tau}(V)$ out-of-fold, tests formally whether heterogeneity is real via Chernozhukov et al.'s (2018) Best Linear Projection with **HC1 heteroscedasticity-robust standard errors** (`tidy(cate)`, where a slope near `1` indicates well-calibrated heterogeneity and $p < 0.05$ rejects a constant effect), predicts on new patients (`predict(cate, new_data)`), and measures targeting uplift via Qini curves (`qini_auc()`, `autoplot(cate, type = "qini")`):
 
 ```{r cate, message = FALSE, fig.alt = c("Histogram of predicted individualized treatment effects split at zero with dashed population mean", "Qini cumulative uplift curve comparing DR-Learner prioritization to random treatment order")}
 df_het <- sim_causal_cohort(n = 400, outcome_type = "continuous", seed = 303)

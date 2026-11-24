@@ -13,7 +13,7 @@ qini_auc(cate_fit, pseudo_outcome = NULL)
 to \code{cate_fit$phi} when \code{cate_fit} is a \code{"tmle_cate"} object).}
 }
 \value{
-A 1-row \code{\link[tibble:tibble]{tibble::tibble()}} with columns \code{.metric}, \code{.estimator}, and
+A 2-row \code{\link[tibble:tibble]{tibble::tibble()}} with columns \code{.metric}, \code{.estimator}, and
 \code{.estimate} (\code{qini_auc} and \code{auuc}).
 }
 \description{

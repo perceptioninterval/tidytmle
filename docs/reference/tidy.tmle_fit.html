@@ -96,7 +96,11 @@ multiplier bootstrap over the joint EIF matrix.</p></dd>
 <dt id="arg-e-value">e_value<a class="anchor" aria-label="anchor" href="#arg-e-value"></a></dt>
 <dd><p>Logical; if <code>TRUE</code>, appends <code>e_value</code> and <code>e_value_ci</code>
 sensitivity columns (VanderWeele &amp; Ding, 2017) quantifying robustness to
-unmeasured confounding.</p></dd>
+unmeasured confounding: exact on risk ratios (<code>"rr"</code>), square-root
+converted for common binary outcomes (<code>"or"</code> when outcome prevalence exceeds
+<code>15%</code>, exact otherwise), standardized-difference converted via
+<code>exp(0.91 * d)</code> on additive contrasts, and <code>NA</code> for non-contrast marginal
+means (<code>"ey1"</code>, <code>"ey0"</code>, uncontrasted continuous policies).</p></dd>
 
 
 <dt id="arg-contrast">contrast<a class="anchor" aria-label="anchor" href="#arg-contrast"></a></dt>

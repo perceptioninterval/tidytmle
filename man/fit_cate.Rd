@@ -49,7 +49,11 @@ whose conditional expectation given covariates \eqn{V} equals the true CATE
 estimated. Regressing \eqn{\varphi_i} on \eqn{V_i} lets any \code{tidymodels}
 regression workflow learn treatment effect heterogeneity while \code{tidy()}
 reports Chernozhukov et al.'s (2018) Best Linear Projection (BLP) test for
-significant effect modification.
+significant effect modification using HC1 heteroscedasticity-robust
+(Eicker-Huber-White) standard errors. When \code{fit} targeted an \code{"att"} or
+\code{"atc"} parameter, \code{fit_cate()} automatically re-targets the ATE nuisance
+surface via \code{retarget(fit, estimand = "ate")} without ML refitting before
+constructing \eqn{\varphi_i}.
 }
 \examples{
 df <- sim_causal_cohort(n = 200, outcome_type = "continuous", seed = 42)

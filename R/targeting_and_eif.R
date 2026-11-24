@@ -846,9 +846,33 @@ compute_vanderweele_evalue <- function(est_name, est, se, ci_low, ci_high, y_obs
     rr_adj + sqrt(rr_adj * max(rr_adj - 1, 0))
   }
 
-  if (est_name %in% c("rr", "or")) {
+  is_policy_mean <- (startsWith(est_name, "shift(") || startsWith(est_name, "scale_tx(")) &&
+    !grepl(" - observed$", est_name)
+  if (est_name %in% c("ey1", "ey0") || is_policy_mean) {
+    return(list(e_value = NA_real_, e_value_ci = NA_real_))
+  }
+
+  if (est_name == "rr") {
     ev_pt <- calc_ev(est)
     ev_ci <- if (ci_low <= 1 && ci_high >= 1) 1 else if (ci_low > 1) calc_ev(ci_low) else calc_ev(ci_high)
+    return(list(e_value = ev_pt, e_value_ci = ev_ci))
+  }
+
+  if (est_name == "or") {
+    prev <- mean(y_obs, na.rm = TRUE)
+    conv_or <- function(val) {
+      if (!is.finite(val) || val <= 0) return(NA_real_)
+      # VanderWeele & Ding (2017): approximate RR via sqrt(OR) when outcome is common (> 15%)
+      if (is.finite(prev) && prev > 0.15) sqrt(val) else val
+    }
+    ev_pt <- calc_ev(conv_or(est))
+    ev_ci <- if (ci_low <= 1 && ci_high >= 1) {
+      1
+    } else if (ci_low > 1) {
+      calc_ev(conv_or(ci_low))
+    } else {
+      calc_ev(conv_or(ci_high))
+    }
     return(list(e_value = ev_pt, e_value_ci = ev_ci))
   }
 

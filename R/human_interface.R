@@ -44,20 +44,25 @@ check_tmle <- function(x) {
   rows <- list()
 
   # 1. Targeting Convergence
+  is_none_fluc <- identical(x$spec$targeting$fluctuation, "none")
   eif_abs <- abs(gl$mean_eif)
-  conv_status <- if (is.finite(eif_abs) && eif_abs <= 1e-4) "pass" else "fail"
+  conv_status <- if (!is_none_fluc && is.finite(eif_abs) && eif_abs <= 1e-4) "pass" else "fail"
   rows[[length(rows) + 1L]] <- tibble::tibble(
     check = "Targeting Convergence",
     status = conv_status,
-    metric = sprintf("mean EIF = %.2e", gl$mean_eif),
-    summary = if (conv_status == "pass") {
+    metric = if (is_none_fluc) sprintf("mean EIF = %.2e (untargeted)", gl$mean_eif) else sprintf("mean EIF = %.2e", gl$mean_eif),
+    summary = if (is_none_fluc) {
+      sprintf("Targeting fluctuation disabled (fluctuation = 'none'; mean EIF = %.2e).", gl$mean_eif)
+    } else if (conv_status == "pass") {
       sprintf("Bias-removal step converged cleanly (targeting shift = %+.4f, epsilon = %.4f).",
               gl$plugin_vs_tmle_shift, gl$epsilon)
     } else {
       sprintf("EIF score equation did not reach zero (mean EIF = %.2e > 1e-4).", gl$mean_eif)
     },
     why_it_matters = "A zero mean EIF confirms the targeting nudge finished stripping plug-in bias.",
-    next_step = if (conv_status == "pass") {
+    next_step = if (is_none_fluc) {
+      "Enable targeting calibration with retarget(fit, fluctuation = 'logistic')."
+    } else if (conv_status == "pass") {
       "None required."
     } else {
       "Inspect extreme weights via autoplot(fit, type = 'eif') or retarget(fit, g_bounds = c(0.05, 0.95))."
@@ -93,7 +98,11 @@ check_tmle <- function(x) {
     next_step = if (ov_status == "pass") {
       "None required; inspect autoplot(fit, type = 'overlap') to confirm visually."
     } else if (is_binary_tx) {
-      "Inspect overlap & stability: autoplot(fit, type = 'sensitivity') or retarget(fit, g_bounds = c(0.05, 0.95))."
+      if (ov_status == "fail" && identical(x$spec$estimand$names[1L], "ate")) {
+        "Inspect overlap & stability: autoplot(fit, type = 'sensitivity'), retarget(fit, g_bounds = c(0.05, 0.95)), or switch to retarget(fit, estimand = 'att')."
+      } else {
+        "Inspect overlap & stability: autoplot(fit, type = 'sensitivity') or retarget(fit, g_bounds = c(0.05, 0.95))."
+      }
     } else {
       "Try a smaller policy shift (shift()/scale_tx()) or tighter bounds in retarget()."
     }
@@ -102,6 +111,13 @@ check_tmle <- function(x) {
   # 3. Confounder Balance (binary treatments only)
   if (is_binary_tx) {
     bal <- compute_covariate_balance(x)
+    wt_scheme <- attr(bal, "weight_scheme")
+    bal_wt_txt <- switch(
+      if (is.null(wt_scheme)) "IPW" else wt_scheme,
+      "ATT odds" = "ATT odds weighting",
+      "ATC odds" = "ATC odds weighting",
+      "IPW weighting"
+    )
     if (nrow(bal) == 0L) {
       rows[[length(rows) + 1L]] <- tibble::tibble(
         check = "Confounder Balance",
@@ -123,15 +139,15 @@ check_tmle <- function(x) {
       }
       bal_sum <- if (bal_status == "pass") {
         if (max_wt < max_raw) {
-          sprintf("Weighted confounders are well balanced (max |SMD| fell from %.3f to %.3f, below 0.10).",
-                  max_raw, max_wt)
+          sprintf("Confounders are well balanced under %s (max |SMD| fell from %.3f to %.3f, below 0.10).",
+                  bal_wt_txt, max_raw, max_wt)
         } else {
-          sprintf("Weighted confounders remain balanced (max |SMD| = %.3f vs. %.3f raw, below 0.10).",
-                  max_wt, max_raw)
+          sprintf("Confounders remain balanced under %s (max |SMD| = %.3f vs. %.3f raw, below 0.10).",
+                  bal_wt_txt, max_wt, max_raw)
         }
       } else {
-        sprintf("Residual imbalance remains after weighting (max |SMD| = %.3f vs. %.3f raw; goal <= 0.10).",
-                max_wt, max_raw)
+        sprintf("Residual imbalance remains after %s (max |SMD| = %.3f vs. %.3f raw; goal <= 0.10).",
+                bal_wt_txt, max_wt, max_raw)
       }
       rows[[length(rows) + 1L]] <- tibble::tibble(
         check = "Confounder Balance",
@@ -185,14 +201,20 @@ check_tmle <- function(x) {
     is.finite(gl$q_metric) && gl$q_metric > 0.01
   }
   g_ok <- if (is_binary_tx) is.finite(gl$g_auc) && gl$g_auc > 0.52 else TRUE
-  ml_status <- if (q_ok && (g_ok || !is_binary_tx)) "pass" else "warn"
+  g_sep <- is_binary_tx && is.finite(gl$g_auc) && gl$g_auc > 0.95
+  # Note: near-random treatment assignment (g AUC <= 0.52) is ideal for positivity
+  # (as in randomized experiments), so only low outcome Q signal triggers a warning.
+  ml_status <- if (q_ok) "pass" else "warn"
 
   q_txt <- if (is_bin_out) sprintf("Q AUC = %.3f", gl$q_metric) else sprintf("Q R2 = %.3f", gl$q_metric)
   ml_metric <- if (is_binary_tx) sprintf("%s | g AUC = %.3f", q_txt, gl$g_auc) else q_txt
   ml_summary <- if (!q_ok) {
     sprintf("Outcome Super Learner explained near-zero signal (%s); TMLE leans heavily on treatment weights.", q_txt)
   } else if (!g_ok) {
-    sprintf("Outcome learner is strong (%s), while treatment g AUC = %.3f (expected if treatment is randomized or weakly predictable).",
+    sprintf("Outcome learner is strong (%s); treatment g AUC = %.3f indicates balanced/near-random assignment (favorable for positivity).",
+            q_txt, gl$g_auc)
+  } else if (g_sep) {
+    sprintf("Cross-validated Super Learners captured strong structure (%s, treatment AUC = %.3f; high treatment predictability warrants checking overlap).",
             q_txt, gl$g_auc)
   } else if (is_binary_tx) {
     sprintf("Cross-validated Super Learners captured real structure (%s, treatment AUC = %.3f).", q_txt, gl$g_auc)
@@ -388,6 +410,24 @@ report_tmle <- function(x,
     "Outcome measurements were complete across all analyzed observations."
   }
 
+  fluc_mode <- x$spec$targeting$fluctuation
+  fluc_phrase <- switch(
+    fluc_mode,
+    logistic = if (x$cache$outcome_type == "continuous") {
+      "Continuous outcomes were linearly mapped to [0, 1] before arm-specific weighted-intercept canonical logistic fluctuation so counterfactual predictions remain strictly bounded inside the observed outcome range (Gruber & van der Laan, 2010)."
+    } else {
+      "Initial outcome predictions were calibrated via arm-specific weighted-intercept canonical logistic fluctuation along the bounded Clever Covariate weights."
+    },
+    logistic_covariate = if (x$cache$outcome_type == "continuous") {
+      "Continuous outcomes were linearly mapped to [0, 1] before two-parameter unweighted Clever-Covariate logistic fluctuation (matching classical tmle::tmle(..., target.gwt = FALSE))."
+    } else {
+      "Initial outcome predictions were calibrated via the two-parameter unweighted Clever-Covariate logistic fluctuation submodel (matching classical tmle::tmle(..., target.gwt = FALSE))."
+    },
+    linear = "Initial outcome predictions were calibrated via weighted linear fluctuation targeting the Clever Covariate.",
+    none = "Targeted fluctuation was disabled (fluctuation = 'none'), yielding an untargeted ML G-computation plug-in estimate rather than a targeted TMLE update.",
+    ""
+  )
+
   se_phrase <- if (!is.na(gl$n_clusters)) {
     sprintf("Standard errors and %s confidence intervals were derived from the cluster-aggregated Efficient Influence Function (EIF) across %d clusters.", pct_lbl, gl$n_clusters)
   } else {
@@ -396,14 +436,23 @@ report_tmle <- function(x,
   if (isTRUE(simultaneous) && "crit.value" %in% names(td)) {
     se_phrase <- paste(se_phrase, sprintf("Multi-estimand intervals were adjusted to simultaneous uniform bands via a Rademacher multiplier bootstrap (critical value = %.2f).", td$crit.value[1L]))
   }
-  if (identical(x$spec$targeting$fluctuation, "logistic") && x$cache$outcome_type == "continuous") {
-    se_phrase <- paste(se_phrase, "Continuous outcomes were linearly mapped to [0, 1] before canonical logistic fluctuation so counterfactual predictions remain strictly bounded inside the observed outcome range (Gruber & van der Laan, 2010).")
+  if (nzchar(fluc_phrase)) {
+    se_phrase <- paste(fluc_phrase, se_phrase)
   }
   ev_method_phrase <- if (isTRUE(e_value) && "e_value" %in% names(td)) {
-    "Sensitivity to potential unmeasured confounding was quantified on the risk-ratio scale using VanderWeele-Ding E-values (VanderWeele & Ding, 2017)."
+    "Sensitivity to potential unmeasured confounding was quantified using VanderWeele-Ding E-values (exact on risk ratios, square-root transformed for common binary outcomes with prevalence > 15%, and standardized-difference converted via exp(0.91 * d) for additive contrasts; VanderWeele & Ding, 2017)."
   } else {
     ""
   }
+
+  plain_step2_phrase <- switch(
+    fluc_mode,
+    logistic = "Second, a weighted-intercept logistic calibration step adjusted those initial predictions so residual confounding bias on the causal estimand was removed.",
+    logistic_covariate = "Second, a two-parameter Clever-Covariate logistic calibration step adjusted those initial predictions so residual confounding bias on the causal estimand was removed.",
+    linear = "Second, a weighted linear calibration step adjusted those initial predictions so residual confounding bias on the causal estimand was removed.",
+    none = "Targeted calibration was skipped (fluctuation = 'none'), so this run returns an untargeted ML plug-in estimate without solving the EIF equation.",
+    "Second, a targeted calibration step adjusted those initial predictions to remove residual confounding bias."
+  )
 
   methods_text <- if (style == "plain") {
     paste(
@@ -413,7 +462,7 @@ report_tmle <- function(x,
               out_name, trt_name, n_covs, cov_preview, q_desc, g_desc),
       if (!is.null(c_desc)) sprintf("An additional model accounted for %d missing outcomes instead of dropping incomplete rows.", gl$n - gl$n_observed) else "",
       wt_phrase,
-      "Second, a targeted logistic calibration step adjusted those initial predictions so residual confounding bias on the causal estimand was removed.",
+      plain_step2_phrase,
       se_phrase
     )
   } else {
@@ -501,22 +550,48 @@ report_tmle <- function(x,
   )
   results_text <- trimws(gsub(" +", " ", results_text))
 
-  ev_note <- if ("e_value" %in% names(td) && any(is.finite(td$e_value))) {
-    e_top <- td$e_value[1L]
-    sprintf("1. **No unmeasured confounding:** Valid causal interpretation assumes all joint causes of %s and %s are captured in W. For the primary estimand (%s), an unmeasured confounder would need a risk-ratio association of at least %.2f with both treatment and outcome (beyond measured covariates) to explain away the point estimate.",
-            trt_name, out_name, td$term[1L], e_top)
+  ev_idx <- if ("e_value" %in% names(td)) which(is.finite(td$e_value))[1L] else NA_integer_
+  ev_note <- if (!is.na(ev_idx)) {
+    e_top <- td$e_value[ev_idx]
+    sprintf("1. **No unmeasured confounding:** Valid causal interpretation assumes all joint causes of %s and %s are captured in W. For %s, an unmeasured confounder would need a risk-ratio association of at least %.2f with both treatment and outcome (beyond measured covariates) to explain away the point estimate.",
+            trt_name, out_name, td$term[ev_idx], e_top)
   } else {
     sprintf("1. **No unmeasured confounding:** Causal attribution requires that no unmeasured common causes of %s and %s remain outside W.", trt_name, out_name)
   }
 
-  pos_note <- sprintf("2. **Positivity (real-world overlap):** Only %.1f%% of observations hit bounds [%.3f, %.3f]%s.",
-                      100 * gl$pct_truncated, gl$g_bound_low, gl$g_bound_high,
-                      if (x$cache$treatment_type == "binary") sprintf(" (effective sample sizes: treated = %.1f, control = %.1f)", gl$ess_treated, gl$ess_control) else "")
-  sutva_note <- sprintf("3. **Consistency & interference:** Each unit's observed outcome matches its potential outcome under the received %s level%s.",
-                        trt_name,
-                        if (!is.na(gl$n_clusters)) sprintf(", with within-cluster dependence accounted for across %d clusters", gl$n_clusters) else " without cross-unit spillover")
+  pct_clip_val <- 100 * gl$pct_truncated
+  ess_note <- if (x$cache$treatment_type == "binary") {
+    sprintf(" (effective sample sizes: treated = %.1f, control = %.1f)", gl$ess_treated, gl$ess_control)
+  } else {
+    ""
+  }
+  pos_note <- if (pct_clip_val <= 5) {
+    sprintf("2. **Positivity (real-world overlap):** Only %.1f%% of observations hit bounds [%.3f, %.3f]%s.",
+            pct_clip_val, gl$g_bound_low, gl$g_bound_high, ess_note)
+  } else if (pct_clip_val <= 15) {
+    sprintf("2. **Positivity (real-world overlap):** A moderate proportion (%.1f%%) of observations hit bounds [%.3f, %.3f]%s; verify sensitivity across bounds via retarget().",
+            pct_clip_val, gl$g_bound_low, gl$g_bound_high, ess_note)
+  } else {
+    sprintf("2. **Positivity (real-world overlap):** Substantial positivity stress was observed (%.1f%% of observations hit bounds [%.3f, %.3f]%s); inspect sensitivity via retarget() and consider ATT/overlap-restricted estimands.",
+            pct_clip_val, gl$g_bound_low, gl$g_bound_high, ess_note)
+  }
+  cl_note <- if (!is.na(gl$n_clusters)) {
+    sprintf("; within-cluster statistical correlation across %d clusters was accounted for via cluster-robust EIF standard errors", gl$n_clusters)
+  } else {
+    ""
+  }
+  sutva_note <- sprintf(
+    "3. **Consistency & no interference (SUTVA):** Each unit's observed outcome matches its potential outcome under the received %s level without unmodeled cross-unit spillover%s.",
+    trt_name, cl_note
+  )
 
-  assumptions_text <- paste(ev_note, pos_note, sutva_note, sep = "\n")
+  miss_note <- if (isTRUE(x$cache$has_censoring)) {
+    "4. **Missing At Random (MAR) outcome observation:** Inverse-probability censoring weights assume outcome observation depends only on measured baseline covariates and treatment (Delta independent of Y(a) given A = a, W), not on the unobserved outcome itself."
+  } else {
+    NULL
+  }
+
+  assumptions_text <- paste(c(ev_note, pos_note, sutva_note, miss_note), collapse = "\n")
 
   tbl_md <- c(
     sprintf("| Estimand | Estimate | SE / log-SE | %s CI | p-value |", pct_lbl),

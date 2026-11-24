@@ -23,7 +23,11 @@
 #'   multiplier bootstrap over the joint EIF matrix.
 #' @param e_value Logical; if `TRUE`, appends `e_value` and `e_value_ci`
 #'   sensitivity columns (VanderWeele & Ding, 2017) quantifying robustness to
-#'   unmeasured confounding.
+#'   unmeasured confounding: exact on risk ratios (`"rr"`), square-root
+#'   converted for common binary outcomes (`"or"` when outcome prevalence exceeds
+#'   `15%`, exact otherwise), standardized-difference converted via
+#'   `exp(0.91 * d)` on additive contrasts, and `NA` for non-contrast marginal
+#'   means (`"ey1"`, `"ey0"`, uncontrasted continuous policies).
 #' @param contrast Optional causal contrast override for continuous Modified
 #'   Treatment Policies: `NULL` (default; uses the contrast declared inside
 #'   [shift()] / [scale_tx()]), `"none"` (counterfactual policy mean), or
@@ -128,13 +132,14 @@ tidy.tmle_fit <- function(x,
 #' - **`mean_eif`**: The sample average of the Efficient Influence Function
 #'   \eqn{\frac{1}{n}\sum D_i^*}. A healthy TMLE solves the EIF score equation,
 #'   so `abs(mean_eif)` must be near zero (`< 1e-4`).
-#' - **`epsilon`**: The magnitude of the targeting fluctuation step. Values
-#'   close to `0` mean the initial ML outcome fit already had little residual
-#'   confounding bias; larger magnitudes show how strongly TMLE adjusted the
-#'   initial predictions to remove bias.
-#' - **`plugin_vs_tmle_shift`**: Difference between the final targeted TMLE ATE
-#'   and the untargeted G-computation plug-in ATE. Quantifies the exact causal
-#'   bias correction performed by the targeting step.
+#' - **`epsilon`**: Scalar summary of the arm-specific targeting fluctuation
+#'   parameters stored in `fit$targeting$epsilon_arms`. Values close to `0` mean
+#'   the initial ML outcome fit already had little residual confounding bias;
+#'   larger magnitudes show how strongly TMLE fluctuated the initial predictions
+#'   to remove bias.
+#' - **`plugin_vs_tmle_shift`**: Difference between the targeted estimate and
+#'   the untargeted G-computation plug-in estimate for the primary estimand.
+#'   Quantifies the exact causal bias calibration performed by the targeting step.
 #' - **`pct_truncated` & `ess_treated`/`ess_control`**: Share of propensity
 #'   scores clipped to `[g_bound_low, g_bound_high]` and Kish's effective sample
 #'   size under inverse-propensity weighting. High truncation (`> 5%`) or tiny
@@ -530,10 +535,17 @@ explain_tmle <- function(x, conf.level = NULL) {
         atc = "among untreated/comparison individuals (ATC)"
       )
       dir_txt <- if (r$estimate >= 0) "increases" else "decreases"
-      sprintf(
-        "%s (%s): Treatment %s the expected outcome by %.4f units (%s CI [%.4f, %.4f], %s).",
-        r$term, pop, dir_txt, abs(r$estimate), pct_lbl, r$conf.low, r$conf.high, p_txt
-      )
+      if (identical(x$cache$outcome_type, "binary")) {
+        sprintf(
+          "%s (%s): Treatment %s the expected outcome probability by %.4f (%.1f percentage points; %s CI [%.4f, %.4f], %s).",
+          r$term, pop, dir_txt, abs(r$estimate), 100 * abs(r$estimate), pct_lbl, r$conf.low, r$conf.high, p_txt
+        )
+      } else {
+        sprintf(
+          "%s (%s): Treatment %s the expected outcome by %.4f units (%s CI [%.4f, %.4f], %s).",
+          r$term, pop, dir_txt, abs(r$estimate), pct_lbl, r$conf.low, r$conf.high, p_txt
+        )
+      }
     } else if (r$estimand == "rr") {
       pct_ch <- 100 * (r$estimate - 1)
       dir_txt <- if (r$estimate >= 1) "higher" else "lower"
@@ -579,15 +591,21 @@ explain_tmle <- function(x, conf.level = NULL) {
     }
 
     cli::cli_h3("2. What the Targeting Step Did (\"Predict, Then Target\")")
-    shift_abs <- abs(gl$plugin_vs_tmle_shift)
-    if (shift_abs < 1e-3) {
-      cli::cli_text(
-        "The initial ML predictions already captured nearly all measured confounding bias (calibration shift = {sprintf('%+.4f', gl$plugin_vs_tmle_shift)}, epsilon = {sprintf('%.4f', gl$epsilon)})."
+    if (identical(x$spec$targeting$fluctuation, "none")) {
+      cli::cli_alert_warning(
+        "Targeting fluctuation is disabled (fluctuation = 'none'): this fit reports an untargeted ML plug-in estimate (mean EIF = {sprintf('%.2e', gl$mean_eif)})."
       )
     } else {
-      cli::cli_text(
-        "Targeting nudged the initial ML plug-in predictions by {sprintf('%+.4f', gl$plugin_vs_tmle_shift)} (epsilon = {sprintf('%.4f', gl$epsilon)}) to zero out residual confounding bias."
-      )
+      shift_abs <- abs(gl$plugin_vs_tmle_shift)
+      if (shift_abs < 1e-3) {
+        cli::cli_text(
+          "The initial ML predictions already captured nearly all measured confounding bias (calibration shift = {sprintf('%+.4f', gl$plugin_vs_tmle_shift)}, epsilon = {sprintf('%.4f', gl$epsilon)})."
+        )
+      } else {
+        cli::cli_text(
+          "Targeting nudged the initial ML plug-in predictions by {sprintf('%+.4f', gl$plugin_vs_tmle_shift)} (epsilon = {sprintf('%.4f', gl$epsilon)}) to zero out residual confounding bias."
+        )
+      }
     }
 
     cli::cli_h3("3. Can I Trust These Numbers? (Health Check & Next Steps)")

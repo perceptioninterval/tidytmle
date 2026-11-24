@@ -147,16 +147,24 @@ TMLE resolves both weaknesses in two stages:</p><ol><li><p><strong>Predict</stro
 and treatment propensity \(g(W)\) (plus missingness/censoring
 \(C(A, W)\) when outcomes are missing) using cross-validated Super
 Learning.</p></li>
-<li><p><strong>Target (Fluctuate)</strong>: Construct the <em>Clever Covariate</em> \(H(A, W)\)
-derived from the parameter's Efficient Influence Function (EIF) and fit a
-1-parameter fluctuation submodel \(\text{logit}\,\bar{Q}^*(A, W) =
-   \text{logit}\,\bar{Q}^0(A, W) + \epsilon H(A, W)\). This nudges the
-initial predictions strictly along the direction needed to remove residual
-confounding bias until the sample mean of the EIF equals zero.</p></li>
+<li><p><strong>Target (Fluctuate)</strong>: Construct arm-specific Clever Covariates
+\(H_1(A, W) = \mathbb{I}(A = 1) / g(W)\) and
+\(H_0(A, W) = \mathbb{I}(A = 0) / (1 - g(W))\) (including censoring
+weights when outcomes are missing) derived from the Efficient Influence
+Function (EIF). By default (<code>fluctuation = "logistic"</code>), outcomes are
+mapped to <code>(0, 1)</code> and fluctuated via arm-specific weighted-intercept
+canonical logistic models \(\text{logit}\,\bar{Q}^*(a, W) =
+   \text{logit}\,\bar{Q}^0(a, W) + \epsilon_a\) using weights \(H_a\)
+(matching <code>target.gwt = TRUE</code>). Classical unweighted Clever-Covariate
+fluctuation (\(\text{logit}\,\bar{Q}^0 + \epsilon_1 H_1 + \epsilon_0 H_0\),
+matching <code>target.gwt = FALSE</code>) is available via <code>fluctuation = "logistic_covariate"</code>. Both nudge initial predictions until the sample mean
+of each component EIF solves the zero score equation.</p></li>
 </ol><p>This makes TMLE a <strong>doubly robust</strong>, <strong>locally efficient substitution
-estimator</strong>: it remains consistent if <em>either</em> \(\bar{Q}\) <em>or</em> \(g\) is
-consistently estimated, attains the semiparametric efficiency lower bound
-when both are consistent, and respects natural outcome bounds.</p>
+estimator</strong>: point estimation remains consistent if <em>either</em> \(\bar{Q}\)
+<em>or</em> \(g\) (and \(C\) under missingness) is consistently estimated, while
+EIF-based Wald confidence intervals and semiparametric efficiency hold when
+<em>both</em> nuisance models converge fast enough that their second-order product
+remainder is \(o_p(n^{-1/2})\).</p>
 </div>
 
     </div>

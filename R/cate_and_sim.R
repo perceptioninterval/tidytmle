@@ -15,7 +15,11 @@
 #' estimated. Regressing \eqn{\varphi_i} on \eqn{V_i} lets any `tidymodels`
 #' regression workflow learn treatment effect heterogeneity while `tidy()`
 #' reports Chernozhukov et al.'s (2018) Best Linear Projection (BLP) test for
-#' significant effect modification.
+#' significant effect modification using HC1 heteroscedasticity-robust
+#' (Eicker-Huber-White) standard errors. When `fit` targeted an `"att"` or
+#' `"atc"` parameter, `fit_cate()` automatically re-targets the ATE nuisance
+#' surface via `retarget(fit, estimand = "ate")` without ML refitting before
+#' constructing \eqn{\varphi_i}.
 #'
 #' @references
 #' Kennedy, E. H. (2023). Towards optimal doubly robust estimation of
@@ -62,16 +66,21 @@ fit_cate <- function(fit,
   }
 
   idx <- fit$subgroup_idx
+  t_res <- if (identical(fit$spec$estimand$names[1L], "ate")) {
+    fit$targeting
+  } else {
+    retarget(fit, estimand = "ate")$targeting
+  }
   aug <- augment.tmle_fit(fit)
-  t_res <- fit$targeting
+  h_ate <- ifelse(fit$cache$a_num[idx] == 1L,
+                  1 / (t_res$g_trunc * pmax(t_res$c1_hat, 0.025)),
+                  -1 / ((1 - t_res$g_trunc) * pmax(t_res$c0_hat, 0.025)))
 
-  # Doubly robust pseudo-outcome:
+  # Doubly robust ATE pseudo-outcome:
   # phi_i = H_i * (Y_i - Q*_i(A_i, W_i)) + (Q*_i(1, W_i) - Q*_i(0, W_i))
   y_obs <- fit$cache$y_num[idx]
   y_safe <- ifelse(fit$cache$delta[idx] == 1L, y_obs, 0)
-  c_obs <- ifelse(fit$cache$a_num[idx] == 1L, t_res$c1_hat, t_res$c0_hat)
-  c_obs <- pmax(c_obs, 0.025)
-  h_dr <- ifelse(fit$cache$delta[idx] == 1L, t_res$clever_h, 0)
+  h_dr <- ifelse(fit$cache$delta[idx] == 1L, h_ate, 0)
   phi <- h_dr * (y_safe - t_res$qa_star) + (t_res$q1_star - t_res$q0_star)
 
   cov_quo <- rlang::enquo(covariates)
@@ -160,12 +169,44 @@ fit_cate <- function(fit,
   # Also fit full-sample workflows for new-data prediction
   full_models <- lapply(wfs, function(wf) fit_single_workflow_safe(wf, cate_df))
 
-  # Best Linear Projection heterogeneity test (Chernozhukov et al. 2018):
+  # Best Linear Projection heterogeneity test (Chernozhukov et al. 2018) with
+  # HC1 heteroscedasticity-robust (Eicker-Huber-White) standard errors:
   # Regress phi on centered OOF CATE predictions
   tau_oof <- sl_cate$sl_preds
   tau_centered <- tau_oof - mean(tau_oof)
-  blp_fit <- stats::lm(phi ~ tau_centered, weights = fit$cache$weights[idx])
+  w_c <- fit$cache$weights[idx]
+  blp_fit <- stats::lm(phi ~ tau_centered, weights = w_c)
   blp_tidy <- broom::tidy(blp_fit, conf.int = TRUE)
+
+  nz <- which(w_c > 0 & is.finite(phi) & is.finite(tau_centered))
+  n_eff <- length(nz)
+  X_mat <- stats::model.matrix(blp_fit)[nz, , drop = FALSE]
+  p_col <- ncol(X_mat)
+  df_hc <- max(n_eff - p_col, 1L)
+  resid_c <- stats::residuals(blp_fit)[nz]
+  w_nz <- w_c[nz]
+
+  vcov_hc1 <- tryCatch({
+    Xw <- X_mat * sqrt(w_nz)
+    bread <- solve(crossprod(Xw))
+    u_mat <- X_mat * (w_nz * resid_c)
+    meat <- crossprod(u_mat)
+    (n_eff / df_hc) * (bread %*% meat %*% bread)
+  }, error = function(e) stats::vcov(blp_fit))
+
+  se_hc1 <- sqrt(pmax(diag(vcov_hc1), 1e-16))
+  est_blp <- as.numeric(stats::coef(blp_fit))
+  ok_est <- is.finite(est_blp) & seq_along(est_blp) <= length(se_hc1)
+  if (all(ok_est) && length(se_hc1) == nrow(blp_tidy)) {
+    t_vals <- est_blp / se_hc1
+    p_vals <- 2 * stats::pt(-abs(t_vals), df = df_hc)
+    t_crit <- stats::qt(0.975, df = df_hc)
+    blp_tidy$std.error <- se_hc1
+    blp_tidy$statistic <- t_vals
+    blp_tidy$p.value <- p_vals
+    blp_tidy$conf.low <- est_blp - t_crit * se_hc1
+    blp_tidy$conf.high <- est_blp + t_crit * se_hc1
+  }
   blp_tidy$term <- c("ATE (BLP Intercept)", "Heterogeneity Loading (BLP Slope)")
 
   structure(
@@ -249,7 +290,7 @@ print.tmle_cate <- function(x, ...) {
 #' @param pseudo_outcome Optional numeric vector of pseudo-outcomes (defaults
 #'   to `cate_fit$phi` when `cate_fit` is a `"tmle_cate"` object).
 #'
-#' @return A 1-row [tibble::tibble()] with columns `.metric`, `.estimator`, and
+#' @return A 2-row [tibble::tibble()] with columns `.metric`, `.estimator`, and
 #'   `.estimate` (`qini_auc` and `auuc`).
 #'
 #' @examples
@@ -460,9 +501,11 @@ autoplot.tmle_cate <- function(object, type = c("qini", "cate"), ...) {
 #' @param seed Optional integer random seed.
 #'
 #' @return A [tibble::tibble()] with columns `age`, `sex`, `lab_1`, `lab_2`,
-#'   `lab_3`, `a`, `y`, and optionally `delta` and `clinic_id`, plus an attribute
-#'   `"truth"` containing `true_ate`, `true_att`, `true_atc`, `true_rr`,
-#'   `true_or`, `true_shift_1`, and `true_cate`.
+#'   `lab_3`, `a`, `y`, and optionally `delta` and `clinic_id`, plus a `"truth"`
+#'   attribute containing the relevant scenario ground-truth values (`true_ey1`,
+#'   `true_ey0`, `true_ate`, `true_att`, `true_atc`, `true_cate`, plus
+#'   `true_rr`/`true_or` when `outcome_type = "binary"`, or `true_shift_1` and
+#'   `true_scale_09` when `treatment_type = "continuous"`).
 #'
 #' @examples
 #' cohort <- sim_causal_cohort(n = 150, outcome_type = "binary", seed = 42)

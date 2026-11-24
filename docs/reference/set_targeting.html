@@ -76,18 +76,21 @@ valid influence-function standard errors without Donsker assumptions.</p></dd>
 
 <dt id="arg-g-bounds">g_bounds<a class="anchor" aria-label="anchor" href="#arg-g-bounds"></a></dt>
 <dd><p>Positivity truncation rule for propensity scores: <code>"adaptive"</code>
-(Gruber &amp; van der Laan \(5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})\)
-bounded to <code>[0.01, 0.15]</code>), a single numeric threshold <code>b</code> giving <code>[b, 1 - b]</code>,
-or a length-2 numeric vector <code>c(low, high)</code> in <code>(0, 1)</code>.</p></dd>
+(sample-size-aware \(5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})\) rule
+clamped to <code>[0.01, 0.15]</code>; Gruber et al., 2022), a single numeric threshold
+<code>b</code> giving <code>[b, 1 - b]</code>, or a length-2 numeric vector <code>c(low, high)</code> in
+<code>(0, 1)</code>.</p></dd>
 
 
 <dt id="arg-fluctuation">fluctuation<a class="anchor" aria-label="anchor" href="#arg-fluctuation"></a></dt>
-<dd><p>Fluctuation submodel: <code>"logistic"</code> (weighted-intercept
-bounded canonical logistic fluctuation on scaled <code>[0, 1]</code> outcomes,
-equivalent to <code>target.gwt = TRUE</code> – default), <code>"logistic_covariate"</code>
-(classical unweighted Clever-Covariate logistic submodel matching
-<code>tmle::tmle(..., target.gwt = FALSE)</code>), <code>"linear"</code> (weighted linear
-fluctuation), or <code>"none"</code> (one-step / plug-in without targeting step).</p></dd>
+<dd><p>Fluctuation submodel: <code>"logistic"</code> (arm-specific
+weighted-intercept bounded canonical logistic fluctuation on scaled <code>[0, 1]</code>
+outcomes, equivalent to <code>target.gwt = TRUE</code> – default),
+<code>"logistic_covariate"</code> (classical unweighted two-parameter Clever-Covariate
+logistic submodel matching <code>tmle::tmle(..., target.gwt = FALSE)</code>),
+<code>"linear"</code> (weighted linear fluctuation), or <code>"none"</code> (untargeted
+G-computation plug-in using initial ML predictions without a targeting
+fluctuation step; EIF score is not solved).</p></dd>
 
 
 <dt id="arg-max-iter">max_iter<a class="anchor" aria-label="anchor" href="#arg-max-iter"></a></dt>
@@ -95,7 +98,9 @@ fluctuation), or <code>"none"</code> (one-step / plug-in without targeting step)
 
 
 <dt id="arg-tol">tol<a class="anchor" aria-label="anchor" href="#arg-tol"></a></dt>
-<dd><p>Convergence tolerance on mean EIF.</p></dd>
+<dd><p>Convergence tolerance reserved for iterative longitudinal updates
+(point-treatment canonical logistic updates converge in one closed-form GLM
+iteration using internal tolerance <code>1e-10</code>).</p></dd>
 
 
 <dt id="arg-save-nuisance">save_nuisance<a class="anchor" aria-label="anchor" href="#arg-save-nuisance"></a></dt>
@@ -125,7 +130,7 @@ learners such as random forests or boosted trees (Zheng &amp; van der Laan,
 <li><p><strong>Adaptive Positivity Truncation (<code>g_bounds = "adaptive"</code>)</strong>: Prevents a
 handful of near-0 or near-1 propensity scores from inflating inverse weights
 and EIF variance, following the sample-size-aware \(5 / (\sqrt{n}\ln n)\)
-diagnostic rule (Petersen et al., 2012; Gruber &amp; van der Laan, 2010).</p></li>
+truncation rule (Petersen et al., 2012; Gruber et al., 2022).</p></li>
 <li><p><strong>Bounded Logistic Fluctuation (<code>fluctuation = "logistic"</code>)</strong>: Scales
 continuous outcomes into <code>[0, 1]</code> and performs canonical logistic
 fluctuation so targeted counterfactual predictions stay strictly inside the
@@ -139,6 +144,10 @@ estimation. In <em>Targeted Learning</em> (pp. 459–474). Springer.</p>
 <p>Gruber, S., &amp; van der Laan, M. J. (2010). A targeted maximum likelihood
 estimator of a causal effect on a bounded continuous outcome. <em>The
 International Journal of Biostatistics</em>, 6(1), Article 26.</p>
+<p>Gruber, S., Phillips, R. V., Lee, H., &amp; van der Laan, M. J. (2022). Data-adaptive
+selection of the propensity score truncation level for inverse-probability-weighted
+and targeted maximum likelihood estimators of marginal point treatment effects.
+<em>American Journal of Epidemiology</em>, 191(9), 1640–1651.</p>
 <p>Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., &amp; van der Laan, M. J.
 (2012). Diagnosing and responding to violations in the positivity assumption.
 <em>Statistical Methods in Medical Research</em>, 21(1), 31–54.</p>

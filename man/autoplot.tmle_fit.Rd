@@ -33,8 +33,8 @@ of the TMLE estimator into an intuitive visual check:
 \itemize{
 \item \code{"effect"}: \strong{Causal Effect Forest Plot (Default)}. Publication-ready
 effect estimates and 95\% confidence intervals with direct numeric labels, a
-\code{"No effect"} reference line, and (for binary ATE) a hollow marker showing
-the untargeted initial ML estimate before bias calibration.
+\code{"No effect"} reference line, and (for binary ATE/ATT/ATC) a hollow marker
+showing the untargeted initial ML estimate before bias calibration.
 \item \code{"overlap"}: \strong{Step 2 (Fair Comparison / Positivity Check)}. Mirrored
 propensity distributions directly labeled \code{"Treated"} and \code{"Control"},
 with shaded tail clipping zones (or trimmed density-ratio distribution for
@@ -42,9 +42,11 @@ continuous LMTPs).
 \item \code{"targeting"}: \strong{Steps 3–4 (How Much Bias Calibration Changed Things)}.
 Initial ML counterfactual contrasts plotted against targeted TMLE contrasts,
 with direct \code{"No adjustment"} reference line and population shift marker.
-\item \code{"balance"}: \strong{Confounder Balance Dumbbell Plot}. Before vs. after IPW
-imbalance (\verb{|SMD|}) ordered from largest baseline imbalance to smallest,
-highlighting the balanced \verb{< 0.10} zone without duplicate factor mirror rows.
+\item \code{"balance"}: \strong{Confounder Balance Dumbbell Plot}. Before vs. after
+weighting imbalance (\verb{|SMD|}, using ATE IPW or ATT/ATC odds weights to
+match the primary estimand) ordered from largest baseline imbalance to
+smallest, highlighting the balanced \verb{< 0.10} zone without duplicate factor
+mirror rows.
 \item \code{"sensitivity"}: \strong{Positivity Strictness Sweep}. Instant \code{retarget()}
 sensitivity curve across clipping thresholds showing stability of point
 estimates and 95\% confidence intervals.

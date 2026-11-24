@@ -98,12 +98,25 @@ theme_tidytmle <- function(base_size = 11,
 }
 
 compute_covariate_balance <- function(object) {
+  primary_est <- if (!is.null(object$spec$estimand$names[1L])) {
+    object$spec$estimand$names[1L]
+  } else {
+    "ate"
+  }
+  wt_scheme <- switch(
+    primary_est,
+    att = "ATT odds",
+    atc = "ATC odds",
+    "IPW"
+  )
+
   empty_bal <- tibble::tibble(
     covariate = character(),
     smd_raw = numeric(),
     smd_wt = numeric(),
     improved = logical()
   )
+  attr(empty_bal, "weight_scheme") <- wt_scheme
   if (!identical(object$cache$treatment_type, "binary")) {
     return(empty_bal)
   }
@@ -112,7 +125,13 @@ compute_covariate_balance <- function(object) {
   a <- object$cache$a_num[idx]
   w_base <- object$cache$weights[idx]
   g_t <- object$targeting$g_trunc
-  w_ipw <- w_base * ifelse(a == 1L, 1 / g_t, 1 / (1 - g_t))
+  w_ipw <- if (identical(primary_est, "att")) {
+    w_base * ifelse(a == 1L, 1, g_t / (1 - g_t))
+  } else if (identical(primary_est, "atc")) {
+    w_base * ifelse(a == 1L, (1 - g_t) / g_t, 1)
+  } else {
+    w_base * ifelse(a == 1L, 1 / g_t, 1 / (1 - g_t))
+  }
 
   # Expand column-by-column so NA covariates keep exact row alignment and
   # 1-level factors/characters in subgroups are skipped cleanly instead of erroring.
@@ -158,7 +177,7 @@ compute_covariate_balance <- function(object) {
     abs(m1 - m0) / pooled_sd
   }
 
-  purrr::map_dfr(names(cols_expanded), function(cn) {
+  out <- purrr::map_dfr(names(cols_expanded), function(cn) {
     xv <- cols_expanded[[cn]]
     s_raw <- calc_smd(xv, a, w_base)
     s_wt <- calc_smd(xv, a, w_ipw)
@@ -169,6 +188,8 @@ compute_covariate_balance <- function(object) {
       improved = s_wt <= s_raw + 1e-12
     )
   })
+  attr(out, "weight_scheme") <- wt_scheme
+  out
 }
 
 #' Human-Centered Causal Visual Diagnostics for a TMLE Fit
@@ -177,8 +198,8 @@ compute_covariate_balance <- function(object) {
 #' of the TMLE estimator into an intuitive visual check:
 #' - `"effect"`: **Causal Effect Forest Plot (Default)**. Publication-ready
 #'   effect estimates and 95% confidence intervals with direct numeric labels, a
-#'   `"No effect"` reference line, and (for binary ATE) a hollow marker showing
-#'   the untargeted initial ML estimate before bias calibration.
+#'   `"No effect"` reference line, and (for binary ATE/ATT/ATC) a hollow marker
+#'   showing the untargeted initial ML estimate before bias calibration.
 #' - `"overlap"`: **Step 2 (Fair Comparison / Positivity Check)**. Mirrored
 #'   propensity distributions directly labeled `"Treated"` and `"Control"`,
 #'   with shaded tail clipping zones (or trimmed density-ratio distribution for
@@ -186,9 +207,11 @@ compute_covariate_balance <- function(object) {
 #' - `"targeting"`: **Steps 3–4 (How Much Bias Calibration Changed Things)**.
 #'   Initial ML counterfactual contrasts plotted against targeted TMLE contrasts,
 #'   with direct `"No adjustment"` reference line and population shift marker.
-#' - `"balance"`: **Confounder Balance Dumbbell Plot**. Before vs. after IPW
-#'   imbalance (`|SMD|`) ordered from largest baseline imbalance to smallest,
-#'   highlighting the balanced `< 0.10` zone without duplicate factor mirror rows.
+#' - `"balance"`: **Confounder Balance Dumbbell Plot**. Before vs. after
+#'   weighting imbalance (`|SMD|`, using ATE IPW or ATT/ATC odds weights to
+#'   match the primary estimand) ordered from largest baseline imbalance to
+#'   smallest, highlighting the balanced `< 0.10` zone without duplicate factor
+#'   mirror rows.
 #' - `"sensitivity"`: **Positivity Strictness Sweep**. Instant `retarget()`
 #'   sensitivity curve across clipping thresholds showing stability of point
 #'   estimates and 95% confidence intervals.
@@ -800,6 +823,14 @@ autoplot_balance <- function(object, compact = FALSE) {
   }
   pal <- tmle_palette()
   bal_wide <- compute_covariate_balance(object)
+  wt_scheme <- attr(bal_wide, "weight_scheme")
+  if (is.null(wt_scheme)) wt_scheme <- "IPW"
+  wt_lbl <- switch(
+    wt_scheme,
+    "ATT odds" = "ATT Odds Weighting",
+    "ATC odds" = "ATC Odds Weighting",
+    "Propensity Weighting"
+  )
   if (nrow(bal_wide) == 0L) {
     cli::cli_abort(c(
       "No varying baseline covariates remain in the analyzed sample or subgroup to plot balance.",
@@ -809,9 +840,9 @@ autoplot_balance <- function(object, compact = FALSE) {
   max_raw <- max(bal_wide$smd_raw, na.rm = TRUE)
   max_wt <- max(bal_wide$smd_wt, na.rm = TRUE)
   bal_sub <- if (max_wt < max_raw) {
-    sprintf("Max standardized difference dropped from %.3f (raw) to %.3f (weighted)", max_raw, max_wt)
+    sprintf("%s: max |SMD| dropped from %.3f (raw) to %.3f (weighted)", wt_lbl, max_raw, max_wt)
   } else {
-    sprintf("Max standardized difference was %.3f (raw) vs. %.3f (weighted)", max_raw, max_wt)
+    sprintf("%s: max |SMD| was %.3f (raw) vs. %.3f (weighted)", wt_lbl, max_raw, max_wt)
   }
 
   bal_wide$covariate <- stats::reorder(bal_wide$covariate, bal_wide$smd_raw)
@@ -842,13 +873,13 @@ autoplot_balance <- function(object, compact = FALSE) {
     ggplot2::scale_shape_manual(values = c("Before weighting" = 17L, "After weighting" = 16L)) +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.02, 0.14))) +
     ggplot2::labs(
-      title = "Did Propensity Weighting Balance Confounders?",
+      title = sprintf("Did %s Balance Confounders?", wt_lbl),
       subtitle = bal_sub,
       x = if (compact) "Imbalance |SMD|" else "Absolute Standardized Mean Difference |SMD|",
       y = NULL,
       color = NULL,
       shape = NULL,
-      caption = if (!compact) "Points inside the green shaded band (< 0.10) indicate well-balanced confounders across arms." else NULL
+      caption = if (!compact) "SMDs share the baseline pooled SD; points in green (< 0.10) indicate balanced confounders across arms." else NULL
     ) +
     theme_tidytmle(grid = "x", compact = compact) +
     ggplot2::theme(legend.position = "top")

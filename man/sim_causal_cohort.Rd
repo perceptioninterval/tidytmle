@@ -35,9 +35,11 @@ logistic fluctuation.}
 }
 \value{
 A \code{\link[tibble:tibble]{tibble::tibble()}} with columns \code{age}, \code{sex}, \code{lab_1}, \code{lab_2},
-\code{lab_3}, \code{a}, \code{y}, and optionally \code{delta} and \code{clinic_id}, plus an attribute
-\code{"truth"} containing \code{true_ate}, \code{true_att}, \code{true_atc}, \code{true_rr},
-\code{true_or}, \code{true_shift_1}, and \code{true_cate}.
+\code{lab_3}, \code{a}, \code{y}, and optionally \code{delta} and \code{clinic_id}, plus a \code{"truth"}
+attribute containing the relevant scenario ground-truth values (\code{true_ey1},
+\code{true_ey0}, \code{true_ate}, \code{true_att}, \code{true_atc}, \code{true_cate}, plus
+\code{true_rr}/\code{true_or} when \code{outcome_type = "binary"}, or \code{true_shift_1} and
+\code{true_scale_09} when \code{treatment_type = "continuous"}).
 }
 \description{
 Generates a realistic biomedical cohort featuring nonlinear confounding,

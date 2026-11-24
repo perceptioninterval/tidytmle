@@ -155,11 +155,16 @@ with elements <code>methods</code>, <code>results</code>, <code>assumptions</cod
 <span class="r-out co"><span class="r-pr">#&gt;</span> P(therapy = 1 | W) was estimated with [glmnet (100%), glm (0%), ranger</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (0%)] and bounded using adaptive sample-size-aware positivity bounds</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [0.081, 0.919] (Petersen et al., 2012). Outcome measurements were</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> complete across all analyzed observations. Standard errors and 95%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> confidence intervals were derived from the sample variance of the</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Efficient Influence Function (EIF). Sensitivity to potential</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> unmeasured confounding was quantified on the risk-ratio scale using</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> VanderWeele-Ding E-values (VanderWeele &amp; Ding, 2017).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> complete across all analyzed observations. Initial outcome predictions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> were calibrated via arm-specific weighted-intercept canonical logistic</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> fluctuation along the bounded Clever Covariate weights. Standard</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> errors and 95% confidence intervals were derived from the sample</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> variance of the Efficient Influence Function (EIF). Sensitivity to</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> potential unmeasured confounding was quantified using VanderWeele-Ding</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> E-values (exact on risk ratios, square-root transformed for common</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> binary outcomes with prevalence &gt; 15%, and standardized-difference</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> converted via exp(0.91 * d) for additive contrasts; VanderWeele &amp;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Ding, 2017).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── Results </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> After confounder adjustment and targeting, therapy shifted 30-day</span>
@@ -178,16 +183,15 @@ with elements <code>methods</code>, <code>results</code>, <code>assumptions</cod
 <span class="r-out co"><span class="r-pr">#&gt;</span> ── Causal Assumptions &amp; Diagnostics </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1. **No unmeasured confounding:** Valid causal interpretation assumes</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> all joint causes of therapy and 30-day recovery are captured in W. For</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> the primary estimand (ATE), an unmeasured confounder would need a</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> risk-ratio association of at least 2.42 with both treatment and</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> outcome (beyond measured covariates) to explain away the point</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> estimate.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> ATE, an unmeasured confounder would need a risk-ratio association of</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> at least 2.42 with both treatment and outcome (beyond measured</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> covariates) to explain away the point estimate.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2. **Positivity (real-world overlap):** Only 0.0% of observations hit</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> bounds [0.081, 0.919] (effective sample sizes: treated = 55.4, control</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> = 85.4).</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3. **Consistency &amp; interference:** Each unit's observed outcome</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> matches its potential outcome under the received therapy level without</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cross-unit spillover.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3. **Consistency &amp; no interference (SUTVA):** Each unit's observed</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> outcome matches its potential outcome under the received therapy level</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> without unmodeled cross-unit spillover.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">Tip: Use as.character(report) or style = 'markdown' to copy directly</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="font-style: italic;">into Quarto/R Markdown.</span></span>

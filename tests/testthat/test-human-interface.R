@@ -183,3 +183,89 @@ test_that("Regression tests: NA balance alignment, 1-level subgroup factors, cha
     "one continuous Modified Treatment Policy at a time"
   )
 })
+
+test_that("Scientific fidelity guards: RCT Pillar 5, ATT/ATC balance weights, common-OR/NA E-values, honest report prose, and ATE-aligned fit_cate HC1", {
+  # 1. RCT-like unconfounded cohort passes Model Learning Quality when Q is strong and g AUC ~ 0.50
+  set.seed(8101)
+  n <- 300L
+  x1 <- stats::rnorm(n)
+  x2 <- stats::rnorm(n)
+  a <- stats::rbinom(n, 1L, 0.5)
+  y <- 1.0 + 1.5 * x1 + 0.8 * x2 + 0.7 * a + stats::rnorm(n)
+  df_rct <- tibble::tibble(age = 50 + 10 * x1, lab_1 = x2, a = a, y = y)
+
+  fit_rct <- tmle_spec(y, a, c(age, lab_1), estimand = c("ate", "ey1", "ey0")) |>
+    set_treatment_learners(parsnip::logistic_reg() |> parsnip::set_engine("glm")) |>
+    set_resamples(v_folds = 3L) |>
+    fit(df_rct)
+  chk_rct <- check_tmle(fit_rct)
+  expect_identical(chk_rct$status[chk_rct$check == "Model Learning Quality"], "pass")
+
+  # Marginal means (ey1, ey0) have NA E-values while ATE contrast has finite E-value
+  td_ev <- tidy(fit_rct, e_value = TRUE)
+  expect_true(is.finite(td_ev$e_value[td_ev$estimand == "ate"]))
+  expect_true(all(is.na(td_ev$e_value[td_ev$estimand %in% c("ey1", "ey0")])))
+
+  # Uncontrasted shift() also yields NA from E-value helper
+  ev_shift <- tidytmle:::compute_vanderweele_evalue("shift(1)", 4.2, 0.2, 3.8, 4.6, y)
+  expect_true(is.na(ev_shift$e_value) && is.na(ev_shift$e_value_ci))
+
+  # Common binary outcome (> 15% prevalence) uses sqrt(OR) E-value formula
+  df_bin_common <- sim_causal_cohort(n = 300L, outcome_type = "binary", seed = 8102)
+  fit_bc <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = c("ate", "or", "ey1")) |>
+    set_resamples(v_folds = 3L) |>
+    fit(df_bin_common)
+  td_bc <- tidy(fit_bc, e_value = TRUE)
+  or_est <- td_bc$estimate[td_bc$estimand == "or"]
+  rr_eq <- sqrt(or_est)
+  expect_equal(td_bc$e_value[td_bc$estimand == "or"], rr_eq + sqrt(rr_eq * (rr_eq - 1)), tolerance = 1e-6)
+  expect_true(is.na(td_bc$e_value[td_bc$estimand == "ey1"]))
+  expect_output(explain_tmle(fit_bc), "percentage points")
+
+  # 2. Estimand-aware ATT and ATC balance weights match exact odds weighting
+  fit_att <- retarget(fit_bc, estimand = "att")
+  fit_atc <- retarget(fit_bc, estimand = "atc")
+  bal_ate <- tidytmle:::compute_covariate_balance(fit_bc)
+  bal_att <- tidytmle:::compute_covariate_balance(fit_att)
+  bal_atc <- tidytmle:::compute_covariate_balance(fit_atc)
+  expect_identical(attr(bal_ate, "weight_scheme"), "IPW")
+  expect_identical(attr(bal_att, "weight_scheme"), "ATT odds")
+  expect_identical(attr(bal_atc, "weight_scheme"), "ATC odds")
+  expect_false(isTRUE(all.equal(bal_ate$smd_wt, bal_att$smd_wt)))
+  expect_match(check_tmle(fit_att)$summary[3L], "ATT odds weighting")
+  expect_match(autoplot(fit_att, type = "balance")$labels$title, "ATT Odds Weighting")
+
+  # 3. report_tmle prose reflects actual fluctuation submodel, high clipping, SUTVA, and MAR
+  fit_lin <- retarget(fit_bc, fluctuation = "linear")
+  rep_lin <- report_tmle(fit_lin, style = "paper")
+  expect_match(rep_lin$methods, "weighted linear fluctuation")
+  expect_match(rep_lin$assumptions, "without unmodeled cross-unit spillover")
+
+  fit_none <- retarget(fit_bc, fluctuation = "none")
+  rep_none <- report_tmle(fit_none, style = "paper")
+  expect_match(rep_none$methods, "Targeting fluctuation was disabled|fluctuation = 'none'")
+  expect_identical(check_tmle(fit_none)$status[1L], "fail")
+
+  fit_clip <- retarget(fit_bc, g_bounds = c(0.35, 0.65))
+  rep_clip <- report_tmle(fit_clip)
+  expect_false(grepl("Only [2-9][0-9]\\.[0-9]% of observations", rep_clip$assumptions))
+  expect_match(rep_clip$assumptions, "Substantial positivity stress")
+
+  df_cens <- sim_causal_cohort(n = 220L, outcome_type = "continuous", censoring_rate = 0.2, seed = 8103)
+  fit_cens <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), censoring = delta) |>
+    set_resamples(v_folds = 3L) |>
+    fit(df_cens)
+  rep_cens <- report_tmle(fit_cens)
+  expect_match(rep_cens$assumptions, "Missing At Random \\(MAR\\)")
+
+  # 4. fit_cate() on an ATT fit retargets internally to ATE DR pseudo-outcome & produces HC1 BLP SEs
+  fit_hetero <- tmle_spec(y, a, c(age, sex, lab_1, lab_2), estimand = "ate") |>
+    set_resamples(v_folds = 3L) |>
+    fit(sim_causal_cohort(n = 240L, outcome_type = "continuous", seed = 8104))
+  fit_hetero_att <- retarget(fit_hetero, estimand = "att")
+  set.seed(11); c1 <- fit_cate(fit_hetero, v_folds = 3L)
+  set.seed(11); c2 <- fit_cate(fit_hetero_att, v_folds = 3L)
+  expect_equal(c1$phi, c2$phi, tolerance = 1e-8)
+  expect_true(all(is.finite(tidy(c2)$std.error)))
+  expect_s3_class(c2, "tmle_cate")
+})

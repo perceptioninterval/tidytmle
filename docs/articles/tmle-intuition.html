@@ -92,9 +92,41 @@ the causal contrast you care about.</p>
 <p><strong>Analogy 2 — “Two Safety Nets” (<em>Double
 Robustness</em>):</strong> Pure outcome regression relies 100% on the
 outcome model; pure weighting relies 100% on the treatment propensity
-model. TMLE wears both safety nets: you still get an unbiased causal
-answer if <em>either</em> model gets the confounding structure
-right.</p>
+model. TMLE wears both safety nets: under causal identification
+assumptions, point estimation remains consistent if <em>either</em>
+model gets the confounding structure right.</p>
+</blockquote>
+<blockquote>
+<p><strong>Before Any Estimator — Three Causal Identification
+Assumptions:</strong> Statistics alone cannot turn observational
+correlations into causal effects without three structural conditions
+connecting observed data to counterfactual outcomes
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">Y(a)</annotation></semantics></math>:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Exchangeability (No Unmeasured Confounding):</strong>
+Measured confounders
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>W</mi><annotation encoding="application/x-tex">W</annotation></semantics></math>
+include all joint causes of treatment
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
+and outcome
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Y</mi><annotation encoding="application/x-tex">Y</annotation></semantics></math>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Y</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mo>⟂</mo><mi>A</mi><mo>∣</mo><mi>W</mi></mrow><annotation encoding="application/x-tex">Y(a) \perp A \mid W</annotation></semantics></math>).
+Data alone cannot prove this; <code>tidytmle</code> quantifies
+sensitivity via VanderWeele–Ding E-values
+(<code>tidy(..., e_value = TRUE)</code>).</li>
+<li>
+<strong>Positivity (Real-World Overlap):</strong> Every confounder
+profile has a positive probability of receiving each treatment arm
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn><mo>&lt;</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>&lt;</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">0 &lt; P(A = 1 \mid W) &lt; 1</annotation></semantics></math>).
+<code><a href="../reference/check_tmle.html">check_tmle()</a></code> and
+<code>autoplot(fit, type = "overlap")</code> audit this directly.</li>
+<li>
+<strong>Consistency &amp; No Interference (SUTVA):</strong> Each
+person’s observed outcome matches their potential outcome for the
+treatment received, with no hidden treatment versions or spillover
+across units.</li>
+</ol>
 </blockquote>
 <hr>
 <div class="section level2">
@@ -209,10 +241,15 @@ Predictions<a class="anchor" aria-label="anchor" href="#step-3-step-4-how-the-cl
 <p>Look at the intuition: people who received a <em>surprising</em>
 treatment given their profile carry larger calibration weights
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>H</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">|</mo></mrow><annotation encoding="application/x-tex">|H_n|</annotation></semantics></math>.
-Holding initial predictions fixed on the bounded logit scale, TMLE fits
-an arm-specific weighted-intercept fluctuation
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ϵ</mi><annotation encoding="application/x-tex">\epsilon</annotation></semantics></math>)
-that nudges <code>.q1_init -&gt; .q1_star</code> and
+Holding initial predictions fixed on the bounded logit scale,
+<code>tidytmle</code> fits arm-specific weighted-intercept fluctuations
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">logit</mtext><mspace width="0.167em"></mspace><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo>*</mo></msup><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mtext mathvariant="normal">logit</mtext><mspace width="0.167em"></mspace><msup><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mn>0</mn></msup><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><msub><mi>ϵ</mi><mi>a</mi></msub></mrow><annotation encoding="application/x-tex">\text{logit}\,\bar{Q}^*(a, W) = \text{logit}\,\bar{Q}^0(a, W) + \epsilon_a</annotation></semantics></math>
+weighted by
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">|</mo><msub><mi>H</mi><mi>n</mi></msub><mo stretchy="false" form="prefix">|</mo></mrow><annotation encoding="application/x-tex">|H_n|</annotation></semantics></math>,
+equivalent to <code>target.gwt = TRUE</code>; classical unweighted
+covariate fluctuation is also available via
+<code>fluctuation = "logistic_covariate"</code>), nudging
+<code>.q1_init -&gt; .q1_star</code> and
 <code>.q0_init -&gt; .q0_star</code> strictly along the causal
 bias-removal path:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
@@ -269,8 +306,8 @@ bias-removal path:</p>
 <td>
 <code>.q0_star</code>, <code>.q1_star</code>
 </td>
-<td>Stay strictly inside observed <code>[min(Y), max(Y)]</code>
-</td>
+<td>Stay strictly inside <code>(0, 1)</code> (binary) or
+<code>[min(Y), max(Y)]</code> (continuous)</td>
 </tr>
 <tr class="even">
 <td>Uncertainty &amp; convergence audit</td>
@@ -364,8 +401,18 @@ blind intercept-only model that ignores every confounder!):</p>
 <span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> Blind g Only -&gt; Rescued by Outcome Super Learner     1.61  0.111</span></span></code></pre></div>
 <p>Notice how untargeted regression on the blind outcome model collapses
 to <strong><code>0.00</code></strong>, yet TMLE’s targeting step uses
-propensity weights to rescue the causal estimate back toward ground
-truth.</p>
+propensity weights to rescue the causal point estimate back toward
+ground truth. Keep the exact statistical distinction in mind:
+<strong>point consistency</strong> only requires <em>one</em> safety net
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>Q</mi><mo accent="true">‾</mo></mover><annotation encoding="application/x-tex">\bar{Q}</annotation></semantics></math>
+or
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>g</mi><annotation encoding="application/x-tex">g</annotation></semantics></math>)
+to be consistent, whereas <strong>valid EIF Wald confidence intervals
+and semiparametric efficiency</strong> require <em>both</em> nuisance
+models to converge fast enough that their second-order product remainder
+shrinks faster than
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>n</mi><mrow><mi>−</mi><mn>1</mn><mi>/</mi><mn>2</mn></mrow></msup><annotation encoding="application/x-tex">n^{-1/2}</annotation></semantics></math>
+under cross-fitting.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -377,8 +424,8 @@ truth.</p>
 <li>
 <strong>Cross-Fitting (<code>cv_tmle = TRUE</code>, Zheng &amp; van
 der Laan, 2011)</strong>: Out-of-fold nuisance predictions preserve
-valid confidence intervals even when using random forests or boosted
-trees.</li>
+valid confidence intervals even when using random forests or regularized
+spline ensembles.</li>
 <li>
 <strong>Bounded Canonical Logistic Fluctuation
 (<code>fluctuation = "logistic"</code>, Gruber &amp; van der Laan,
@@ -387,10 +434,11 @@ logistic targeting keeps predictions strictly inside realistic outcome
 bounds.</li>
 <li>
 <strong>Adaptive Overlap Bounds (<code>g_bounds = "adaptive"</code>,
-Petersen et al., 2012)</strong>: Sample-size-aware bounds
+Petersen et al., 2012; Gruber et al., 2022)</strong>: Sample-size-aware
+bounds
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5</mn><mi>/</mi><mo stretchy="false" form="prefix">(</mo><msqrt><msub><mi>n</mi><mtext mathvariant="normal">eff</mtext></msub></msqrt><mrow><mi>ln</mi><mo>⁡</mo></mrow><msub><mi>n</mi><mtext mathvariant="normal">eff</mtext></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})</annotation></semantics></math>
-in <code>[0.01, 0.15]</code>) prevent extreme inverse weights from
-hijacking standard errors.</li>
+clamped to <code>[0.01, 0.15]</code>) prevent extreme inverse weights
+from hijacking standard errors.</li>
 </ol>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -29,7 +29,11 @@ multiplier bootstrap over the joint EIF matrix.}
 
 \item{e_value}{Logical; if \code{TRUE}, appends \code{e_value} and \code{e_value_ci}
 sensitivity columns (VanderWeele & Ding, 2017) quantifying robustness to
-unmeasured confounding.}
+unmeasured confounding: exact on risk ratios (\code{"rr"}), square-root
+converted for common binary outcomes (\code{"or"} when outcome prevalence exceeds
+\verb{15\%}, exact otherwise), standardized-difference converted via
+\code{exp(0.91 * d)} on additive contrasts, and \code{NA} for non-contrast marginal
+means (\code{"ey1"}, \code{"ey0"}, uncontrasted continuous policies).}
 
 \item{contrast}{Optional causal contrast override for continuous Modified
 Treatment Policies: \code{NULL} (default; uses the contrast declared inside

@@ -110,9 +110,11 @@ logistic fluctuation.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble::tibble()</a></code> with columns <code>age</code>, <code>sex</code>, <code>lab_1</code>, <code>lab_2</code>,
-<code>lab_3</code>, <code>a</code>, <code>y</code>, and optionally <code>delta</code> and <code>clinic_id</code>, plus an attribute
-<code>"truth"</code> containing <code>true_ate</code>, <code>true_att</code>, <code>true_atc</code>, <code>true_rr</code>,
-<code>true_or</code>, <code>true_shift_1</code>, and <code>true_cate</code>.</p>
+<code>lab_3</code>, <code>a</code>, <code>y</code>, and optionally <code>delta</code> and <code>clinic_id</code>, plus a <code>"truth"</code>
+attribute containing the relevant scenario ground-truth values (<code>true_ey1</code>,
+<code>true_ey0</code>, <code>true_ate</code>, <code>true_att</code>, <code>true_atc</code>, <code>true_cate</code>, plus
+<code>true_rr</code>/<code>true_or</code> when <code>outcome_type = "binary"</code>, or <code>true_shift_1</code> and
+<code>true_scale_09</code> when <code>treatment_type = "continuous"</code>).</p>
     </div>
 
     <div class="section level2">

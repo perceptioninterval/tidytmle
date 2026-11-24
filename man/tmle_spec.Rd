@@ -74,18 +74,26 @@ TMLE resolves both weaknesses in two stages:
 and treatment propensity \eqn{g(W)} (plus missingness/censoring
 \eqn{C(A, W)} when outcomes are missing) using cross-validated Super
 Learning.
-\item \strong{Target (Fluctuate)}: Construct the \emph{Clever Covariate} \eqn{H(A, W)}
-derived from the parameter's Efficient Influence Function (EIF) and fit a
-1-parameter fluctuation submodel \eqn{\text{logit}\,\bar{Q}^*(A, W) =
-   \text{logit}\,\bar{Q}^0(A, W) + \epsilon H(A, W)}. This nudges the
-initial predictions strictly along the direction needed to remove residual
-confounding bias until the sample mean of the EIF equals zero.
+\item \strong{Target (Fluctuate)}: Construct arm-specific Clever Covariates
+\eqn{H_1(A, W) = \mathbb{I}(A = 1) / g(W)} and
+\eqn{H_0(A, W) = \mathbb{I}(A = 0) / (1 - g(W))} (including censoring
+weights when outcomes are missing) derived from the Efficient Influence
+Function (EIF). By default (\code{fluctuation = "logistic"}), outcomes are
+mapped to \verb{(0, 1)} and fluctuated via arm-specific weighted-intercept
+canonical logistic models \eqn{\text{logit}\,\bar{Q}^*(a, W) =
+   \text{logit}\,\bar{Q}^0(a, W) + \epsilon_a} using weights \eqn{H_a}
+(matching \code{target.gwt = TRUE}). Classical unweighted Clever-Covariate
+fluctuation (\eqn{\text{logit}\,\bar{Q}^0 + \epsilon_1 H_1 + \epsilon_0 H_0},
+matching \code{target.gwt = FALSE}) is available via \code{fluctuation = "logistic_covariate"}. Both nudge initial predictions until the sample mean
+of each component EIF solves the zero score equation.
 }
 
 This makes TMLE a \strong{doubly robust}, \strong{locally efficient substitution
-estimator}: it remains consistent if \emph{either} \eqn{\bar{Q}} \emph{or} \eqn{g} is
-consistently estimated, attains the semiparametric efficiency lower bound
-when both are consistent, and respects natural outcome bounds.
+estimator}: point estimation remains consistent if \emph{either} \eqn{\bar{Q}}
+\emph{or} \eqn{g} (and \eqn{C} under missingness) is consistently estimated, while
+EIF-based Wald confidence intervals and semiparametric efficiency hold when
+\emph{both} nuisance models converge fast enough that their second-order product
+remainder is \eqn{o_p(n^{-1/2})}.
 }
 }
 \examples{

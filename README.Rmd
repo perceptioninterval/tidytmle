@@ -31,9 +31,9 @@ knitr::opts_chunk$set(
 Imagine running a clinical trial using messy real-world observational data—you cannot randomly assign treatment after the fact, so treated and comparison groups differ in age, severity, and baseline risk. **TMLE resolves confounding in two intuitive stages ("Predict, Then Target"):**
 
 1. **Build Every Person's Digital Twin ($\bar{Q}^0$):** Cross-validated machine learning (*Super Learner*) predicts each person's expected outcome *if treated* vs. *if untreated*, holding all measured characteristics fixed. Because prediction models minimize global accuracy rather than causal contrast bias, a small residual bias usually remains.
-2. **Re-Balance the Scale ($\epsilon$ Calibration):** A second model estimates who tended to receive treatment ($g$) and nudges the initial predictions just enough along the optimal bias-removal path (guided by the *Clever Covariate* $H$) until weighted confounding bias cancels cleanly to zero.
+2. **Re-Balance the Scale ($\epsilon$ Calibration):** A second model estimates who tended to receive treatment ($g$) and nudges the initial predictions via an arm-specific weighted-intercept logistic calibration step (using the *Clever Covariate* weights $|H|$) until weighted confounding bias cancels cleanly to zero.
 
-Think of this as wearing **Two Safety Nets (Double Robustness)**: your causal estimate remains trustworthy if *either* the outcome model $\bar{Q}$ *or* the propensity model $g$ gets the confounding structure right—while staying naturally bounded and locally efficient when both do well.
+Think of this as wearing **Two Safety Nets (Double Robustness)**: under the standard causal assumptions (no unmeasured confounding, positivity, and consistency), your point estimate remains consistent if *either* the outcome model $\bar{Q}$ *or* the propensity model $g$ gets the confounding structure right—while cross-fitting ensures valid EIF confidence intervals and local efficiency when both converge fast enough.
 
 | Question in Plain English | One-Line `tidytmle` Call |
 |---|---|
@@ -53,7 +53,7 @@ Think of this as wearing **Two Safety Nets (Double Robustness)**: your causal es
 pak::pak("perceptioninterval/tidytmle")
 ```
 
-## The 4-Step Human Workflow: Question $\rightarrow$ Estimate $\rightarrow$ Audit $\rightarrow$ Paper
+## From Causal Question to Paper in 3 Steps
 
 ### 1. Ask your question & estimate causal effects
 
@@ -107,7 +107,7 @@ report_tmle(
 | Baseline digital-twin predictions | Initial outcome model $\bar{Q}^0(a, W)$ | `.q1_init`, `.q0_init` in `augment(fit)` |
 | Likelihood of receiving treatment | Propensity score $g(W)$ | `.g_hat`, `.g_trunc` in `augment(fit)` |
 | How much each person needs re-balancing | Clever Covariate $H_n(A, W)$ | `.clever_h` in `augment(fit)` |
-| Size of the bias-removal nudge | Fluctuation parameter $\epsilon$ | `epsilon` & `plugin_vs_tmle_shift` in `glance(fit)` |
+| Size of the bias-removal nudge | Arm-specific fluctuation $\epsilon$ (`"logistic"` default) | `epsilon` & `plugin_vs_tmle_shift` in `glance(fit)` |
 | Uncertainty & outlier influence | Efficient Influence Function $D_i^*$ | `.eif` & `.eif_leverage` in `augment(fit)` |
 
 For a full worked visual walkthrough—including a live test of **both safety nets (double robustness)**—read [TMLE Intuition: A Step-by-Step Visual Guide](articles/tmle-intuition.html) (`vignette("tmle-intuition", package = "tidytmle")`).
@@ -134,6 +134,7 @@ Read the full quantitative breakdown in [Benchmarks, Double Robustness & Validat
 * VanderWeele, T. J., & Ding, P. (2017). Sensitivity analysis in observational research: Introducing the E-value. *Ann. Intern. Med.*, 167(4), 268–274.
 * Luque-Fernandez, M. A., et al. (2018). Targeted maximum likelihood estimation for a binary treatment: A tutorial. *Stat. Med.*, 37(16), 2530–2546.
 * Díaz, I., Williams, N., Hoffman, K. L., & Schenck, E. J. (2021). Nonparametric causal effects based on longitudinal modified treatment policies. *JASA*, 118(542), 846–857.
+* Gruber, S., Phillips, R. V., Lee, H., & van der Laan, M. J. (2022). Data-adaptive selection of the propensity score truncation level for IPW and TMLE. *Am. J. Epidemiol.*, 191(9), 1640–1651.
 * Kennedy, E. H. (2023). Towards optimal doubly robust estimation of heterogeneous causal effects. *Electron. J. Stat.*, 17(2), 3008–3049.
 * Phillips, R. V., et al. (2023). Practical considerations for specifying a super learner. *Int. J. Epidemiol.*, 52(4), 1276–1285.
 

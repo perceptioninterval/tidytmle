@@ -47,7 +47,7 @@ Two design details discovered during comparative source-code auditing drove meas
 
 ## 2 · Benchmark 1: Machine-Precision Parity Against `tmle::tmle()`
 
-To rule out algebraic bugs before running machine-learning ensembles, both packages were evaluated on identical simulated cohorts ($n = 500$, $5$-fold nuisance fit with `cv_tmle = FALSE`, `g_bounds = c(0.025, 0.975)`, and fixed parametric `glm` nuisances) across binary, continuous, and censored outcomes:
+To rule out algebraic bugs before running machine-learning ensembles, both packages were evaluated on identical simulated cohorts ($n = 500$, full-sample fixed parametric `glm` nuisances with `cv_tmle = FALSE` / `cvQinit = FALSE`, `g_bounds = c(0.025, 0.975)`) across binary, continuous, and censored outcomes:
 
 | Scenario | Estimand | `tidytmle` | `tmle::tmle()` | `|tidytmle - tmle|` | `tidytmle` SE | `tmle` SE |
 |---|---|---:|---:|---:|---:|---:|
@@ -205,7 +205,7 @@ What explains the consistent gains across all four stress tests?
 
 ### Single-Core Speed Advantage (2× to 12× Faster)
 
-Because `tidytmle` solves simplex-constrained FISTA Super Learner weights directly on outer cross-fitting splits instead of running nested `V_outer * 10` `SuperLearner` loops inside every fold, sequential single-thread (`OMP_NUM_THREADS = 1`) wall-clock fit times are substantially faster across nearly all benchmarks:
+Because `tidytmle` solves simplex-constrained FISTA Super Learner weights directly on outer cross-fitting splits instead of running nested `V_outer * 10` `SuperLearner` loops inside every fold, sequential single-thread (`OMP_NUM_THREADS = 1`) wall-clock fit times are substantially faster across nearly all benchmarks. Methodologically, pooling $K \approx 3\text{--}5$ non-negative simplex weights over $n$ strictly out-of-fold base predictions avoids $O(V \cdot 10)$ inner refits with negligible metalearning variance ($O(K/n)$), though very small cohorts with dozens of candidate learners should increase $V$ or inspect per-fold weights with `extract_sl_weights(fit, by_fold = TRUE)`:
 
 | Benchmark | `tidytmle` (`v0.1.0`) | `tmle::tmle()` | `AIPW::AIPW` | `lmtp::lmtp_tmle()` | Speedup vs. Fastest Peer |
 |---|---:|---:|---:|---:|---:|

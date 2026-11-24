@@ -156,7 +156,7 @@ predictors:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── <span style="font-weight: bold;">TMLE Fit Summary</span> ──</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (280 observed) | 5-fold CV-TMLE | logistic calibration | 3.33s</span></span></span>
+<span><span class="co">#&gt; <span style="font-style: italic;">n = 350 (280 observed) | 5-fold CV-TMLE | logistic calibration | 2.47s</span></span></span>
 <span><span class="co">#&gt; <span style="font-style: italic;">| 15 clusters</span></span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ── Causal Effect Estimates </span></span>
@@ -189,6 +189,20 @@ models informative missingness
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mi mathvariant="normal">Δ</mi><mo>=</mo><mn>1</mn><mo>∣</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">C(A, W) = P(\Delta = 1 \mid A, W)</annotation></semantics></math>,
 and folds inverse-observation weights directly into the Clever
 Covariate.</p>
+<blockquote>
+<p><strong>Key Identifying Assumption — Missing At Random
+(MAR):</strong> Inverse-probability censoring weights remove dropout
+bias provided outcome observation depends only on measured baseline
+covariates and treatment
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mo>⟂</mo><mi>Y</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo stretchy="false" form="postfix">)</mo><mo>∣</mo><mi>A</mi><mo>=</mo><mi>a</mi><mo>,</mo><mi>W</mi></mrow><annotation encoding="application/x-tex">\Delta \perp Y(a) \mid A = a, W</annotation></semantics></math>,
+with positive observation probability
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi><mo stretchy="false" form="prefix">(</mo><mi>a</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">C(a, W) &gt; 0</annotation></semantics></math>).
+If dropout depends on the <em>unobserved</em> outcome itself even after
+conditioning on
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(A, W)</annotation></semantics></math>
+(<em>Missing Not At Random</em>, MNAR), sensitivity analyses are
+required.</p>
+</blockquote>
 <p>Native <code><a href="https://hardhat.tidymodels.org/reference/importance_weights.html" class="external-link">hardhat::importance_weights()</a></code> and
 <code><a href="https://hardhat.tidymodels.org/reference/frequency_weights.html" class="external-link">hardhat::frequency_weights()</a></code> are likewise carried cleanly
 through both nuisance workflows and cluster-robust standard errors:</p>
@@ -213,7 +227,7 @@ through both nuisance workflows and cluster-robust standard errors:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Targeting Convergence</span> (mean EIF = -2.20e-16): Bias-removal step converged cleanly (targeting shift = -0.0368, epsilon = -0.0094).</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Comparison Overlap (Positivity)</span> (0.0% clipped | ESS 123 vs 128): 0.0% of propensity scores hit bounds [0.150, 0.850] (ESS: treated = 122.7, control = 128.0).</span></span>
-<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Confounder Balance</span> (max |SMD| 0.421 -&gt; 0.067): Weighted confounders are well balanced (max |SMD| fell from 0.421 to 0.067, below 0.10).</span></span>
+<span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Confounder Balance</span> (max |SMD| 0.421 -&gt; 0.067): Confounders are well balanced under IPW weighting (max |SMD| fell from 0.421 to 0.067, below 0.10).</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Individual Influence</span> (top obs = 6.7% variance): No single row dominates uncertainty (row 235 holds 6.7% of EIF variance, &lt;= 10%).</span></span>
 <span><span class="co">#&gt; <span style="color: #00BB00;">✔</span> <span style="font-weight: bold;">Model Learning Quality</span> (Q R2 = 0.753 | g AUC = 0.611): Cross-validated Super Learners captured real structure (Q R2 = 0.753, treatment AUC = 0.611).</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -224,6 +238,48 @@ through both nuisance workflows and cluster-robust standard errors:</p>
 <p>Notice how confounding imbalance drops cleanly into the green
 <code>&lt; 0.10</code> balanced band—ready to generate paper prose via
 <code>report_tmle(fit_auto_c)</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="stratified-outcome-modeling-fluctuation-submodels-outer-fold-super-learning">Stratified Outcome Modeling, Fluctuation Submodels &amp; Outer-Fold
+Super Learning<a class="anchor" aria-label="anchor" href="#stratified-outcome-modeling-fluctuation-submodels-outer-fold-super-learning"></a>
+</h2>
+<p>Three methodological controls give you finer-grained command when
+datasets have strong effect modification, severe positivity stress, or
+strict parity requirements:</p>
+<ul>
+<li>
+<strong>Pooled (<code>stratify = FALSE</code>) vs. Arm-Stratified
+<code>Q</code> (<code>stratify = TRUE</code>):</strong> By default,
+<code>tidytmle</code> fits a pooled Super Learner
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>Q</mi><mo accent="true">‾</mo></mover><mo stretchy="false" form="prefix">(</mo><mi>A</mi><mo>,</mo><mi>W</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\bar{Q}(A, W)</annotation></semantics></math>
+enriched with treatment-interaction workflows
+(<code>glmnet_interact</code>), natural splines
+(<code>glmnet_spline</code>), and
+<code>ranger(..., always.split.variables = treatment_col)</code>. When
+treatment-effect heterogeneity is complex or sample size per arm is
+large, <code>set_outcome_learners("default", stratify = TRUE)</code>
+fits separate Super Learners on treated and control arms (T-learner
+mode) while retaining joint TMLE targeting.</li>
+<li>
+<strong>Weighted (<code>"logistic"</code>) vs. Covariate
+(<code>"logistic_covariate"</code>) Fluctuation:</strong> The default
+<code>"logistic"</code> submodel fits arm-specific weighted-intercept
+fluctuations (<code>target.gwt = TRUE</code>), avoiding logit-scale
+boundary explosions under skewed propensity weights. Classical
+two-parameter clever-covariate fluctuation
+(<code>target.gwt = FALSE</code>) is available anytime via
+<code>set_targeting(fluctuation = "logistic_covariate")</code> or
+<code>retarget(fit, fluctuation = "logistic_covariate")</code>.</li>
+<li>
+<strong>Outer-Fold Simplex FISTA Stacking:</strong> Each candidate
+workflow is fit exclusively out-of-fold across the <code>rsample</code>
+splits, and convex simplex ensemble weights
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>w</mi><mi>k</mi></msub><mo>≥</mo><mn>0</mn><mo>,</mo><mo>∑</mo><msub><mi>w</mi><mi>k</mi></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">w_k \ge 0, \sum w_k = 1</annotation></semantics></math>)
+are solved over the concatenated out-of-fold risk matrix using
+FISTA—avoiding nested
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi><mo>×</mo><mn>10</mn></mrow><annotation encoding="application/x-tex">V \times 10</annotation></semantics></math>
+inner cross-validation loops while keeping predictions honest.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

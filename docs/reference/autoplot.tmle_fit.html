@@ -3,8 +3,8 @@
 of the TMLE estimator into an intuitive visual check:
 "effect": Causal Effect Forest Plot (Default). Publication-ready
 effect estimates and 95% confidence intervals with direct numeric labels, a
-"No effect" reference line, and (for binary ATE) a hollow marker showing
-the untargeted initial ML estimate before bias calibration.
+"No effect" reference line, and (for binary ATE/ATT/ATC) a hollow marker
+showing the untargeted initial ML estimate before bias calibration.
 "overlap": Step 2 (Fair Comparison / Positivity Check). Mirrored
 propensity distributions directly labeled "Treated" and "Control",
 with shaded tail clipping zones (or trimmed density-ratio distribution for
@@ -12,9 +12,11 @@ continuous LMTPs).
 "targeting": Steps 3–4 (How Much Bias Calibration Changed Things).
 Initial ML counterfactual contrasts plotted against targeted TMLE contrasts,
 with direct "No adjustment" reference line and population shift marker.
-"balance": Confounder Balance Dumbbell Plot. Before vs. after IPW
-imbalance (|SMD|) ordered from largest baseline imbalance to smallest,
-highlighting the balanced &amp;lt; 0.10 zone without duplicate factor mirror rows.
+"balance": Confounder Balance Dumbbell Plot. Before vs. after
+weighting imbalance (|SMD|, using ATE IPW or ATT/ATC odds weights to
+match the primary estimand) ordered from largest baseline imbalance to
+smallest, highlighting the balanced &amp;lt; 0.10 zone without duplicate factor
+mirror rows.
 "sensitivity": Positivity Strictness Sweep. Instant retarget()
 sensitivity curve across clipping thresholds showing stability of point
 estimates and 95% confidence intervals.
@@ -31,8 +33,8 @@ continuous policies) via patchwork.
 of the TMLE estimator into an intuitive visual check:
 "effect": Causal Effect Forest Plot (Default). Publication-ready
 effect estimates and 95% confidence intervals with direct numeric labels, a
-"No effect" reference line, and (for binary ATE) a hollow marker showing
-the untargeted initial ML estimate before bias calibration.
+"No effect" reference line, and (for binary ATE/ATT/ATC) a hollow marker
+showing the untargeted initial ML estimate before bias calibration.
 "overlap": Step 2 (Fair Comparison / Positivity Check). Mirrored
 propensity distributions directly labeled "Treated" and "Control",
 with shaded tail clipping zones (or trimmed density-ratio distribution for
@@ -40,9 +42,11 @@ continuous LMTPs).
 "targeting": Steps 3–4 (How Much Bias Calibration Changed Things).
 Initial ML counterfactual contrasts plotted against targeted TMLE contrasts,
 with direct "No adjustment" reference line and population shift marker.
-"balance": Confounder Balance Dumbbell Plot. Before vs. after IPW
-imbalance (|SMD|) ordered from largest baseline imbalance to smallest,
-highlighting the balanced &amp;lt; 0.10 zone without duplicate factor mirror rows.
+"balance": Confounder Balance Dumbbell Plot. Before vs. after
+weighting imbalance (|SMD|, using ATE IPW or ATT/ATC odds weights to
+match the primary estimand) ordered from largest baseline imbalance to
+smallest, highlighting the balanced &amp;lt; 0.10 zone without duplicate factor
+mirror rows.
 "sensitivity": Positivity Strictness Sweep. Instant retarget()
 sensitivity curve across clipping thresholds showing stability of point
 estimates and 95% confidence intervals.
@@ -102,8 +106,8 @@ continuous policies) via patchwork.
     <p>Produces clean, Tufte-inspired <code>ggplot2</code> causal figures turning every step
 of the TMLE estimator into an intuitive visual check:</p><ul><li><p><code>"effect"</code>: <strong>Causal Effect Forest Plot (Default)</strong>. Publication-ready
 effect estimates and 95% confidence intervals with direct numeric labels, a
-<code>"No effect"</code> reference line, and (for binary ATE) a hollow marker showing
-the untargeted initial ML estimate before bias calibration.</p></li>
+<code>"No effect"</code> reference line, and (for binary ATE/ATT/ATC) a hollow marker
+showing the untargeted initial ML estimate before bias calibration.</p></li>
 <li><p><code>"overlap"</code>: <strong>Step 2 (Fair Comparison / Positivity Check)</strong>. Mirrored
 propensity distributions directly labeled <code>"Treated"</code> and <code>"Control"</code>,
 with shaded tail clipping zones (or trimmed density-ratio distribution for
@@ -111,9 +115,11 @@ continuous LMTPs).</p></li>
 <li><p><code>"targeting"</code>: <strong>Steps 3–4 (How Much Bias Calibration Changed Things)</strong>.
 Initial ML counterfactual contrasts plotted against targeted TMLE contrasts,
 with direct <code>"No adjustment"</code> reference line and population shift marker.</p></li>
-<li><p><code>"balance"</code>: <strong>Confounder Balance Dumbbell Plot</strong>. Before vs. after IPW
-imbalance (<code>|SMD|</code>) ordered from largest baseline imbalance to smallest,
-highlighting the balanced <code>&lt; 0.10</code> zone without duplicate factor mirror rows.</p></li>
+<li><p><code>"balance"</code>: <strong>Confounder Balance Dumbbell Plot</strong>. Before vs. after
+weighting imbalance (<code>|SMD|</code>, using ATE IPW or ATT/ATC odds weights to
+match the primary estimand) ordered from largest baseline imbalance to
+smallest, highlighting the balanced <code>&lt; 0.10</code> zone without duplicate factor
+mirror rows.</p></li>
 <li><p><code>"sensitivity"</code>: <strong>Positivity Strictness Sweep</strong>. Instant <code><a href="retarget.html">retarget()</a></code>
 sensitivity curve across clipping thresholds showing stability of point
 estimates and 95% confidence intervals.</p></li>

@@ -114,7 +114,11 @@ whose conditional expectation given covariates \(V\) equals the true CATE
 estimated. Regressing \(\varphi_i\) on \(V_i\) lets any <code>tidymodels</code>
 regression workflow learn treatment effect heterogeneity while <code><a href="https://generics.r-lib.org/reference/tidy.html" class="external-link">tidy()</a></code>
 reports Chernozhukov et al.'s (2018) Best Linear Projection (BLP) test for
-significant effect modification.</p>
+significant effect modification using HC1 heteroscedasticity-robust
+(Eicker-Huber-White) standard errors. When <code>fit</code> targeted an <code>"att"</code> or
+<code>"atc"</code> parameter, <code>fit_cate()</code> automatically re-targets the ATE nuisance
+surface via <code>retarget(fit, estimand = "ate")</code> without ML refitting before
+constructing \(\varphi_i\).</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -138,7 +142,7 @@ randomized experiments. <em>NBER Working Paper No. 24678</em>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   term         estimate std.error statistic  p.value conf.low conf.high</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> ATE (BLP In…    1.96      0.195     10.1  1.81<span style="color: #949494;">e</span><span style="color: #BB0000;">-19</span>    1.58       2.34</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Heterogenei…    0.653     0.217      3.01 2.98<span style="color: #949494;">e</span><span style="color: #BB0000;">- 3</span>    0.225      1.08</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Heterogenei…    0.653     0.205      3.19 1.66<span style="color: #949494;">e</span><span style="color: #BB0000;">- 3</span>    0.249      1.06</span>
 <span class="r-in"><span><span class="fu"><a href="qini_auc.html">qini_auc</a></span><span class="op">(</span><span class="va">cate</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 2 × 3</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   .metric  .estimator .estimate</span>

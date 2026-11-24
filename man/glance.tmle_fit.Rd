@@ -27,13 +27,14 @@ nuisance performance.
 \item \strong{\code{mean_eif}}: The sample average of the Efficient Influence Function
 \eqn{\frac{1}{n}\sum D_i^*}. A healthy TMLE solves the EIF score equation,
 so \code{abs(mean_eif)} must be near zero (\verb{< 1e-4}).
-\item \strong{\code{epsilon}}: The magnitude of the targeting fluctuation step. Values
-close to \code{0} mean the initial ML outcome fit already had little residual
-confounding bias; larger magnitudes show how strongly TMLE adjusted the
-initial predictions to remove bias.
-\item \strong{\code{plugin_vs_tmle_shift}}: Difference between the final targeted TMLE ATE
-and the untargeted G-computation plug-in ATE. Quantifies the exact causal
-bias correction performed by the targeting step.
+\item \strong{\code{epsilon}}: Scalar summary of the arm-specific targeting fluctuation
+parameters stored in \code{fit$targeting$epsilon_arms}. Values close to \code{0} mean
+the initial ML outcome fit already had little residual confounding bias;
+larger magnitudes show how strongly TMLE fluctuated the initial predictions
+to remove bias.
+\item \strong{\code{plugin_vs_tmle_shift}}: Difference between the targeted estimate and
+the untargeted G-computation plug-in estimate for the primary estimand.
+Quantifies the exact causal bias calibration performed by the targeting step.
 \item \strong{\code{pct_truncated} & \code{ess_treated}/\code{ess_control}}: Share of propensity
 scores clipped to \verb{[g_bound_low, g_bound_high]} and Kish's effective sample
 size under inverse-propensity weighting. High truncation (\verb{> 5\%}) or tiny

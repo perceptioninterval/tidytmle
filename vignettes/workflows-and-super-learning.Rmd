@@ -81,6 +81,8 @@ autoplot(fit_l2, type = "learners")
 
 Dropping patients whose follow-up outcomes are missing (`NA`) creates **selection bias** whenever sicker participants drop out more often. When `outcome` contains `NA`s and `censoring` is omitted, `tidytmle` automatically introduces $\Delta = \mathbb{I}(\neg\text{is.na}(Y))$, models informative missingness $C(A, W) = P(\Delta = 1 \mid A, W)$, and folds inverse-observation weights directly into the Clever Covariate.
 
+> **Key Identifying Assumption — Missing At Random (MAR):** Inverse-probability censoring weights remove dropout bias provided outcome observation depends only on measured baseline covariates and treatment ($\Delta \perp Y(a) \mid A = a, W$, with positive observation probability $C(a, W) > 0$). If dropout depends on the *unobserved* outcome itself even after conditioning on $(A, W)$ (*Missing Not At Random*, MNAR), sensitivity analyses are required.
+
 Native `hardhat::importance_weights()` and `hardhat::frequency_weights()` are likewise carried cleanly through both nuisance workflows and cluster-robust standard errors:
 
 ```{r missingness, fig.alt = "Dumbbell plot comparing confounder imbalance before and after IPW/TMLE weighting"}
@@ -102,3 +104,11 @@ autoplot(fit_auto_c, type = "balance")
 ```
 
 Notice how confounding imbalance drops cleanly into the green `< 0.10` balanced band—ready to generate paper prose via `report_tmle(fit_auto_c)`.
+
+## Stratified Outcome Modeling, Fluctuation Submodels & Outer-Fold Super Learning
+
+Three methodological controls give you finer-grained command when datasets have strong effect modification, severe positivity stress, or strict parity requirements:
+
+* **Pooled (`stratify = FALSE`) vs. Arm-Stratified `Q` (`stratify = TRUE`):** By default, `tidytmle` fits a pooled Super Learner $\bar{Q}(A, W)$ enriched with treatment-interaction workflows (`glmnet_interact`), natural splines (`glmnet_spline`), and `ranger(..., always.split.variables = treatment_col)`. When treatment-effect heterogeneity is complex or sample size per arm is large, `set_outcome_learners("default", stratify = TRUE)` fits separate Super Learners on treated and control arms (T-learner mode) while retaining joint TMLE targeting.
+* **Weighted (`"logistic"`) vs. Covariate (`"logistic_covariate"`) Fluctuation:** The default `"logistic"` submodel fits arm-specific weighted-intercept fluctuations (`target.gwt = TRUE`), avoiding logit-scale boundary explosions under skewed propensity weights. Classical two-parameter clever-covariate fluctuation (`target.gwt = FALSE`) is available anytime via `set_targeting(fluctuation = "logistic_covariate")` or `retarget(fit, fluctuation = "logistic_covariate")`.
+* **Outer-Fold Simplex FISTA Stacking:** Each candidate workflow is fit exclusively out-of-fold across the `rsample` splits, and convex simplex ensemble weights ($w_k \ge 0, \sum w_k = 1$) are solved over the concatenated out-of-fold risk matrix using FISTA—avoiding nested $V \times 10$ inner cross-validation loops while keeping predictions honest.

@@ -22,7 +22,14 @@ Causal inference often feels buried under semiparametric notation, yet the core 
 > First, use machine learning to predict each person's outcome with and without treatment (*their digital twin*). Next, use who actually received treatment to nudge those predictions just enough to cancel any leftover confounding bias on the causal contrast you care about.
 >
 > **Analogy 2 — "Two Safety Nets" (*Double Robustness*):**
-> Pure outcome regression relies 100% on the outcome model; pure weighting relies 100% on the treatment propensity model. TMLE wears both safety nets: you still get an unbiased causal answer if *either* model gets the confounding structure right.
+> Pure outcome regression relies 100% on the outcome model; pure weighting relies 100% on the treatment propensity model. TMLE wears both safety nets: under causal identification assumptions, point estimation remains consistent if *either* model gets the confounding structure right.
+
+> **Before Any Estimator — Three Causal Identification Assumptions:**
+> Statistics alone cannot turn observational correlations into causal effects without three structural conditions connecting observed data to counterfactual outcomes $Y(a)$:
+>
+> 1. **Exchangeability (No Unmeasured Confounding):** Measured confounders $W$ include all joint causes of treatment $A$ and outcome $Y$ ($Y(a) \perp A \mid W$). Data alone cannot prove this; `tidytmle` quantifies sensitivity via VanderWeele–Ding E-values (`tidy(..., e_value = TRUE)`).
+> 2. **Positivity (Real-World Overlap):** Every confounder profile has a positive probability of receiving each treatment arm ($0 < P(A = 1 \mid W) < 1$). `check_tmle()` and `autoplot(fit, type = "overlap")` audit this directly.
+> 3. **Consistency & No Interference (SUTVA):** Each person's observed outcome matches their potential outcome for the treatment received, with no hidden treatment versions or spillover across units.
 
 ---
 
@@ -80,7 +87,7 @@ autoplot(fit, type = "balance")
 Where did initial ML leave residual bias? TMLE computes a **Clever Covariate** (`.clever_h`):
 $$H_n(A, W) = \frac{A}{g_n(W)} - \frac{1 - A}{1 - g_n(W)}.$$
 
-Look at the intuition: people who received a *surprising* treatment given their profile carry larger calibration weights $|H_n|$. Holding initial predictions fixed on the bounded logit scale, TMLE fits an arm-specific weighted-intercept fluctuation ($\epsilon$) that nudges `.q1_init -> .q1_star` and `.q0_init -> .q0_star` strictly along the causal bias-removal path:
+Look at the intuition: people who received a *surprising* treatment given their profile carry larger calibration weights $|H_n|$. Holding initial predictions fixed on the bounded logit scale, `tidytmle` fits arm-specific weighted-intercept fluctuations ($\text{logit}\,\bar{Q}^*(a, W) = \text{logit}\,\bar{Q}^0(a, W) + \epsilon_a$ weighted by $|H_n|$, equivalent to `target.gwt = TRUE`; classical unweighted covariate fluctuation is also available via `fluctuation = "logistic_covariate"`), nudging `.q1_init -> .q1_star` and `.q0_init -> .q0_star` strictly along the causal bias-removal path:
 
 ```{r targeting-plot, fig.alt = "Scatter plot comparing initial ML counterfactual effects against targeted TMLE effects shaded by Clever Covariate magnitude"}
 autoplot(fit, type = "targeting")
@@ -96,7 +103,7 @@ Every abstract quantity maps cleanly to a column inside `augment(fit)` and `glan
 | Chance of treatment (raw & clipped) | `.g_hat`, `.g_trunc` | Substantial middle overlap between arms |
 | Re-balancing leverage per row | `.clever_h` | Bounded well away from infinity |
 | Size of targeting bias nudge | `epsilon`, `plugin_vs_tmle_shift` | Small if initial ML already captured confounding |
-| Calibrated digital-twin predictions | `.q0_star`, `.q1_star` | Stay strictly inside observed `[min(Y), max(Y)]` |
+| Calibrated digital-twin predictions | `.q0_star`, `.q1_star` | Stay strictly inside `(0, 1)` (binary) or `[min(Y), max(Y)]` (continuous) |
 | Uncertainty & convergence audit | `.eif`, `.eif_leverage`, `mean_eif` | `mean_eif` $\approx 0$; no single row > `10%` leverage |
 
 ```{r decoder}
@@ -154,7 +161,7 @@ tibble::tibble(
 )
 ```
 
-Notice how untargeted regression on the blind outcome model collapses to **`0.00`**, yet TMLE's targeting step uses propensity weights to rescue the causal estimate back toward ground truth.
+Notice how untargeted regression on the blind outcome model collapses to **`0.00`**, yet TMLE's targeting step uses propensity weights to rescue the causal point estimate back toward ground truth. Keep the exact statistical distinction in mind: **point consistency** only requires *one* safety net ($\bar{Q}$ or $g$) to be consistent, whereas **valid EIF Wald confidence intervals and semiparametric efficiency** require *both* nuisance models to converge fast enough that their second-order product remainder shrinks faster than $n^{-1/2}$ under cross-fitting.
 
 ---
 
@@ -162,6 +169,6 @@ Notice how untargeted regression on the blind outcome model collapses to **`0.00
 
 Three practical traps break naive TMLE pipelines in applied research; `tidytmle` protects against all three automatically:
 
-1. **Cross-Fitting (`cv_tmle = TRUE`, Zheng & van der Laan, 2011)**: Out-of-fold nuisance predictions preserve valid confidence intervals even when using random forests or boosted trees.
+1. **Cross-Fitting (`cv_tmle = TRUE`, Zheng & van der Laan, 2011)**: Out-of-fold nuisance predictions preserve valid confidence intervals even when using random forests or regularized spline ensembles.
 2. **Bounded Canonical Logistic Fluctuation (`fluctuation = "logistic"`, Gruber & van der Laan, 2010)**: Scaling outcomes into `[0, 1]` before logistic targeting keeps predictions strictly inside realistic outcome bounds.
-3. **Adaptive Overlap Bounds (`g_bounds = "adaptive"`, Petersen et al., 2012)**: Sample-size-aware bounds ($5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})$ in `[0.01, 0.15]`) prevent extreme inverse weights from hijacking standard errors.
+3. **Adaptive Overlap Bounds (`g_bounds = "adaptive"`, Petersen et al., 2012; Gruber et al., 2022)**: Sample-size-aware bounds ($5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})$ clamped to `[0.01, 0.15]`) prevent extreme inverse weights from hijacking standard errors.

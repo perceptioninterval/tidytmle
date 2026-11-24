@@ -65,7 +65,7 @@ extract_sl_weights(fit)
 
 ## Step 3 · Audit Causal Health & Stress-Test Instantly
 
-Run `check_tmle(fit)` to evaluate the 5 pillars of causal trustworthiness (*Targeting Convergence*, *Comparison Overlap*, *Confounder Balance*, *Individual Influence*, and *Model Learning Quality*), inspect the 4-panel dashboard, and test stricter assumptions in milliseconds via `retarget()`:
+Run `check_tmle(fit)` to evaluate the five *data-checkable* pillars of causal trustworthiness (*Targeting Convergence*, *Comparison Overlap*, *Confounder Balance*, *Individual Influence*, and *Model Learning Quality*), inspect the 4-panel dashboard, and test stricter bounds or subgroups in milliseconds via `retarget()`. *(Unmeasured confounding cannot be tested from data alone and is instead assessed using VanderWeele–Ding E-values and domain knowledge.)*
 
 ```{r audit, fig.width = 9.5, fig.height = 6.8, fig.alt = "4-panel Tufte-styled TMLE Causal Audit Dashboard showing overlap, targeting shift, sensitivity sweep, and confounder balance dumbbell plot"}
 check_tmle(fit)

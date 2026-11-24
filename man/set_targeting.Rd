@@ -23,20 +23,25 @@ nuisance predictions). Strongly recommended (\code{TRUE} by default) to preserve
 valid influence-function standard errors without Donsker assumptions.}
 
 \item{g_bounds}{Positivity truncation rule for propensity scores: \code{"adaptive"}
-(Gruber & van der Laan \eqn{5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})}
-bounded to \verb{[0.01, 0.15]}), a single numeric threshold \code{b} giving \verb{[b, 1 - b]},
-or a length-2 numeric vector \code{c(low, high)} in \verb{(0, 1)}.}
+(sample-size-aware \eqn{5 / (\sqrt{n_{\text{eff}}} \ln n_{\text{eff}})} rule
+clamped to \verb{[0.01, 0.15]}; Gruber et al., 2022), a single numeric threshold
+\code{b} giving \verb{[b, 1 - b]}, or a length-2 numeric vector \code{c(low, high)} in
+\verb{(0, 1)}.}
 
-\item{fluctuation}{Fluctuation submodel: \code{"logistic"} (weighted-intercept
-bounded canonical logistic fluctuation on scaled \verb{[0, 1]} outcomes,
-equivalent to \code{target.gwt = TRUE} -- default), \code{"logistic_covariate"}
-(classical unweighted Clever-Covariate logistic submodel matching
-\code{tmle::tmle(..., target.gwt = FALSE)}), \code{"linear"} (weighted linear
-fluctuation), or \code{"none"} (one-step / plug-in without targeting step).}
+\item{fluctuation}{Fluctuation submodel: \code{"logistic"} (arm-specific
+weighted-intercept bounded canonical logistic fluctuation on scaled \verb{[0, 1]}
+outcomes, equivalent to \code{target.gwt = TRUE} -- default),
+\code{"logistic_covariate"} (classical unweighted two-parameter Clever-Covariate
+logistic submodel matching \code{tmle::tmle(..., target.gwt = FALSE)}),
+\code{"linear"} (weighted linear fluctuation), or \code{"none"} (untargeted
+G-computation plug-in using initial ML predictions without a targeting
+fluctuation step; EIF score is not solved).}
 
 \item{max_iter}{Maximum iterative TMLE steps (reserved for iterative updates).}
 
-\item{tol}{Convergence tolerance on mean EIF.}
+\item{tol}{Convergence tolerance reserved for iterative longitudinal updates
+(point-treatment canonical logistic updates converge in one closed-form GLM
+iteration using internal tolerance \code{1e-10}).}
 
 \item{save_nuisance}{Memory policy for nuisance models after fitting:
 \code{"predictions"} (default; keeps only out-of-fold predictions, CV risk, and
@@ -64,7 +69,7 @@ learners such as random forests or boosted trees (Zheng & van der Laan,
 \item \strong{Adaptive Positivity Truncation (\code{g_bounds = "adaptive"})}: Prevents a
 handful of near-0 or near-1 propensity scores from inflating inverse weights
 and EIF variance, following the sample-size-aware \eqn{5 / (\sqrt{n}\ln n)}
-diagnostic rule (Petersen et al., 2012; Gruber & van der Laan, 2010).
+truncation rule (Petersen et al., 2012; Gruber et al., 2022).
 \item \strong{Bounded Logistic Fluctuation (\code{fluctuation = "logistic"})}: Scales
 continuous outcomes into \verb{[0, 1]} and performs canonical logistic
 fluctuation so targeted counterfactual predictions stay strictly inside the
@@ -85,6 +90,11 @@ estimation. In \emph{Targeted Learning} (pp. 459–474). Springer.
 Gruber, S., & van der Laan, M. J. (2010). A targeted maximum likelihood
 estimator of a causal effect on a bounded continuous outcome. \emph{The
 International Journal of Biostatistics}, 6(1), Article 26.
+
+Gruber, S., Phillips, R. V., Lee, H., & van der Laan, M. J. (2022). Data-adaptive
+selection of the propensity score truncation level for inverse-probability-weighted
+and targeted maximum likelihood estimators of marginal point treatment effects.
+\emph{American Journal of Epidemiology}, 191(9), 1640–1651.
 
 Petersen, M. L., Porter, K. E., Gruber, S., Wang, Y., & van der Laan, M. J.
 (2012). Diagnosing and responding to violations in the positivity assumption.
